@@ -1,0 +1,106 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password_hash String
+  name      String?
+  profilePictureUrl String?
+  dogs      Dog[]
+  favoriteParks Park[] @relation("UserFavoriteParks")
+  enemies   User[]   @relation("UserEnemies")
+  enemyOf   User[]   @relation("UserEnemies")
+  eventsOrganized Event[] @relation("EventOrganizer")
+  organizationsOwned Organization[] @relation("OrganizationOwner")
+  organizationMemberships OrganizationMember[]
+  friendshipsRequested Friendship[] @relation("FriendshipRequester")
+  friendshipsReceived Friendship[] @relation("FriendshipAddressee")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Dog {
+  id        Int      @id @default(autoincrement())
+  name      String
+  breed     String
+  age       Int
+  ownerId   Int
+  owner     User     @relation(fields: [ownerId], references: [id])
+  profilePictureUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Friendship {
+  requesterId Int
+  addresseeId Int
+  status      String
+
+  requester   User @relation("FriendshipRequester", fields: [requesterId], references: [id])
+  addressee   User @relation("FriendshipAddressee", fields: [addresseeId], references: [id])
+
+  @@id([requesterId, addresseeId])
+}
+
+model Park {
+  id        Int      @id @default(autoincrement())
+  name      String
+  location  String
+  description String?
+  amenities String[]
+  profilePictureUrl String?
+  favoritedBy User[] @relation("UserFavoriteParks")
+  events Event[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Organization {
+  id        Int      @id @default(autoincrement())
+  name      String
+  profilePictureUrl String?
+  description String?
+  ownerId   Int
+  owner     User     @relation("OrganizationOwner", fields: [ownerId], references: [id])
+  membershipRecords OrganizationMember[]
+  memberRoles String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OrganizationMember {
+  userId         Int
+  organizationId Int
+  role           String
+
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@id([userId, organizationId])
+}
+
+model Event {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  date        DateTime
+  parkId      Int
+  park        Park     @relation(fields: [parkId], references: [id])
+  organizerId Int
+  organizer   User     @relation("EventOrganizer", fields: [organizerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+} 

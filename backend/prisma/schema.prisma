@@ -32,6 +32,9 @@ model User {
   enemies   enemies[] @relation("EnemyUser")
   enemiesOwned enemies[] @relation("EnemiesOwner")
   comments Comment[]
+  achievements UserAchievement[]
+  levels    UserLevel[]
+  ExpPoints   Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -41,6 +44,7 @@ model Dog {
   name      String
   breed     String
   gender    String
+  fixed     Boolean @default(false)
   dateOfBirth DateTime
   size      String
   ownerId   Int
@@ -150,4 +154,48 @@ model Comment {
   event     Event?    @relation(fields: [eventId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Achievements {
+  id        Int      @id @default(autoincrement())
+  name      String
+  description String?
+  badgeUrl  String?
+  userAchievements UserAchievement[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserAchievement {
+  userId        Int
+  achievementId Int
+  dateEarned    DateTime @default(now())
+
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement  Achievements @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@id([userId, achievementId])
+}
+
+model Levels {
+  id        Int      @id @default(autoincrement())
+  name      String
+  description String?
+  minPoints Int
+  maxPoints Int
+  badgeUrl  String?
+  userLevels UserLevel[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserLevel {
+  userId   Int
+  levelId  Int
+  dateAchieved DateTime @default(now())
+
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  level   Levels @relation(fields: [levelId], references: [id], onDelete: Cascade)
+
+  @@id([userId, levelId])
 }

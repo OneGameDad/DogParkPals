@@ -1,8 +1,8 @@
 {
     "compilerOptions": {
         "target": "esnext",
-        "module": "nodenext",
-        "moduleResolution": "nodenext",
+        "module": "commonjs",
+        "moduleResolution": "node",
         "sourceMap": true,
         "outDir": "./dist",
         "rootDir": "./src",
@@ -20,6 +20,6 @@
   "include": ["src/**/*", "tests"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"],
   "ts-node": {
-    "esm": true
+    "esm": false
   }
 }

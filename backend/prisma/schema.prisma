@@ -6,28 +6,32 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output   = "./generated/client"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
   password_hash String
-  name      String?
+  username  String   @unique
+  first_name      String?
+  last_name       String?
   profilePictureUrl String?
   dogs      Dog[]
   favoriteParks Park[] @relation("UserFavoriteParks")
-  enemies   User[]   @relation("UserEnemies")
-  enemyOf   User[]   @relation("UserEnemies")
   eventsOrganized Event[] @relation("EventOrganizer")
   organizationsOwned Organization[] @relation("OrganizationOwner")
   organizationMemberships OrganizationMember[]
   friendshipsRequested Friendship[] @relation("FriendshipRequester")
   friendshipsReceived Friendship[] @relation("FriendshipAddressee")
+  enemies   enemies[] @relation("EnemyUser")
+  enemiesOwned enemies[] @relation("EnemiesOwner")
+  comments Comment[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -36,10 +40,19 @@ model Dog {
   id        Int      @id @default(autoincrement())
   name      String
   breed     String
-  age       Int
+  gender    String
+  dateOfBirth DateTime
+  size      String
   ownerId   Int
   owner     User     @relation(fields: [ownerId], references: [id])
   profilePictureUrl String?
+  vaccinationRecordUrl String?
+  playstyle  String?
+  description String?
+  currentLocationId Int?
+  currentLocation Park? @relation(fields: [currentLocationId], references: [id])
+  ownerOfEnemies enemies[] @relation("EnemiesOwnerDog")
+  enemyOf enemies[] @relation("EnemyDog")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -55,15 +68,33 @@ model Friendship {
   @@id([requesterId, addresseeId])
 }
 
+// Table for enemies, they can be users or dogs, but are owned by users
+model enemies {
+  id        Int      @id @default(autoincrement())
+  ownerId   Int
+  owner     User     @relation("EnemiesOwner", fields: [ownerId], references: [id])
+  ownerDogId Int?
+  ownerDog  Dog?     @relation("EnemiesOwnerDog", fields: [ownerDogId], references: [id])
+  enemyUserId Int?
+  enemyUser User?    @relation("EnemyUser", fields: [enemyUserId], references: [id])
+  enemyDogId Int?
+  enemyDog  Dog?     @relation("EnemyDog", fields: [enemyDogId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Park {
   id        Int      @id @default(autoincrement())
   name      String
   location  String
   description String?
-  amenities String[]
+  separateSmallDogArea Boolean @default(false)
+  amenities Json?
   profilePictureUrl String?
   favoritedBy User[] @relation("UserFavoriteParks")
   events Event[]
+  comments  Comment[]
+  currentDogs Dog[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -72,11 +103,12 @@ model Organization {
   id        Int      @id @default(autoincrement())
   name      String
   profilePictureUrl String?
+  websiteUrl String?
   description String?
   ownerId   Int
   owner     User     @relation("OrganizationOwner", fields: [ownerId], references: [id])
   membershipRecords OrganizationMember[]
-  memberRoles String[]
+  memberRoles Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -96,11 +128,26 @@ model Event {
   id          Int      @id @default(autoincrement())
   title       String
   description String?
+  private     Boolean  @default(false)
   date        DateTime
   parkId      Int
   park        Park     @relation(fields: [parkId], references: [id])
   organizerId Int
   organizer   User     @relation("EventOrganizer", fields: [organizerId], references: [id])
+  comments Comment[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-} 
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  parkId    Int?
+  park      Park?     @relation(fields: [parkId], references: [id])
+  eventId   Int?
+  event     Event?    @relation(fields: [eventId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

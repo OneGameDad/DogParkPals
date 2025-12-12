@@ -8,11 +8,15 @@ As this is an MVP it is limited in scope to only included the public dog parks i
 
 ## Instructions
 ### Dev Database (Docker Compose)
-- Copy `.env.example` (repo root) to `.env` and set values.
+- Copy `.env.example` (repo root) to `.env` and set values (`DB_USER`, `DB_PASSWORD`, `DB_PORT`).
 - Start Postgres:
-	- `docker-compose up -d` (legacy) or `docker compose up -d` (v2)
+  - `docker-compose up -d` (legacy) or `docker compose up -d` (v2)
 - Stop Postgres:
-	- `docker-compose down`
+  - `docker-compose down`
+- Check status:
+  - `docker-compose ps`
+- View logs:
+  - `docker-compose logs db`
 
 If you see permission errors with Docker Compose on Linux:
 - `sudo usermod -aG docker "$USER" && newgrp docker`
@@ -46,8 +50,8 @@ More to come
 - NodeJS
 - Express
 - Typescript
-- PostgreSql (Database)
-- Prisma (ORM)
+- SQLite(Database)
+- Prisma 6 (ORM)
 
 Reasoning: All commonly used tech, requested or required in many job advertisements. They also are well documented and supported.
 

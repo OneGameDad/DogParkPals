@@ -1,4 +1,5 @@
-import { PrismaClient } from "../generated/prisma";
+import "dotenv/config";
+import { PrismaClient } from "./generated/client/client";
 
 const prisma = new PrismaClient();
 
@@ -10,7 +11,8 @@ async function main() {
     create: {
       email: "alice@example.com",
       password_hash: "dev",
-      name: "Alice",
+      username: "alice",
+      first_name: "Alice",
     },
   });
 

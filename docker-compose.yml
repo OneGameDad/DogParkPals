@@ -1,0 +1,20 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:16
+    container_name: postgres-dogparkpals
+    environment:
+      POSTGRES_DB: dog_park_pals
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - dogparkpals_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d dog_park_pals"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  dogparkpals_data:

@@ -7,30 +7,25 @@ Find local dog parks, make friends with the other dogs and their owners, and let
 As this is an MVP it is limited in scope to only included the public dog parks in Helsinki, and currently has no geolocation functionality.
 
 ## Instructions
-### Dev Database (Docker Compose)
-- Copy `.env.example` (repo root) to `.env` and set values (`DB_USER`, `DB_PASSWORD`, `DB_PORT`).
-- Start Postgres:
-  - `docker-compose up -d` (legacy) or `docker compose up -d` (v2)
-- Stop Postgres:
-  - `docker-compose down`
-- Check status:
-  - `docker-compose ps`
-- View logs:
-  - `docker-compose logs db`
-
-If you see permission errors with Docker Compose on Linux:
-- `sudo usermod -aG docker "$USER" && newgrp docker`
-
-### Backend Setup
-- Copy `backend/.env.example` to `backend/.env`.
-- Apply migrations and seed:
-	- `cd backend`
-	- `npx prisma migrate dev`
-	- `npx prisma db seed`
+### Backend Setup (Local SQLite)
+- Ensure Node 20+ is installed: `node --version`
+- Backend uses local SQLite database at `backend/dev.db` (created automatically).
+- Setup:
+  - `cd backend`
+  - `npm install`
+  - `npx prisma generate` (generates Prisma client)
+  - `npx prisma migrate dev --name init` (first time only)
+  - `npx prisma db seed` (optional: seeds test data)
+- Start dev server:
+  - `npm run dev` (TypeScript watch mode) or `npm run build && node dist/server.js` (production)
+  - Server listens on `http://localhost:3000`
+  - Health check: `GET /health`
 
 ### Notes
-- Do not commit `.env` or `.docker-secrets`.
-- Prisma migrations in `backend/prisma/migrations` are versioned; run migrate after pulling.
+- Do not commit `backend/prisma/generated/client/` (generated Prisma client; run `npx prisma generate` after pulling).
+- Do not commit `backend/dev.db` (local SQLite database).
+- Prisma migrations in `backend/prisma/migrations` are versioned; run `npx prisma migrate deploy` after pulling to sync.
+- Environment: `DATABASE_URL=file:./dev.db` is set in `backend/.env` for local SQLite development.
 
 ## Resources
 More to come

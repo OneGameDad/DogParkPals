@@ -15,7 +15,7 @@ As this is an MVP it is limited in scope to only included the public dog parks i
   - `npm install`
   - `npx prisma generate` (generates Prisma client)
   - `npx prisma migrate dev --name init` (first time only)
-  - `npx prisma db seed` (optional: seeds test data)
+  - `npx prisma db seed` (optional: seeds test data; configured via package.json Prisma hook)
 - Start dev server:
   - `npm run dev` (TypeScript watch mode) or `npm run build && node dist/server.js` (production)
   - Server listens on `http://localhost:3000`
@@ -26,6 +26,7 @@ As this is an MVP it is limited in scope to only included the public dog parks i
 - Do not commit `backend/dev.db` (local SQLite database).
 - Prisma migrations in `backend/prisma/migrations` are versioned; run `npx prisma migrate deploy` after pulling to sync.
 - Environment: `DATABASE_URL=file:./dev.db` is set in `backend/.env` for local SQLite development.
+- Prisma config file `prisma.config.ts` has been removed; Prisma reads `schema.prisma` and the seed hook from `package.json`.
 
 ## Resources
 More to come

@@ -22,8 +22,8 @@ model User {
   first_name      String?
   last_name       String?
   profilePictureUrl String?
-  dogs      Dog[]
-  favoriteParks Park[] @relation("UserFavoriteParks")
+  dogOwnerships DogOwner[]
+  favoriteParks UserFavoritePark[]
   eventsOrganized Event[] @relation("EventOrganizer")
   organizationsOwned Organization[] @relation("OrganizationOwner")
   organizationMemberships OrganizationMember[]
@@ -48,8 +48,7 @@ model Dog {
   fixed     Boolean @default(false)
   dateOfBirth DateTime
   size      DogSize @default(MEDIUM)
-  ownerId   Int
-  owner     User     @relation(fields: [ownerId], references: [id])
+  ownerRecords DogOwner[]
   profilePictureUrl String?
   vaccinationRecordUrl String?
   playstyle  DogPlaystyle @default(SOCIAL)
@@ -98,12 +97,32 @@ model Park {
   separateSmallDogArea Boolean @default(false)
   amenities Json?
   profilePictureUrl String?
-  favoritedBy User[] @relation("UserFavoriteParks")
+  favoritedBy UserFavoritePark[]
   events Event[]
   comments  Comment[]
   currentDogs Dog[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model DogOwner {
+  userId Int
+  dogId  Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dog  Dog  @relation(fields: [dogId], references: [id], onDelete: Cascade)
+
+  @@id([userId, dogId])
+}
+
+model UserFavoritePark {
+  userId Int
+  parkId Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  park Park @relation(fields: [parkId], references: [id], onDelete: Cascade)
+
+  @@id([userId, parkId])
 }
 
 model Organization {

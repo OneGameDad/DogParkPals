@@ -27,6 +27,7 @@ model User {
   eventsOrganized Event[] @relation("EventOrganizer")
   organizationsOwned Organization[] @relation("OrganizationOwner")
   organizationMemberships OrganizationMember[]
+  role      UserRole @default(CLIENT)
   friendshipsRequested Friendship[] @relation("FriendshipRequester")
   friendshipsReceived Friendship[] @relation("FriendshipAddressee")
   enemies   enemies[] @relation("EnemyUser")
@@ -46,12 +47,12 @@ model Dog {
   gender    String
   fixed     Boolean @default(false)
   dateOfBirth DateTime
-  size      String
+  size      DogSize @default(MEDIUM)
   ownerId   Int
   owner     User     @relation(fields: [ownerId], references: [id])
   profilePictureUrl String?
   vaccinationRecordUrl String?
-  playstyle  String?
+  playstyle  DogPlaystyle @default(SOCIAL)
   description String?
   currentLocationId Int?
   currentLocation Park? @relation(fields: [currentLocationId], references: [id])
@@ -64,7 +65,9 @@ model Dog {
 model Friendship {
   requesterId Int
   addresseeId Int
-  status      String
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   requester   User @relation("FriendshipRequester", fields: [requesterId], references: [id])
   addressee   User @relation("FriendshipAddressee", fields: [addresseeId], references: [id])
@@ -112,7 +115,7 @@ model Organization {
   ownerId   Int
   owner     User     @relation("OrganizationOwner", fields: [ownerId], references: [id])
   membershipRecords OrganizationMember[]
-  memberRoles Json?
+  memberRole OrgRole @default(MEMBER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -120,7 +123,8 @@ model Organization {
 model OrganizationMember {
   userId         Int
   organizationId Int
-  role           String
+  role           OrgRole @default(MEMBER)
+  joinedAt       DateTime @default(now())
 
   user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -132,7 +136,7 @@ model Event {
   id          Int      @id @default(autoincrement())
   title       String
   description String?
-  private     Boolean  @default(false)
+  private     EventPrivacy @default(PUBLIC)
   date        DateTime
   parkId      Int
   park        Park     @relation(fields: [parkId], references: [id])
@@ -159,6 +163,7 @@ model Comment {
 model Achievements {
   id        Int      @id @default(autoincrement())
   name      String
+  type      AchievementType @default(BADGE)
   description String?
   badgeUrl  String?
   userAchievements UserAchievement[]
@@ -198,4 +203,68 @@ model UserLevel {
   level   Levels @relation(fields: [levelId], references: [id], onDelete: Cascade)
 
   @@id([userId, levelId])
+}
+
+// Enum for user roles in the organization
+enum OrgRole {
+  MEMBER
+  MODERATOR
+  OWNER
+}
+
+// Enum for friendship status
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  BLOCKED
+}
+
+enum DogSize {
+  TOY
+  SMALL
+  MEDIUM
+  LARGE
+  GIANT
+}
+
+enum DogGender {  
+  MALE
+  FEMALE
+}
+
+// Enum for dog playstyle
+enum DogPlaystyle {
+  SOCIAL
+  SHY
+  AGGRESSIVE
+  ENERGETIC
+  CALM
+}
+
+enum Amenity {
+  WATER_FOUNTAIN
+  SHADE
+  BENCHES
+  WASTE_BAGS
+  OBSTACLES
+  AGILITY_EQUIPMENT
+}
+
+enum EventPrivacy {
+  PUBLIC
+  PRIVATE
+}
+
+enum AchievementType {
+  BADGE
+  TROPHY
+  CERTIFICATE
+}
+
+// 
+enum UserRole {
+  CLIENT
+  DEVELOPER
+  ADMIN
 }

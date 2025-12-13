@@ -157,6 +157,8 @@ model Event {
   description String?
   private     EventPrivacy @default(PUBLIC)
   date        DateTime
+  startTime   DateTime
+  endTime     DateTime
   parkId      Int
   park        Park     @relation(fields: [parkId], references: [id])
   organizerId Int

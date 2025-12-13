@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Event" ADD COLUMN "endTime" DATETIME;
+ALTER TABLE "Event" ADD COLUMN "startTime" DATETIME;

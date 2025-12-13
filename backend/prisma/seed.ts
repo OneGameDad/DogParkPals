@@ -70,6 +70,10 @@ async function main() {
     data: {
       title: "Morning Meetup",
       date: new Date(),
+      startTime: new Date(new Date().setHours(9, 0, 0, 0)),
+      endTime: new Date(new Date().setHours(11, 0, 0, 0)),
+      description: "A fun morning meetup for dogs and their owners.",
+      private: "PUBLIC",      
       park: { connect: { id: park.id } },
       organizer: { connect: { id: user.id } },
     },

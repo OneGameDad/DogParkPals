@@ -365,9 +365,74 @@ try {
 - `src/middlewares/errorHandler.ts` — Global error middleware (do not modify for specific routes)
 - `src/middlewares/requestId.ts` — Adds requestId to all responses for debugging
 
+## Retry/Timeout Classification
+
+For outbound service calls (APIs, databases, external services), classify errors to guide retry and circuit-breaker strategies:
+
+```typescript
+import { classifyError, createExternalServiceError } from '../utils/errorClassification';
+
+const paymentService = {
+  charge: async (amount: number) => {
+    try {
+      return await paymentAPI.charge(amount);
+    } catch (error) {
+      // Classify for retry logic
+      const classified = classifyError(error);
+      
+      if (classified.isTimeout) {
+        // Track timeout for circuit breaker
+        circuitBreaker.recordTimeout();
+      }
+      
+      if (!classified.isRetryable) {
+        // Fail fast for permanent errors
+        throw error;
+      }
+      
+      // Retry transient errors with exponential backoff
+      throw createExternalServiceError('PaymentAPI', 503, 'SERVICE_UNAVAILABLE', error);
+    }
+  },
+};
+```
+
+**Classification levels:**
+- `RETRYABLE` (5xx, 429) — Retry with exponential backoff
+- `TIMEOUT` (408) — Circuit breaker + aggressive backoff
+- `NON_RETRYABLE` (4xx except 429) — Fail fast, no retry
+
+**Using classified errors:**
+```typescript
+const error = paymentError;
+const classified = classifyError(error);
+
+// Retry logic
+if (classified.isRetryable) {
+  await retry(operation, {
+    maxAttempts: 3,
+    backoff: (attempt) => 100 * Math.pow(2, attempt), // exponential
+  });
+}
+
+// Circuit breaker
+if (classified.isTimeout) {
+  circuitBreaker.trip(); // open circuit after threshold
+}
+
+// Logging
+logger.error('External call failed', {
+  service: classified.code,
+  retryable: classified.isRetryable,
+  statusCode: classified.statusCode,
+});
+```
+
 ## Questions?
 
 If you're uncertain about error handling in a new feature:
 1. Check `src/controllers/userController.ts` for the reference implementation
 2. Look at `src/tests/userController.test.ts` for test patterns
 3. Review `src/tests/errorHandler.test.ts` for middleware behavior
+4. Check `src/tests/errorClassification.test.ts` for retry/timeout classification
+5. Reference `src/utils/errorClassification.ts` for available classifications

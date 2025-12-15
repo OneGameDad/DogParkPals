@@ -52,7 +52,7 @@ describe('User Controller', () => {
       await userController.createUser(mockReq as Request, mockRes as Response);
 
       expect(mockStatus).toHaveBeenCalledWith(400);
-      expect(mockJson).toHaveBeenCalledWith({ error: 'Missing required fields' });
+      expect(mockJson).toHaveBeenCalledWith({ error: 'Missing required fields', code: 'VALIDATION_ERROR' });
     });
 
     test('returns 400 when email is missing', async () => {
@@ -61,7 +61,7 @@ describe('User Controller', () => {
       await userController.createUser(mockReq as Request, mockRes as Response);
 
       expect(mockStatus).toHaveBeenCalledWith(400);
-      expect(mockJson).toHaveBeenCalledWith({ error: 'Missing required fields' });
+      expect(mockJson).toHaveBeenCalledWith({ error: 'Missing required fields', code: 'VALIDATION_ERROR' });
     });
 
     test('returns 400 when password is missing', async () => {
@@ -70,7 +70,7 @@ describe('User Controller', () => {
       await userController.createUser(mockReq as Request, mockRes as Response);
 
       expect(mockStatus).toHaveBeenCalledWith(400);
-      expect(mockJson).toHaveBeenCalledWith({ error: 'Missing required fields' });
+      expect(mockJson).toHaveBeenCalledWith({ error: 'Missing required fields', code: 'VALIDATION_ERROR' });
     });
 
     test('returns 400 when password is less than 8 characters', async () => {
@@ -83,7 +83,7 @@ describe('User Controller', () => {
       await userController.createUser(mockReq as Request, mockRes as Response);
 
       expect(mockStatus).toHaveBeenCalledWith(400);
-      expect(mockJson).toHaveBeenCalledWith({ error: 'Password must be at least 8 characters long' });
+      expect(mockJson).toHaveBeenCalledWith({ error: 'Password must be at least 8 characters long', code: 'VALIDATION_ERROR' });
     });
 
     test('returns 409 when email already exists', async () => {
@@ -113,7 +113,7 @@ describe('User Controller', () => {
 
       expect(mockGetUserByEmail).toHaveBeenCalledWith('existing@example.com');
       expect(mockStatus).toHaveBeenCalledWith(409);
-      expect(mockJson).toHaveBeenCalledWith({ error: 'Email already in use' });
+      expect(mockJson).toHaveBeenCalledWith({ error: 'Email already in use', code: 'CONFLICT' });
       expect(mockCreateUser).not.toHaveBeenCalled();
     });
 
@@ -167,7 +167,7 @@ describe('User Controller', () => {
       await userController.createUser(mockReq as Request, mockRes as Response);
 
       expect(mockStatus).toHaveBeenCalledWith(500);
-      expect(mockJson).toHaveBeenCalledWith({ error: 'Failed to create user' });
+      expect(mockJson).toHaveBeenCalledWith({ error: 'Failed to create user', code: 'INTERNAL_ERROR' });
     });
   });
 
@@ -181,7 +181,7 @@ describe('User Controller', () => {
 
       expect(mockGetUserByEmail).toHaveBeenCalledWith('notfound@example.com');
       expect(mockStatus).toHaveBeenCalledWith(404);
-      expect(mockJson).toHaveBeenCalledWith({ error: 'User not found' });
+      expect(mockJson).toHaveBeenCalledWith({ error: 'User not found', code: 'NOT_FOUND' });
     });
 
     test('returns 200 and user data when user is found', async () => {
@@ -223,7 +223,7 @@ describe('User Controller', () => {
       await userController.getUserByEmail(mockReq as Request, mockRes as Response);
 
       expect(mockStatus).toHaveBeenCalledWith(500);
-      expect(mockJson).toHaveBeenCalledWith({ error: 'Failed to retrieve user' });
+      expect(mockJson).toHaveBeenCalledWith({ error: 'Failed to retrieve user', code: 'INTERNAL_ERROR' });
     });
   });
 });

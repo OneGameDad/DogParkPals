@@ -1,10 +1,12 @@
 import express from "express";
 import userRouter from "./routes/userRouter";
 import typeSafeLogger from "./utils/typeSafeLogger";
+import { requestIdMiddleware } from "./middlewares/requestId";
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 
+app.use(requestIdMiddleware);
 app.use(express.json());
 app.use(userRouter);
 

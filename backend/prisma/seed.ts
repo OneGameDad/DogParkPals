@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, DogBreed, DogPlaystyle, DogSize, EventPrivacy } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -39,11 +39,11 @@ async function main() {
   const dog = await prisma.dog.create({
     data: {
       name: "Rex",
-      breed: "Mixed",
+      breed: DogBreed.LABRADOR_RETRIEVER,
       gender: "MALE",
       dateOfBirth: new Date("2020-06-01"),
-      playstyle: "SOCIAL",
-      size: "MEDIUM",
+      playstyle: DogPlaystyle.SOCIAL,
+      size: DogSize.MEDIUM,
     },
   });
 
@@ -73,7 +73,7 @@ async function main() {
       startTime: new Date(new Date().setHours(9, 0, 0, 0)),
       endTime: new Date(new Date().setHours(11, 0, 0, 0)),
       description: "A fun morning meetup for dogs and their owners.",
-      private: "PUBLIC",      
+      private: EventPrivacy.PUBLIC,
       park: { connect: { id: park.id } },
       organizer: { connect: { id: user.id } },
     },

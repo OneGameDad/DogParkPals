@@ -1,8 +1,7 @@
-import { get } from "node:http";
 import userService from "../services/userServices";
 import express from "express";
-
-//TODO create user controller
+import type { User } from "@prisma/client";
+import { sanitizeUser } from "../utils/userSanitizer";
 
 const userController = {
     createUser: async (req: express.Request, res: express.Response) => {
@@ -18,7 +17,7 @@ const userController = {
         }
         try {
             const newUser = await userService.createUser(username, email, password);
-            res.status(201).json(newUser);
+            res.status(201).json(sanitizeUser(newUser));
         } catch (error) {
             res.status(500).json({ error: "Failed to create user" });
         }
@@ -31,7 +30,7 @@ const userController = {
             if (!user) {
                 return res.status(404).json({ error: "User not found" });
             }
-            res.status(200).json(user);
+            res.status(200).json(sanitizeUser(user));
         } catch (error) {
             res.status(500).json({ error: "Failed to retrieve user" });
         }

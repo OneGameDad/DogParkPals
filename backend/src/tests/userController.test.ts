@@ -146,7 +146,12 @@ describe('User Controller', () => {
       expect(mockGetUserByEmail).toHaveBeenCalledWith('new@example.com');
       expect(mockCreateUser).toHaveBeenCalledWith('newuser', 'new@example.com', 'password123');
       expect(mockStatus).toHaveBeenCalledWith(201);
-      expect(mockJson).toHaveBeenCalledWith(newUser);
+      
+      // Verify response does not contain password_hash
+      const responseCall = mockJson.mock.calls[0][0] as any;
+      expect(responseCall).not.toHaveProperty('password_hash');
+      expect(responseCall.username).toBe('newuser');
+      expect(responseCall.email).toBe('new@example.com');
     });
 
     test('returns 500 when service throws an error', async () => {
@@ -202,7 +207,12 @@ describe('User Controller', () => {
 
       expect(mockGetUserByEmail).toHaveBeenCalledWith('test@example.com');
       expect(mockStatus).toHaveBeenCalledWith(200);
-      expect(mockJson).toHaveBeenCalledWith(foundUser);
+      
+      // Verify response does not contain password_hash
+      const responseCall = mockJson.mock.calls[0][0] as any;
+      expect(responseCall).not.toHaveProperty('password_hash');
+      expect(responseCall.email).toBe('test@example.com');
+      expect(responseCall.username).toBe('testuser');
     });
 
     test('returns 500 when service throws an error', async () => {

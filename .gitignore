@@ -13,8 +13,7 @@ backend/node_modules/
 frontend/node_modules/
 
 # Prisma generated client
-backend/generated/
-backend/prisma/generated/
+# Using @prisma/client in node_modules; no local generated client tracked
 
 # Logs
 *.log
@@ -28,3 +27,10 @@ build/
 frontend/build/
 frontend/dist/
 backend/dist/
+
+# Local SQLite databases
+backend/dev.db
+
+# Tool caches (optional)
+frontend/.vite/
+backend/.tsbuildinfo

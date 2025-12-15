@@ -2,6 +2,7 @@ import userService from "../services/userServices";
 import express from "express";
 import { sanitizeUser } from "../utils/userSanitizer";
 import typeSafeLogger from "../utils/typeSafeLogger";
+import { isAppError } from "../utils/errors";
 
 const userController = {
     createUser: async (req: express.Request, res: express.Response) => {
@@ -25,6 +26,9 @@ const userController = {
             res.status(201).json(sanitizeUser(newUser));
         } catch (error) {
             typeSafeLogger.logError("Create user failed", error, { email });
+            if (isAppError(error)) {
+                return res.status(error.statusCode).json({ error: error.message, code: error.code });
+            }
             res.status(500).json({ error: "Failed to create user" });
         }
     },
@@ -42,6 +46,9 @@ const userController = {
             res.status(200).json(sanitizeUser(user));
         } catch (error) {
             typeSafeLogger.logError("Failed to retrieve user", error, { email });
+            if (isAppError(error)) {
+                return res.status(error.statusCode).json({ error: error.message, code: error.code });
+            }
             res.status(500).json({ error: "Failed to retrieve user" });
         }
     }

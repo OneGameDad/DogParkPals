@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { hashPassword } from '../utils/password';
 import typeSafeLogger from '../utils/typeSafeLogger';
+import { toAppError } from '../utils/errors';
 
 const prisma = new PrismaClient();
 
@@ -26,8 +27,12 @@ const userService = {
       typeSafeLogger.logUserAction('User created successfully', { userId: newUser.id, email });
       return newUser;
     } catch (error) {
-      typeSafeLogger.logError('Failed to create user', error, { email });
-      throw error;
+      const appError = toAppError(error, {
+        message: 'Failed to create user',
+        code: 'CREATE_USER_FAILED',
+      });
+      typeSafeLogger.logError('Failed to create user', appError, { email });
+      throw appError;
     }
   },
 
@@ -44,8 +49,12 @@ const userService = {
       }
       return user;
     } catch (error) {
-      typeSafeLogger.logError('Failed to fetch user by email', error, { email });
-      throw error;
+      const appError = toAppError(error, {
+        message: 'Failed to fetch user by email',
+        code: 'FETCH_USER_FAILED',
+      });
+      typeSafeLogger.logError('Failed to fetch user by email', appError, { email });
+      throw appError;
     }
   }
 };

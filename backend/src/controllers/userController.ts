@@ -2,11 +2,11 @@ import userService from "../services/userServices";
 import express from "express";
 import { sanitizeUser } from "../utils/userSanitizer";
 import typeSafeLogger from "../utils/typeSafeLogger";
-import { isAppError } from "../utils/errors";
+import { toAppError } from "../utils/errors";
 import { buildErrorResponse } from "../utils/response";
 
 const userController = {
-    createUser: async (req: express.Request, res: express.Response) => {
+    createUser: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         const { username, email, password } = req.body;
         const requestId = req.requestId;
         typeSafeLogger.logRequest("Received request to create user", { method: req.method, path: req.path });
@@ -27,15 +27,13 @@ const userController = {
             typeSafeLogger.logUserAction("User created", { userId: newUser.id, email });
             res.status(201).json(sanitizeUser(newUser));
         } catch (error) {
-            typeSafeLogger.logError("Create user failed", error, { email, requestId });
-            if (isAppError(error)) {
-                return res.status(error.statusCode).json(buildErrorResponse(req, { error: error.message, code: error.code, details: error.details }));
-            }
-            res.status(500).json(buildErrorResponse(req, { error: "Failed to create user", code: "INTERNAL_ERROR" }));
+            return next(
+                toAppError(error, { message: "Failed to create user", code: "INTERNAL_ERROR", statusCode: 500 })
+            );
         }
     },
 
-    getUserByEmail: async (req: express.Request, res: express.Response) => {
+    getUserByEmail: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         const { email } = req.params;
         const requestId = req.requestId;
         typeSafeLogger.logRequest("Received request to fetch user by email", { method: req.method, path: req.path });
@@ -48,11 +46,9 @@ const userController = {
             typeSafeLogger.logUserAction("User retrieved", { userId: user.id, email });
             res.status(200).json(sanitizeUser(user));
         } catch (error) {
-            typeSafeLogger.logError("Failed to retrieve user", error, { email, requestId });
-            if (isAppError(error)) {
-                return res.status(error.statusCode).json(buildErrorResponse(req, { error: error.message, code: error.code, details: error.details }));
-            }
-            res.status(500).json(buildErrorResponse(req, { error: "Failed to retrieve user", code: "INTERNAL_ERROR" }));
+            return next(
+                toAppError(error, { message: "Failed to retrieve user", code: "INTERNAL_ERROR", statusCode: 500 })
+            );
         }
     }
 };

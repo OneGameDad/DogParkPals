@@ -2,27 +2,21 @@ import userService from "../services/userServices";
 import express from "express";
 import { sanitizeUser } from "../utils/userSanitizer";
 import typeSafeLogger from "../utils/typeSafeLogger";
-import { toAppError } from "../utils/errors";
-import { buildErrorResponse } from "../utils/response";
+import { toAppError, ConflictError, NotFoundError } from "../utils/errors";
+import { parseValidation } from "../utils/validator";
+import { createUserSchema, getUserByEmailSchema } from "../utils/validationSchemas";
 
 const userController = {
     createUser: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-        const { username, email, password } = req.body;
-        const requestId = req.requestId;
-        typeSafeLogger.logRequest("Received request to create user", { method: req.method, path: req.path });
-        if (!username || !email || !password) {
-            typeSafeLogger.warn("Create user validation failed: missing fields", { username, email, requestId });
-            return res.status(400).json(buildErrorResponse(req, { error: "Missing required fields", code: "VALIDATION_ERROR" }));
-        }
-        if (password.length < 8) {
-            typeSafeLogger.warn("Create user validation failed: password too short", { username, email, requestId });
-            return res.status(400).json(buildErrorResponse(req, { error: "Password must be at least 8 characters long", code: "VALIDATION_ERROR" }));
-        }
-        if (await userService.getUserByEmail(email)) {
-            typeSafeLogger.warn("Create user conflict: email already in use", { email, requestId });
-            return res.status(409).json(buildErrorResponse(req, { error: "Email already in use", code: "CONFLICT" }));
-        }
         try {
+            typeSafeLogger.logRequest("Received request to create user", { method: req.method, path: req.path });
+            const { username, email, password } = parseValidation(createUserSchema, req.body);
+
+            const existingUser = await userService.getUserByEmail(email);
+            if (existingUser) {
+                throw ConflictError("Email already in use");
+            }
+
             const newUser = await userService.createUser(username, email, password);
             typeSafeLogger.logUserAction("User created", { userId: newUser.id, email });
             res.status(201).json(sanitizeUser(newUser));
@@ -34,14 +28,13 @@ const userController = {
     },
 
     getUserByEmail: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-        const { email } = req.params;
-        const requestId = req.requestId;
-        typeSafeLogger.logRequest("Received request to fetch user by email", { method: req.method, path: req.path });
         try {
+            typeSafeLogger.logRequest("Received request to fetch user by email", { method: req.method, path: req.path });
+            const { email } = parseValidation(getUserByEmailSchema, req.params);
+
             const user = await userService.getUserByEmail(email);
             if (!user) {
-                typeSafeLogger.warn("User not found", { email, requestId });
-                return res.status(404).json(buildErrorResponse(req, { error: "User not found", code: "NOT_FOUND" }));
+                throw NotFoundError("User not found");
             }
             typeSafeLogger.logUserAction("User retrieved", { userId: user.id, email });
             res.status(200).json(sanitizeUser(user));

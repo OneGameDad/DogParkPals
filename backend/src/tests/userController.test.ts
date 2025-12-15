@@ -1,11 +1,11 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 import type { Request, Response, NextFunction } from 'express';
 import type { User } from '@prisma/client';
-import { AppError } from '../utils/errors';
+import { AppError, ConflictError, NotFoundError } from '../utils/errors';
 
 // Create mock functions first
-const mockGetUserByEmail = jest.fn<Promise<User | null>>();
-const mockCreateUser = jest.fn<Promise<User>>();
+const mockGetUserByEmail = jest.fn<any>();
+const mockCreateUser = jest.fn<any>();
 
 // Mock the entire userServices module
 jest.mock('../services/userServices', () => ({
@@ -24,7 +24,7 @@ describe('User Controller', () => {
   let mockRes: any;
   let mockJson: jest.Mock;
   let mockStatus: jest.Mock;
-  let mockNext: jest.MockedFunction<NextFunction>;
+  let mockNext: jest.Mock;
 
   beforeEach(() => {
     // Clear all mock data before each test
@@ -50,34 +50,46 @@ describe('User Controller', () => {
   });
 
   describe('createUser', () => {
-    test('returns 400 when username is missing', async () => {
+    test('forwards validation error when username is missing', async () => {
       mockReq.body = { email: 'test@example.com', password: 'password123' };
 
       await userController.createUser(mockReq as Request, mockRes as Response, mockNext as any);
 
-      expect(mockStatus).toHaveBeenCalledWith(400);
-      expect(mockJson).toHaveBeenCalledWith({ error: 'Missing required fields', code: 'VALIDATION_ERROR' });
+      expect(mockStatus).not.toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalledTimes(1);
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError).toBeInstanceOf(AppError);
+      expect(forwardedError.statusCode).toBe(400);
+      expect(forwardedError.code).toBe('VALIDATION_ERROR');
     });
 
-    test('returns 400 when email is missing', async () => {
+    test('forwards validation error when email is missing', async () => {
       mockReq.body = { username: 'testuser', password: 'password123' };
 
       await userController.createUser(mockReq as Request, mockRes as Response, mockNext as any);
 
-      expect(mockStatus).toHaveBeenCalledWith(400);
-      expect(mockJson).toHaveBeenCalledWith({ error: 'Missing required fields', code: 'VALIDATION_ERROR' });
+      expect(mockStatus).not.toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalledTimes(1);
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError).toBeInstanceOf(AppError);
+      expect(forwardedError.statusCode).toBe(400);
+      expect(forwardedError.code).toBe('VALIDATION_ERROR');
     });
 
-    test('returns 400 when password is missing', async () => {
+    test('forwards validation error when password is missing', async () => {
       mockReq.body = { username: 'testuser', email: 'test@example.com' };
 
       await userController.createUser(mockReq as Request, mockRes as Response, mockNext as any);
 
-      expect(mockStatus).toHaveBeenCalledWith(400);
-      expect(mockJson).toHaveBeenCalledWith({ error: 'Missing required fields', code: 'VALIDATION_ERROR' });
+      expect(mockStatus).not.toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalledTimes(1);
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError).toBeInstanceOf(AppError);
+      expect(forwardedError.statusCode).toBe(400);
+      expect(forwardedError.code).toBe('VALIDATION_ERROR');
     });
 
-    test('returns 400 when password is less than 8 characters', async () => {
+    test('forwards validation error when password is less than 8 characters', async () => {
       mockReq.body = {
         username: 'testuser',
         email: 'test@example.com',
@@ -86,11 +98,15 @@ describe('User Controller', () => {
 
       await userController.createUser(mockReq as Request, mockRes as Response, mockNext as any);
 
-      expect(mockStatus).toHaveBeenCalledWith(400);
-      expect(mockJson).toHaveBeenCalledWith({ error: 'Password must be at least 8 characters long', code: 'VALIDATION_ERROR' });
+      expect(mockStatus).not.toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalledTimes(1);
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError).toBeInstanceOf(AppError);
+      expect(forwardedError.statusCode).toBe(400);
+      expect(forwardedError.code).toBe('VALIDATION_ERROR');
     });
 
-    test('returns 409 when email already exists', async () => {
+    test('forwards conflict error when email already exists', async () => {
       mockReq.body = {
         username: 'testuser',
         email: 'existing@example.com',
@@ -116,8 +132,12 @@ describe('User Controller', () => {
       await userController.createUser(mockReq as Request, mockRes as Response, mockNext as any);
 
       expect(mockGetUserByEmail).toHaveBeenCalledWith('existing@example.com');
-      expect(mockStatus).toHaveBeenCalledWith(409);
-      expect(mockJson).toHaveBeenCalledWith({ error: 'Email already in use', code: 'CONFLICT' });
+      expect(mockStatus).not.toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalledTimes(1);
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError).toBeInstanceOf(AppError);
+      expect(forwardedError.statusCode).toBe(409);
+      expect(forwardedError.code).toBe('CONFLICT');
       expect(mockCreateUser).not.toHaveBeenCalled();
     });
 
@@ -173,16 +193,16 @@ describe('User Controller', () => {
       expect(mockStatus).not.toHaveBeenCalled();
       expect(mockJson).not.toHaveBeenCalled();
       expect(mockNext).toHaveBeenCalledTimes(1);
-      const forwardedError = mockNext.mock.calls[0][0];
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
       expect(forwardedError).toBeInstanceOf(AppError);
-      expect((forwardedError as AppError).statusCode).toBe(500);
-      expect((forwardedError as AppError).code).toBe('INTERNAL_ERROR');
-      expect((forwardedError as AppError).message).toBe('Failed to create user');
+      expect(forwardedError.statusCode).toBe(500);
+      expect(forwardedError.code).toBe('INTERNAL_ERROR');
+      expect(forwardedError.message).toBe('Failed to create user');
     });
   });
 
   describe('getUserByEmail', () => {
-    test('returns 404 when user is not found', async () => {
+    test('forwards not found error when user is not found', async () => {
       mockReq.params = { email: 'notfound@example.com' };
 
       mockGetUserByEmail.mockResolvedValue(null);
@@ -190,8 +210,12 @@ describe('User Controller', () => {
       await userController.getUserByEmail(mockReq as Request, mockRes as Response, mockNext as any);
 
       expect(mockGetUserByEmail).toHaveBeenCalledWith('notfound@example.com');
-      expect(mockStatus).toHaveBeenCalledWith(404);
-      expect(mockJson).toHaveBeenCalledWith({ error: 'User not found', code: 'NOT_FOUND' });
+      expect(mockStatus).not.toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalledTimes(1);
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError).toBeInstanceOf(AppError);
+      expect(forwardedError.statusCode).toBe(404);
+      expect(forwardedError.code).toBe('NOT_FOUND');
     });
 
     test('returns 200 and user data when user is found', async () => {
@@ -235,11 +259,11 @@ describe('User Controller', () => {
       expect(mockStatus).not.toHaveBeenCalled();
       expect(mockJson).not.toHaveBeenCalled();
       expect(mockNext).toHaveBeenCalledTimes(1);
-      const forwardedError = mockNext.mock.calls[0][0];
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
       expect(forwardedError).toBeInstanceOf(AppError);
-      expect((forwardedError as AppError).statusCode).toBe(500);
-      expect((forwardedError as AppError).code).toBe('INTERNAL_ERROR');
-      expect((forwardedError as AppError).message).toBe('Failed to retrieve user');
+      expect(forwardedError.statusCode).toBe(500);
+      expect(forwardedError.code).toBe('INTERNAL_ERROR');
+      expect(forwardedError.message).toBe('Failed to retrieve user');
     });
   });
 });

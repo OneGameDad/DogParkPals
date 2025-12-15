@@ -1,47 +1,47 @@
 import userService from "../services/userServices";
 import express from "express";
 import { sanitizeUser } from "../utils/userSanitizer";
-import logger from "../utils/logger";
+import typeSafeLogger from "../utils/typeSafeLogger";
 
 const userController = {
     createUser: async (req: express.Request, res: express.Response) => {
         const { username, email, password } = req.body;
-        logger.info("Received request to create user", { username, email });
+        typeSafeLogger.logRequest("Received request to create user", { method: req.method, path: req.path });
         if (!username || !email || !password) {
-            logger.warn("Create user validation failed: missing fields", { username, email });
+            typeSafeLogger.warn("Create user validation failed: missing fields", { username, email });
             return res.status(400).json({ error: "Missing required fields" });
         }
         if (password.length < 8) {
-            logger.warn("Create user validation failed: password too short", { username, email });
+            typeSafeLogger.warn("Create user validation failed: password too short", { username, email });
             return res.status(400).json({ error: "Password must be at least 8 characters long" });
         }
         if (await userService.getUserByEmail(email)) {
-            logger.warn("Create user conflict: email already in use", { email });
+            typeSafeLogger.warn("Create user conflict: email already in use", { email });
             return res.status(409).json({ error: "Email already in use" });
         }
         try {
             const newUser = await userService.createUser(username, email, password);
-            logger.info("User created", { userId: newUser.id, email });
+            typeSafeLogger.logUserAction("User created", { userId: newUser.id, email });
             res.status(201).json(sanitizeUser(newUser));
         } catch (error) {
-            logger.error("Create user failed", { email, error });
+            typeSafeLogger.logError("Create user failed", error, { email });
             res.status(500).json({ error: "Failed to create user" });
         }
     },
 
     getUserByEmail: async (req: express.Request, res: express.Response) => {
         const { email } = req.params;
-        logger.info("Received request to fetch user by email", { email });
+        typeSafeLogger.logRequest("Received request to fetch user by email", { method: req.method, path: req.path });
         try {
             const user = await userService.getUserByEmail(email);
             if (!user) {
-                logger.warn("User not found", { email });
+                typeSafeLogger.warn("User not found", { email });
                 return res.status(404).json({ error: "User not found" });
             }
-            logger.info("User retrieved", { userId: user.id, email });
+            typeSafeLogger.logUserAction("User retrieved", { userId: user.id, email });
             res.status(200).json(sanitizeUser(user));
         } catch (error) {
-            logger.error("Failed to retrieve user", { email, error });
+            typeSafeLogger.logError("Failed to retrieve user", error, { email });
             res.status(500).json({ error: "Failed to retrieve user" });
         }
     }

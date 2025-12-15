@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { hashPassword } from '../utils/password';
-import logger from '../utils/logger';
+import typeSafeLogger from '../utils/typeSafeLogger';
 
 const prisma = new PrismaClient();
 
@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 const userService = {
   
   async createUser(username: string, email: string, password: string, first_name?: string, last_name?: string, profilePictureUrl?: string) {
-    logger.info('Creating user', { username, email });
+    typeSafeLogger.logUserAction('Creating user', { username, email });
     try {
       const hashedPassword = await hashPassword(password);
       const newUser = await prisma.user.create({
@@ -23,28 +23,28 @@ const userService = {
           profilePictureUrl,
         },
       });
-      logger.info('User created successfully', { userId: newUser.id, email });
+      typeSafeLogger.logUserAction('User created successfully', { userId: newUser.id, email });
       return newUser;
     } catch (error) {
-      logger.error('Failed to create user', { email, error });
+      typeSafeLogger.logError('Failed to create user', error, { email });
       throw error;
     }
   },
 
   async getUserByEmail(email: string) {
-    logger.info('Fetching user by email', { email });
+    typeSafeLogger.info('Fetching user by email', { email });
     try {
       const user = await prisma.user.findUnique({
         where: { email },
       });
       if (user) {
-        logger.info('User found by email', { email, userId: user.id });
+        typeSafeLogger.logUserAction('User found by email', { email, userId: user.id });
       } else {
-        logger.warn('User not found by email', { email });
+        typeSafeLogger.warn('User not found by email', { email });
       }
       return user;
     } catch (error) {
-      logger.error('Failed to fetch user by email', { email, error });
+      typeSafeLogger.logError('Failed to fetch user by email', error, { email });
       throw error;
     }
   }

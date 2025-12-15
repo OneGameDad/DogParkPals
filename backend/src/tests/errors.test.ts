@@ -60,6 +60,30 @@ describe('toAppError', () => {
     expect(result.details).toEqual({ field: 'parkId' });
   });
 
+  test('maps Prisma value out of range (P2000) to 400', () => {
+    const prismaErr = dummyPrismaError('P2000', { column: 'name' });
+    const result = toAppError(prismaErr, { message: 'fallback', code: 'FALLBACK' });
+    expect(result.statusCode).toBe(400);
+    expect(result.code).toBe('VALUE_OUT_OF_RANGE');
+    expect(result.details).toEqual({ column: 'name' });
+  });
+
+  test('maps Prisma record not found (P2001) to 404', () => {
+    const prismaErr = dummyPrismaError('P2001', { cause: 'User not found' });
+    const result = toAppError(prismaErr, { message: 'fallback', code: 'FALLBACK' });
+    expect(result.statusCode).toBe(404);
+    expect(result.code).toBe('NOT_FOUND');
+    expect(result.details).toEqual({ cause: 'User not found' });
+  });
+
+  test('maps Prisma constraint failed (P2004) to 409', () => {
+    const prismaErr = dummyPrismaError('P2004', { constraint: 'unique_email' });
+    const result = toAppError(prismaErr, { message: 'fallback', code: 'FALLBACK' });
+    expect(result.statusCode).toBe(409);
+    expect(result.code).toBe('CONSTRAINT_FAILED');
+    expect(result.details).toEqual({ constraint: 'unique_email' });
+  });
+
   test('wraps unknown errors with fallback', () => {
     const unknown = new Error('boom');
     const result = toAppError(unknown, { message: 'fallback message', code: 'FALLBACK', statusCode: 502 });

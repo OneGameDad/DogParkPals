@@ -41,27 +41,49 @@ export const UpstreamError = (
   statusCode: 502 | 504 = 502,
 ) => new AppError(message, { statusCode, code: 'UPSTREAM_ERROR', details });
 
+const PRISMA_VALUE_OUT_OF_RANGE = 'P2000';
+const PRISMA_RECORD_NOT_FOUND = 'P2001';
 const PRISMA_UNIQUE_VIOLATION = 'P2002';
 const PRISMA_FOREIGN_KEY_VIOLATION = 'P2003';
+const PRISMA_CONSTRAINT_FAILED = 'P2004';
 
 export function toAppError(err: unknown, fallback: { message: string; code: string; statusCode?: number }) {
   if (isAppError(err)) return err;
 
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    if (err.code === PRISMA_UNIQUE_VIOLATION) {
-      return new AppError('Resource already exists', {
-        statusCode: 409,
-        code: 'UNIQUE_CONSTRAINT',
-        details: err.meta,
-      });
-    }
-
-    if (err.code === PRISMA_FOREIGN_KEY_VIOLATION) {
-      return new AppError('Related resource not found', {
-        statusCode: 400,
-        code: 'FOREIGN_KEY_CONSTRAINT',
-        details: err.meta,
-      });
+    switch (err.code) {
+      case PRISMA_VALUE_OUT_OF_RANGE:
+        return new AppError('Value out of range for column', {
+          statusCode: 400,
+          code: 'VALUE_OUT_OF_RANGE',
+          details: err.meta,
+        });
+      case PRISMA_RECORD_NOT_FOUND:
+        return new AppError('Resource not found', {
+          statusCode: 404,
+          code: 'NOT_FOUND',
+          details: err.meta,
+        });
+      case PRISMA_UNIQUE_VIOLATION:
+        return new AppError('Resource already exists', {
+          statusCode: 409,
+          code: 'UNIQUE_CONSTRAINT',
+          details: err.meta,
+        });
+      case PRISMA_FOREIGN_KEY_VIOLATION:
+        return new AppError('Related resource not found', {
+          statusCode: 400,
+          code: 'FOREIGN_KEY_CONSTRAINT',
+          details: err.meta,
+        });
+      case PRISMA_CONSTRAINT_FAILED:
+        return new AppError('Constraint failed', {
+          statusCode: 409,
+          code: 'CONSTRAINT_FAILED',
+          details: err.meta,
+        });
+      default:
+        break;
     }
   }
 

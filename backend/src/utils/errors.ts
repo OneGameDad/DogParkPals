@@ -16,6 +16,31 @@ export class AppError extends Error {
 
 export const isAppError = (err: unknown): err is AppError => err instanceof AppError;
 
+// Convenience helpers for common HTTP error semantics
+export const ValidationError = (message = 'Validation failed', details?: unknown) =>
+  new AppError(message, { statusCode: 400, code: 'VALIDATION_ERROR', details });
+
+export const AuthError = (message = 'Authentication required', details?: unknown) =>
+  new AppError(message, { statusCode: 401, code: 'AUTH_ERROR', details });
+
+export const ForbiddenError = (message = 'Forbidden', details?: unknown) =>
+  new AppError(message, { statusCode: 403, code: 'FORBIDDEN', details });
+
+export const NotFoundError = (message = 'Not found', details?: unknown) =>
+  new AppError(message, { statusCode: 404, code: 'NOT_FOUND', details });
+
+export const ConflictError = (message = 'Conflict', details?: unknown) =>
+  new AppError(message, { statusCode: 409, code: 'CONFLICT', details });
+
+export const RateLimitError = (message = 'Too many requests', details?: unknown) =>
+  new AppError(message, { statusCode: 429, code: 'RATE_LIMITED', details });
+
+export const UpstreamError = (
+  message = 'Upstream service error',
+  details?: unknown,
+  statusCode: 502 | 504 = 502,
+) => new AppError(message, { statusCode, code: 'UPSTREAM_ERROR', details });
+
 const PRISMA_UNIQUE_VIOLATION = 'P2002';
 const PRISMA_FOREIGN_KEY_VIOLATION = 'P2003';
 

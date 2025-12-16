@@ -53,7 +53,7 @@ describe('User Router', () => {
 
     test('returns 400 when required fields are missing', async () => {
       mockCreateUser.mockImplementation((req: Request, res: Response) => {
-        res.status(400).json({ error: 'Missing required fields' });
+        res.status(400).json({ error: 'Missing required fields', code: 'VALIDATION_ERROR' });
       });
 
       const response = await request(app).post('/users').send({
@@ -64,11 +64,12 @@ describe('User Router', () => {
       expect(mockCreateUser).toHaveBeenCalled();
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('Missing required fields');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
     });
 
     test('returns 409 when email already exists', async () => {
       mockCreateUser.mockImplementation((req: Request, res: Response) => {
-        res.status(409).json({ error: 'Email already in use' });
+        res.status(409).json({ error: 'Email already in use', code: 'CONFLICT' });
       });
 
       const response = await request(app)
@@ -82,6 +83,7 @@ describe('User Router', () => {
       expect(mockCreateUser).toHaveBeenCalled();
       expect(response.status).toBe(409);
       expect(response.body.error).toBe('Email already in use');
+      expect(response.body.code).toBe('CONFLICT');
     });
 
     test('returns 201 with user data on successful creation', async () => {
@@ -119,7 +121,7 @@ describe('User Router', () => {
 
     test('returns 500 on server error', async () => {
       mockCreateUser.mockImplementation((req: Request, res: Response) => {
-        res.status(500).json({ error: 'Failed to create user' });
+        res.status(500).json({ error: 'Failed to create user', code: 'INTERNAL_ERROR' });
       });
 
       const response = await request(app)
@@ -133,6 +135,7 @@ describe('User Router', () => {
       expect(mockCreateUser).toHaveBeenCalled();
       expect(response.status).toBe(500);
       expect(response.body.error).toBe('Failed to create user');
+      expect(response.body.code).toBe('INTERNAL_ERROR');
     });
   });
 
@@ -150,7 +153,7 @@ describe('User Router', () => {
 
     test('returns 404 when user is not found', async () => {
       mockGetUserByEmail.mockImplementation((req: Request, res: Response) => {
-        res.status(404).json({ error: 'User not found' });
+        res.status(404).json({ error: 'User not found', code: 'NOT_FOUND' });
       });
 
       const response = await request(app).get('/users/notfound@example.com');
@@ -158,6 +161,7 @@ describe('User Router', () => {
       expect(mockGetUserByEmail).toHaveBeenCalled();
       expect(response.status).toBe(404);
       expect(response.body.error).toBe('User not found');
+      expect(response.body.code).toBe('NOT_FOUND');
     });
 
     test('returns 200 with user data when user is found', async () => {
@@ -189,7 +193,7 @@ describe('User Router', () => {
 
     test('returns 500 on server error', async () => {
       mockGetUserByEmail.mockImplementation((req: Request, res: Response) => {
-        res.status(500).json({ error: 'Failed to retrieve user' });
+        res.status(500).json({ error: 'Failed to retrieve user', code: 'INTERNAL_ERROR' });
       });
 
       const response = await request(app).get('/users/test@example.com');
@@ -197,6 +201,7 @@ describe('User Router', () => {
       expect(mockGetUserByEmail).toHaveBeenCalled();
       expect(response.status).toBe(500);
       expect(response.body.error).toBe('Failed to retrieve user');
+      expect(response.body.code).toBe('INTERNAL_ERROR');
     });
 
     test('passes email from route params to controller', async () => {

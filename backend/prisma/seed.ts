@@ -85,6 +85,7 @@ async function main() {
       senderId: user.id,
       receiverId: userBob.id,
       content: "Hey Bob! Are you bringing Rex to the park today?",
+      status: "READ",
     },
   });
 
@@ -93,6 +94,7 @@ async function main() {
       senderId: userBob.id,
       receiverId: user.id,
       content: "Hi Alice! Yes, planning to be there around 10 AM. See you then!",
+      status: "READ",
     },
   });
 
@@ -101,6 +103,7 @@ async function main() {
       senderId: user.id,
       receiverId: userBob.id,
       content: "Perfect! Rex and my pups will have a great time.",
+      status: "DELIVERED",
     },
   });
 

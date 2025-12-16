@@ -32,6 +32,8 @@ model User {
   enemies   enemies[] @relation("EnemyUser")
   enemiesOwned enemies[] @relation("EnemiesOwner")
   comments Comment[]
+  messagesSent Messages[] @relation("MessageSender")
+  messagesReceived Messages[] @relation("MessageReceiver")
   achievements UserAchievement[]
   levels    UserLevel[]
   ExpPoints   Int      @default(0)
@@ -71,6 +73,22 @@ model Friendship {
   addressee   User @relation("FriendshipAddressee", fields: [addresseeId], references: [id])
 
   @@id([requesterId, addresseeId])
+}
+
+model Messages {
+  id        Int      @id @default(autoincrement())
+  senderId  Int
+  receiverId Int
+  content   String
+  sentAt    DateTime @default(now())
+  status    MessageStatus @default(SENT)
+
+  sender    User @relation("MessageSender", fields: [senderId], references: [id])
+  receiver  User @relation("MessageReceiver", fields: [receiverId], references: [id])
+
+  @@index([receiverId, status, sentAt])
+  @@index([senderId])
+  @@index([senderId, receiverId, sentAt])
 }
 
 // Table for enemies, they can be users or dogs, but are owned by users
@@ -593,4 +611,12 @@ enum DogBreed {
   XOLOITZCUINTLE
   YAKUTIAN_LAIKA
   YORKSHIRE_TERRIER
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  ARCHIVED
+  DELETED
 }

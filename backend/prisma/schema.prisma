@@ -21,7 +21,10 @@ model User {
   first_name      String?
   last_name       String?
   profilePictureUrl String?
+  latitude  Float?
+  longitude Float?
   dogOwnerships DogOwner[]
+  checkIns  CheckIn[]
   favoriteParks UserFavoritePark[]
   eventsOrganized Event[] @relation("EventOrganizer")
   organizationsOwned Organization[] @relation("OrganizationOwner")
@@ -54,8 +57,7 @@ model Dog {
   vaccinationRecordUrl String?
   playstyle  DogPlaystyle @default(SOCIAL)
   description String?
-  currentLocationId Int?
-  currentLocation Park? @relation(fields: [currentLocationId], references: [id])
+  checkIns  CheckIn[]
   ownerOfEnemies enemies[] @relation("EnemiesOwnerDog")
   enemyOf enemies[] @relation("EnemyDog")
   createdAt DateTime @default(now())
@@ -91,6 +93,23 @@ model Messages {
   @@index([senderId, receiverId, sentAt])
 }
 
+model CheckIn {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  dogId        Int?
+  parkId       Int
+  checkedInAt  DateTime @default(now())
+  checkedOutAt DateTime?
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dog   Dog?  @relation(fields: [dogId], references: [id], onDelete: Cascade)
+  park  Park  @relation(fields: [parkId], references: [id], onDelete: Cascade)
+
+  @@index([parkId, checkedInAt])
+  @@index([userId])
+  @@index([dogId])
+}
+
 // Table for enemies, they can be users or dogs, but are owned by users
 model enemies {
   id        Int      @id @default(autoincrement())
@@ -109,7 +128,8 @@ model enemies {
 model Park {
   id        Int      @id @default(autoincrement())
   name      String
-  location  String
+  latitude  Float @default(0.0)
+  longitude Float @default(0.0)
   description String?
   separateSmallDogArea Boolean @default(false)
   amenities Json?
@@ -117,9 +137,11 @@ model Park {
   favoritedBy UserFavoritePark[]
   events Event[]
   comments  Comment[]
-  currentDogs Dog[]
+  checkIns  CheckIn[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([latitude, longitude])
 }
 
 model DogOwner {

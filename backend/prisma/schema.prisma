@@ -297,6 +297,7 @@ enum DogSize {
   MEDIUM
   LARGE
   GIANT
+  KAIJU
 }
 
 enum DogGender {  
@@ -341,6 +342,8 @@ enum UserRole {
 }
 
 enum DogBreed {
+  UNKNOWN
+  MIXED_BREED
   AFFENPINSCHER
   AFGHAN_HOUND
   AIDI

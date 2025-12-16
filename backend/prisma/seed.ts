@@ -79,6 +79,31 @@ async function main() {
     },
   });
 
+  // Messages between users
+  await prisma.messages.create({
+    data: {
+      senderId: user.id,
+      receiverId: userBob.id,
+      content: "Hey Bob! Are you bringing Rex to the park today?",
+    },
+  });
+
+  await prisma.messages.create({
+    data: {
+      senderId: userBob.id,
+      receiverId: user.id,
+      content: "Hi Alice! Yes, planning to be there around 10 AM. See you then!",
+    },
+  });
+
+  await prisma.messages.create({
+    data: {
+      senderId: user.id,
+      receiverId: userBob.id,
+      content: "Perfect! Rex and my pups will have a great time.",
+    },
+  });
+
   console.log("Seed completed");
 }
 

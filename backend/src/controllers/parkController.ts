@@ -3,7 +3,8 @@ import { NotFoundError, ForbiddenError } from "../utils/errors";
 import { Request, Response, NextFunction } from "express";
 import typeSafeLogger from "../utils/typeSafeLogger";
 import { toAppError } from "../utils/errors";
-import { createParkSchema, updateParkSchema } from "../utils/validationSchemas";
+import { parseValidation } from "../utils/validator";
+import { createParkSchema, updateParkSchema, getParksNearLocationSchema } from "../utils/validationSchemas";
 
 /**
  * Check if user is authorized to modify a park (admin, or developer)
@@ -45,13 +46,14 @@ const parkController = {
     getParksNearLocation: async (req: Request, res: Response, next: NextFunction) => {
       try {
         typeSafeLogger.logRequest("Received request to fetch parks near location", { method: req.method, path: req.path });
-        const { latitude, longitude, radiusInKm } = req.query;
+        
+        const { latitude, longitude, radiusInKm } = parseValidation(getParksNearLocationSchema, {
+          latitude: parseFloat(req.query.latitude as string),
+          longitude: parseFloat(req.query.longitude as string),
+          radiusInKm: parseFloat(req.query.radiusInKm as string),
+        });
 
-        const parks = await parkService.getParksNearLocation(
-          parseFloat(latitude as string),
-          parseFloat(longitude as string),
-          parseFloat(radiusInKm as string)
-        );
+        const parks = await parkService.getParksNearLocation(latitude, longitude, radiusInKm);
         typeSafeLogger.logUserAction("Parks retrieved near location", { parkCount: parks.length });
         res.status(200).json(parks);
       } catch (error) {

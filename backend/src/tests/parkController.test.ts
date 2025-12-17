@@ -3,16 +3,16 @@ import type { Request, Response, NextFunction } from 'express';
 import { NotFoundError, ForbiddenError } from '../utils/errors';
 
 // Mock parkService
-const mockGetParkById = jest.fn();
-const mockGetParkByName = jest.fn();
-const mockGetParksNearLocation = jest.fn();
-const mockGetAllParks = jest.fn();
-const mockGetParksByAmenity = jest.fn();
-const mockCreatePark = jest.fn();
-const mockUpdatePark = jest.fn();
-const mockDeletePark = jest.fn();
-const mockAddParkToUserFavorites = jest.fn();
-const mockRemoveParkFromUserFavorites = jest.fn();
+const mockGetParkById = jest.fn<any>();
+const mockGetParkByName = jest.fn<any>();
+const mockGetParksNearLocation = jest.fn<any>();
+const mockGetAllParks = jest.fn<any>();
+const mockGetParksByAmenity = jest.fn<any>();
+const mockCreatePark = jest.fn<any>();
+const mockUpdatePark = jest.fn<any>();
+const mockDeletePark = jest.fn<any>();
+const mockAddParkToUserFavorites = jest.fn<any>();
+const mockRemoveParkFromUserFavorites = jest.fn<any>();
 
 jest.mock('../services/parkService', () => ({
   __esModule: true,
@@ -42,6 +42,12 @@ jest.mock('../utils/typeSafeLogger', () => ({
   },
 }));
 
+const mockParseValidation = jest.fn();
+
+jest.mock('../utils/validator', () => ({
+  parseValidation: mockParseValidation,
+}));
+
 jest.mock('../utils/validationSchemas', () => ({
   createParkSchema: {
     parse: jest.fn((data) => data),
@@ -49,6 +55,7 @@ jest.mock('../utils/validationSchemas', () => ({
   updateParkSchema: {
     parse: jest.fn((data) => data),
   },
+  getParksNearLocationSchema: {},
 }));
 
 // Import after all mocks
@@ -116,7 +123,7 @@ describe('Park Controller', () => {
       await parkController.getParkById(mockReq as Request, mockRes as Response, mockNext as any);
 
       expect(mockNext).toHaveBeenCalled();
-      const error = mockNext.mock.calls[0][0];
+      const error = mockNext.mock.calls[0][0] as Error;
       expect(error.message).toContain('Park not found');
     });
 
@@ -156,6 +163,7 @@ describe('Park Controller', () => {
     test('should return nearby parks', async () => {
       mockReq.query = { latitude: '40.7829', longitude: '-73.9654', radiusInKm: '5' };
       const nearbyParks = [mockParkData];
+      mockParseValidation.mockReturnValue({ latitude: 40.7829, longitude: -73.9654, radiusInKm: 5 });
       mockGetParksNearLocation.mockResolvedValue(nearbyParks);
 
       await parkController.getParksNearLocation(mockReq as Request, mockRes as Response, mockNext as any);
@@ -167,12 +175,59 @@ describe('Park Controller', () => {
 
     test('should return empty array when no parks nearby', async () => {
       mockReq.query = { latitude: '0', longitude: '0', radiusInKm: '5' };
+      mockParseValidation.mockReturnValue({ latitude: 0, longitude: 0, radiusInKm: 5 });
       mockGetParksNearLocation.mockResolvedValue([]);
 
       await parkController.getParksNearLocation(mockReq as Request, mockRes as Response, mockNext as any);
 
       expect(mockStatus).toHaveBeenCalledWith(200);
       expect(mockJson).toHaveBeenCalledWith([]);
+    });
+
+    test('should handle validation error for invalid latitude', async () => {
+      mockReq.query = { latitude: '95', longitude: '-73.9654', radiusInKm: '5' };
+      mockParseValidation.mockImplementation(() => {
+        throw new Error('Latitude must be between -90 and 90');
+      });
+
+      await parkController.getParksNearLocation(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockGetParksNearLocation).not.toHaveBeenCalled();
+    });
+
+    test('should handle validation error for invalid longitude', async () => {
+      mockReq.query = { latitude: '40.7829', longitude: '200', radiusInKm: '5' };
+      mockParseValidation.mockImplementation(() => {
+        throw new Error('Longitude must be between -180 and 180');
+      });
+
+      await parkController.getParksNearLocation(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockGetParksNearLocation).not.toHaveBeenCalled();
+    });
+
+    test('should handle validation error for invalid radius', async () => {
+      mockReq.query = { latitude: '40.7829', longitude: '-73.9654', radiusInKm: '-5' };
+      mockParseValidation.mockImplementation(() => {
+        throw new Error('Radius must be at least 0.1 km');
+      });
+
+      await parkController.getParksNearLocation(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockGetParksNearLocation).not.toHaveBeenCalled();
+    });
+
+    test('should handle service error', async () => {
+      mockReq.query = { latitude: '40.7829', longitude: '-73.9654', radiusInKm: '5' };
+      mockParseValidation.mockReturnValue({ latitude: 40.7829, longitude: -73.9654, radiusInKm: 5 });
+      mockGetParksNearLocation.mockRejectedValue(new Error('Database error'));
+
+      await parkController.getParksNearLocation(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockNext).toHaveBeenCalled();
     });
   });
 
@@ -231,7 +286,18 @@ describe('Park Controller', () => {
         description: 'A new park',
         amenities: ['water'],
       };
-      const newPark = { id: 3, ...mockReq.body, createdAt: new Date(), updatedAt: new Date() };
+      const newPark = { 
+        id: 3, 
+        name: 'New Park',
+        latitude: 40.7580,
+        longitude: -73.9855,
+        description: 'A new park',
+        separateSmallDogArea: false,
+        amenities: ['water'],
+        profilePictureUrl: null,
+        createdAt: new Date(), 
+        updatedAt: new Date() 
+      };
       mockCreatePark.mockResolvedValue(newPark);
 
       await parkController.createPark(mockReq as Request, mockRes as Response, mockNext as any);
@@ -276,7 +342,7 @@ describe('Park Controller', () => {
       await parkController.updatePark(mockReq as Request, mockRes as Response, mockNext as any);
 
       expect(mockNext).toHaveBeenCalled();
-      const error = mockNext.mock.calls[0][0];
+      const error = mockNext.mock.calls[0][0] as Error;
       expect(error.message).toContain('Not authorized');
     });
 
@@ -289,7 +355,7 @@ describe('Park Controller', () => {
       await parkController.updatePark(mockReq as Request, mockRes as Response, mockNext as any);
 
       expect(mockNext).toHaveBeenCalled();
-      const error = mockNext.mock.calls[0][0];
+      const error = mockNext.mock.calls[0][0] as Error;
       expect(error.message).toContain('Park not found');
     });
   });
@@ -315,7 +381,7 @@ describe('Park Controller', () => {
       await parkController.deletePark(mockReq as Request, mockRes as Response, mockNext as any);
 
       expect(mockNext).toHaveBeenCalled();
-      const error = mockNext.mock.calls[0][0];
+      const error = mockNext.mock.calls[0][0] as Error;
       expect(error.message).toContain('Not authorized');
     });
 
@@ -327,7 +393,7 @@ describe('Park Controller', () => {
       await parkController.deletePark(mockReq as Request, mockRes as Response, mockNext as any);
 
       expect(mockNext).toHaveBeenCalled();
-      const error = mockNext.mock.calls[0][0];
+      const error = mockNext.mock.calls[0][0] as Error;
       expect(error.message).toContain('Park not found');
     });
 

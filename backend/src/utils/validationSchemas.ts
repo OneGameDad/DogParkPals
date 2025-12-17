@@ -35,3 +35,11 @@ export const updateParkSchema = z.object({
 });
 
 export type UpdateParkRequest = z.infer<typeof updateParkSchema>;
+
+export const getParksNearLocationSchema = z.object({
+  latitude: z.number().min(-90, 'Latitude must be between -90 and 90').max(90, 'Latitude must be between -90 and 90'),
+  longitude: z.number().min(-180, 'Longitude must be between -180 and 180').max(180, 'Longitude must be between -180 and 180'),
+  radiusInKm: z.number().min(0.1, 'Radius must be at least 0.1 km').max(20000, 'Radius cannot exceed 20000 km'),
+});
+
+export type GetParksNearLocationRequest = z.infer<typeof getParksNearLocationSchema>;

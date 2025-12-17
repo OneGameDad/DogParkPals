@@ -1,5 +1,5 @@
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
 import { createParkSchema, updateParkSchema } from '../utils/validationSchemas';
@@ -54,10 +54,10 @@ const parkService = {
     }
   },
   
-  async getParksNearLocation (latitude: number, longitude: number, radiusInKm: number) {
+  async getParksNearLocation(latitude: number, longitude: number, radiusInKm: number) {
     typeSafeLogger.info('Fetching parks near location', { latitude, longitude, radiusInKm });
     try {
-        const nearbyParks = await prisma.$queryRaw<Array<{ id: number; name: string; latitude: number; longitude: number; distance: number }>>`
+        const sql = Prisma.sql`
             SELECT *, 
             (6371 * acos(cos(radians(${latitude})) * cos(radians(latitude)) * cos(radians(longitude) - radians(${longitude})) + 
             sin(radians(${latitude})) * sin(radians(latitude)))) AS distance 
@@ -65,6 +65,7 @@ const parkService = {
             HAVING distance < ${radiusInKm} 
             ORDER BY distance;
         `;
+        const nearbyParks = await prisma.$queryRaw<Array<{ id: number; name: string; latitude: number; longitude: number; distance: number }>>(sql);
         typeSafeLogger.logUserAction('Nearby parks retrieved', { count: nearbyParks.length });
         return nearbyParks;
     } catch (error) {

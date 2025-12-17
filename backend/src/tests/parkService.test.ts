@@ -43,6 +43,7 @@ jest.mock('@prisma/client', () => {
     PrismaClient: jest.fn(() => mockPrisma),
     Prisma: {
       PrismaClientKnownRequestError: mockPrismaClientKnownRequestError,
+      sql: (strings: TemplateStringsArray, ...values: any[]) => ({ strings, values }),
     },
   };
 });

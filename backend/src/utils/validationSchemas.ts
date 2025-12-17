@@ -116,3 +116,37 @@ export const isMemberSchema = z.object({
 });
 
 export type IsMemberRequest = z.infer<typeof isMemberSchema>;
+
+export const createFriendRequestSchema = z.object({
+  requesterId: z.number().int().positive('Requester ID must be a positive integer'),
+  addresseeId: z.number().int().positive('Addressee ID must be a positive integer'),
+}).refine((data) => data.requesterId !== data.addresseeId, {
+  message: 'Requester ID and Addressee ID must be different',
+  path: ['addresseeId'],
+});
+
+export type CreateFriendRequest = z.infer<typeof createFriendRequestSchema>;
+
+export const respondToFriendRequestSchema = z.object({
+  requesterId: z.number().int().positive('Requester ID must be a positive integer'),
+  addresseeId: z.number().int().positive('Addressee ID must be a positive integer'),
+  accept: z.boolean(),
+});
+
+export type RespondToFriendRequest = z.infer<typeof respondToFriendRequestSchema>;
+
+export const getUserIdSchema = z.object({
+  userId: z.number().int().positive('User ID must be a positive integer'),
+});
+
+export type GetUserIdRequest = z.infer<typeof getUserIdSchema>;
+
+export const removeFriendSchema = z.object({
+  userId: z.number().int().positive('User ID must be a positive integer'),
+  friendId: z.number().int().positive('Friend ID must be a positive integer'),
+}).refine((data) => data.userId !== data.friendId, {
+  message: 'User ID and Friend ID must be different',
+  path: ['friendId'],
+});
+
+export type RemoveFriendRequest = z.infer<typeof removeFriendSchema>;

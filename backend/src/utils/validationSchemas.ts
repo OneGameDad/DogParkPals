@@ -43,3 +43,76 @@ export const getParksNearLocationSchema = z.object({
 });
 
 export type GetParksNearLocationRequest = z.infer<typeof getParksNearLocationSchema>;
+
+// Organization Validation Schemas
+export const createOrganizationSchema = z.object({
+  name: z.string().min(1, 'Organization name is required').min(2, 'Organization name must be at least 2 characters').max(255, 'Organization name cannot exceed 255 characters'),
+  description: z.string().max(1000, 'Description cannot exceed 1000 characters').optional(),
+  websiteUrl: z.string().url('Invalid website URL').optional().or(z.literal('')),
+});
+
+export type CreateOrganizationRequest = z.infer<typeof createOrganizationSchema>;
+
+export const updateOrganizationSchema = z.object({
+  name: z.string().min(2, 'Organization name must be at least 2 characters').max(255, 'Organization name cannot exceed 255 characters').optional(),
+  description: z.string().max(1000, 'Description cannot exceed 1000 characters').optional(),
+  websiteUrl: z.string().url('Invalid website URL').optional().or(z.literal('')),
+  profilePictureUrl: z.string().url('Invalid profile picture URL').optional().or(z.literal('')),
+});
+
+export type UpdateOrganizationRequest = z.infer<typeof updateOrganizationSchema>;
+
+export const getOrganizationByIdSchema = z.object({
+  organizationId: z.number().int().positive('Organization ID must be a positive integer'),
+});
+
+export type GetOrganizationByIdRequest = z.infer<typeof getOrganizationByIdSchema>;
+
+export const getOrganizationByNameSchema = z.object({
+  name: z.string().min(1, 'Organization name is required'),
+});
+
+export type GetOrganizationByNameRequest = z.infer<typeof getOrganizationByNameSchema>;
+
+export const addMemberSchema = z.object({
+  organizationId: z.number().int().positive('Organization ID must be a positive integer'),
+  userId: z.number().int().positive('User ID must be a positive integer'),
+  role: z.enum(['MEMBER', 'MODERATOR', 'OWNER']).default('MEMBER'),
+});
+
+export type AddMemberRequest = z.infer<typeof addMemberSchema>;
+
+export const removeMemberSchema = z.object({
+  organizationId: z.number().int().positive('Organization ID must be a positive integer'),
+  userId: z.number().int().positive('User ID must be a positive integer'),
+});
+
+export type RemoveMemberRequest = z.infer<typeof removeMemberSchema>;
+
+export const updateMemberRoleSchema = z.object({
+  organizationId: z.number().int().positive('Organization ID must be a positive integer'),
+  userId: z.number().int().positive('User ID must be a positive integer'),
+  role: z.enum(['MEMBER', 'MODERATOR', 'OWNER'], 'Invalid role specified'),
+});
+
+export type UpdateMemberRoleRequest = z.infer<typeof updateMemberRoleSchema>;
+
+export const getMemberSchema = z.object({
+  organizationId: z.number().int().positive('Organization ID must be a positive integer'),
+  userId: z.number().int().positive('User ID must be a positive integer'),
+});
+
+export type GetMemberRequest = z.infer<typeof getMemberSchema>;
+
+export const getMembersSchema = z.object({
+  organizationId: z.number().int().positive('Organization ID must be a positive integer'),
+});
+
+export type GetMembersRequest = z.infer<typeof getMembersSchema>;
+
+export const isMemberSchema = z.object({
+  organizationId: z.number().int().positive('Organization ID must be a positive integer'),
+  userId: z.number().int().positive('User ID must be a positive integer'),
+});
+
+export type IsMemberRequest = z.infer<typeof isMemberSchema>;

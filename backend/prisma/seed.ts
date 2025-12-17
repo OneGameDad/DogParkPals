@@ -32,7 +32,8 @@ async function main() {
     update: {},
     create: {
       name: "Central Dog Park",
-      location: "City Center",
+      latitude: 40.7829,
+      longitude: -73.9654,
     },
   });
 
@@ -104,6 +105,41 @@ async function main() {
       receiverId: userBob.id,
       content: "Perfect! Rex and my pups will have a great time.",
       status: "DELIVERED",
+    },
+  });
+
+  // Check-ins at parks
+  const now = new Date();
+  const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+  // Alice checked in with Rex (still there)
+  await prisma.checkIn.create({
+    data: {
+      userId: user.id,
+      dogId: dog.id,
+      parkId: park.id,
+      checkedInAt: twoHoursAgo,
+    },
+  });
+
+  // Bob checked in (without a dog)
+  await prisma.checkIn.create({
+    data: {
+      userId: userBob.id,
+      parkId: park.id,
+      checkedInAt: oneHourAgo,
+    },
+  });
+
+  // Alice checked out earlier (historical check-in)
+  await prisma.checkIn.create({
+    data: {
+      userId: user.id,
+      dogId: dog.id,
+      parkId: park.id,
+      checkedInAt: new Date(now.getTime() - 5 * 60 * 60 * 1000),
+      checkedOutAt: new Date(now.getTime() - 4 * 60 * 60 * 1000),
     },
   });
 

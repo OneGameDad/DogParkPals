@@ -1,0 +1,580 @@
+import { describe, test, expect, beforeEach, jest } from '@jest/globals';
+import type { Request, Response, NextFunction } from 'express';
+import type { Event } from '@prisma/client';
+
+// Mocks
+const mockEventService = {
+  createEvent: jest.fn() as jest.Mock<Promise<Event>>,
+  updateEvent: jest.fn() as jest.Mock<Promise<Event>>,
+  getEventById: jest.fn() as jest.Mock<Promise<Event | null>>,
+  deleteEvent: jest.fn() as jest.Mock<Promise<void>>,
+  getEventsByOrganizer: jest.fn() as jest.Mock<Promise<Event[]>>,
+  getEventsByOrganization: jest.fn() as jest.Mock<Promise<Event[]>>,
+  getEventsByPark: jest.fn() as jest.Mock<Promise<Event[]>>,
+  getAllEvents: jest.fn() as jest.Mock<Promise<Event[]>>,
+  getUpcomingEvents: jest.fn() as jest.Mock<Promise<Event[]>>,
+  isEvent: jest.fn() as jest.Mock<Promise<boolean>>,
+};
+
+jest.mock('../services/eventService', () => ({
+  __esModule: true,
+  default: mockEventService,
+}));
+
+jest.mock('../utils/typeSafeLogger', () => ({
+  __esModule: true,
+  default: {
+    logRequest: jest.fn(),
+    logUserAction: jest.fn(),
+    logError: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+  },
+}));
+
+// Use real toAppError helpers
+import eventController from '../controllers/eventController';
+
+// Test helpers
+const makeRes = () => {
+  const res: Partial<Response> = {
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn().mockReturnThis(),
+    send: jest.fn().mockReturnThis(),
+  };
+  return res as Response;
+};
+
+const makeNext = () => jest.fn() as unknown as NextFunction;
+
+const sampleEvent = {
+  id: 1,
+  title: 'Dog Park Playdate',
+  description: 'A fun gathering',
+  date: new Date('2026-01-10'),
+  startTime: new Date('2026-01-10T10:00:00Z'),
+  endTime: new Date('2026-01-10T12:00:00Z'),
+  private: 'PUBLIC' as const,
+  parkId: 1,
+  organizerId: 123,
+  createdAt: new Date('2025-12-01T00:00:00Z'),
+  updatedAt: new Date('2025-12-01T00:00:00Z'),
+};
+
+describe('Event Controller', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('createEvent', () => {
+    test('creates event (PUBLIC) and returns 201', async () => {
+      const req = {
+        method: 'POST',
+        path: '/events',
+        body: {
+          title: 'Dog Park Playdate',
+          description: 'A fun gathering',
+          date: new Date('2026-01-10'),
+          startTime: new Date('2026-01-10T10:00:00Z'),
+          endTime: new Date('2026-01-10T12:00:00Z'),
+          parkId: 1,
+          organizerId: 123,
+          private: 'PUBLIC',
+        },
+      } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.createEvent.mockResolvedValue(sampleEvent);
+
+      await eventController.createEvent(req, res, next);
+
+      expect(mockEventService.createEvent).toHaveBeenCalledWith(
+        'Dog Park Playdate',
+        'A fun gathering',
+        expect.any(Date),
+        expect.any(Date),
+        expect.any(Date),
+        1,
+        123,
+        false,
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(sampleEvent);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('creates event (PRIVATE) maps to boolean true', async () => {
+      const req = {
+        method: 'POST',
+        path: '/events',
+        body: {
+          title: 'Dog Park Playdate',
+          description: 'A fun gathering',
+          date: new Date('2026-01-10'),
+          startTime: new Date('2026-01-10T10:00:00Z'),
+          endTime: new Date('2026-01-10T12:00:00Z'),
+          parkId: 1,
+          organizerId: 123,
+          private: 'PRIVATE',
+        },
+      } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.createEvent.mockResolvedValue({ ...sampleEvent, private: 'PRIVATE' });
+
+      await eventController.createEvent(req, res, next);
+
+      expect(mockEventService.createEvent).toHaveBeenCalledWith(
+        'Dog Park Playdate',
+        'A fun gathering',
+        expect.any(Date),
+        expect.any(Date),
+        expect.any(Date),
+        1,
+        123,
+        true,
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('handles service error via next(toAppError)', async () => {
+      const req = {
+        method: 'POST',
+        path: '/events',
+        body: {
+          title: 'Dog Park Playdate',
+          description: 'A fun gathering',
+          date: new Date('2026-01-10'),
+          startTime: new Date('2026-01-10T10:00:00Z'),
+          endTime: new Date('2026-01-10T12:00:00Z'),
+          parkId: 1,
+          organizerId: 123,
+          private: 'PUBLIC',
+        },
+      } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.createEvent.mockRejectedValue(new Error('Database error'));
+
+      await eventController.createEvent(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('validation error: short title', async () => {
+      const req = {
+        method: 'POST',
+        path: '/events',
+        body: {
+          title: 'a', // too short
+          description: 'desc',
+          date: new Date(Date.now() + 86400000),
+          startTime: new Date(Date.now() + 90000000),
+          endTime: new Date(Date.now() + 93600000),
+          parkId: 1,
+          organizerId: 123,
+          private: 'PUBLIC',
+        },
+      } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      await eventController.createEvent(req, res, next);
+
+      expect(mockEventService.createEvent).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('validation error: past date', async () => {
+      const req = {
+        method: 'POST',
+        path: '/events',
+        body: {
+          title: 'Valid Title',
+          description: 'desc',
+          date: new Date('2020-01-01'),
+          startTime: new Date('2020-01-01T10:00:00Z'),
+          endTime: new Date('2020-01-01T12:00:00Z'),
+          parkId: 1,
+          organizerId: 123,
+          private: 'PUBLIC',
+        },
+      } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      await eventController.createEvent(req, res, next);
+
+      expect(mockEventService.createEvent).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalled();
+    });
+  });
+
+  describe('updateEvent', () => {
+    test('updates event when organizer matches', async () => {
+      const req = {
+        method: 'PATCH',
+        path: '/events/1',
+        params: { eventId: 1 } as any,
+        body: { title: 'Updated Title' },
+        user: { id: 123, role: 'MEMBER' },
+      } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue(sampleEvent); // organizerId: 123
+      mockEventService.updateEvent.mockResolvedValue({ ...sampleEvent, title: 'Updated Title' });
+
+      await eventController.updateEvent(req, res, next);
+
+      expect(mockEventService.updateEvent).toHaveBeenCalledWith(1, { title: 'Updated Title' });
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ title: 'Updated Title' }));
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('forbidden when not organizer and no org context', async () => {
+      const req = {
+        method: 'PATCH',
+        path: '/events/1',
+        params: { eventId: 1 } as any,
+        body: { title: 'Updated Title' },
+        user: { id: 999, role: 'MEMBER', organizationId: undefined },
+      } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue({ ...sampleEvent, organizerId: 123 });
+
+      await eventController.updateEvent(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('not found during authorization', async () => {
+      const req = {
+        method: 'PATCH',
+        path: '/events/1',
+        params: { eventId: 1 } as any,
+        body: { title: 'Updated Title' },
+        user: { id: 123, role: 'MEMBER' },
+      } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue(null);
+
+      await eventController.updateEvent(req, res, next);
+
+      expect(mockEventService.updateEvent).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('forbidden when member role not sufficient', async () => {
+      const req = {
+        method: 'PATCH',
+        path: '/events/1',
+        params: { eventId: 1 } as any,
+        body: { title: 'Updated Title' },
+        user: { id: 999, role: 'MEMBER', organizationId: 5, organizationMember: { role: 'MEMBER' } },
+      } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue({ ...sampleEvent, organizerId: 123 });
+
+      await eventController.updateEvent(req, res, next);
+
+      expect(mockEventService.updateEvent).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('service error bubbles via next', async () => {
+      const req = {
+        method: 'PATCH',
+        path: '/events/1',
+        params: { eventId: 1 } as any,
+        body: { title: 'Updated Title' },
+        user: { id: 123, role: 'MEMBER' },
+      } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue(sampleEvent);
+      mockEventService.updateEvent.mockRejectedValue(new Error('DB error'));
+
+      await eventController.updateEvent(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteEvent', () => {
+    test('deletes event when organizer', async () => {
+      const req = {
+        method: 'DELETE',
+        path: '/events/1',
+        params: { eventId: 1 } as any,
+        user: { id: 123, role: 'MEMBER' },
+      } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue(sampleEvent);
+      mockEventService.deleteEvent.mockResolvedValue(undefined);
+
+      await eventController.deleteEvent(req, res, next);
+
+      expect(mockEventService.deleteEvent).toHaveBeenCalledWith(1);
+      expect(res.status).toHaveBeenCalledWith(204);
+      expect(res.send).toHaveBeenCalled();
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('forbidden when member role not sufficient', async () => {
+      const req = {
+        method: 'DELETE',
+        path: '/events/1',
+        params: { eventId: 1 } as any,
+        user: { id: 999, role: 'MEMBER', organizationId: 5, organizationMember: { role: 'MEMBER' } },
+      } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue({ ...sampleEvent, organizerId: 123 });
+
+      await eventController.deleteEvent(req, res, next);
+
+      expect(mockEventService.deleteEvent).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('service error bubbles via next', async () => {
+      const req = {
+        method: 'DELETE',
+        path: '/events/1',
+        params: { eventId: 1 } as any,
+        user: { id: 123, role: 'MEMBER' },
+      } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue(sampleEvent);
+      mockEventService.deleteEvent.mockRejectedValue(new Error('DB error'));
+
+      await eventController.deleteEvent(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+    });
+  });
+
+  describe('getEventById', () => {
+    test('returns 200 with event when found', async () => {
+      const req = { method: 'GET', path: '/events/1', params: { eventId: 1 } as any } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue(sampleEvent);
+
+      await eventController.getEventById(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(sampleEvent);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('calls next with NotFound when missing', async () => {
+      const req = { method: 'GET', path: '/events/1', params: { eventId: 1 } as any } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue(null);
+
+      await eventController.getEventById(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('validation error: invalid eventId param', async () => {
+      const req = { method: 'GET', path: '/events/abc', params: { eventId: 'abc' } as any } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      await eventController.getEventById(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+      expect(mockEventService.getEventById).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('lists', () => {
+    test('getEventsByOrganizer returns 200', async () => {
+      const req = { method: 'GET', path: '/organizers/123/events', params: { organizerId: 123 } as any } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventsByOrganizer.mockResolvedValue([sampleEvent]);
+
+      await eventController.getEventsByOrganizer(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith([sampleEvent]);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('getEventsByOrganization returns 200', async () => {
+      const req = { method: 'GET', path: '/organizations/7/events', params: { organizationId: 7 } as any } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventsByOrganization.mockResolvedValue([sampleEvent]);
+
+      await eventController.getEventsByOrganization(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith([sampleEvent]);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('getEventsByPark returns 200', async () => {
+      const req = { method: 'GET', path: '/parks/1/events', params: { parkId: 1 } as any } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventsByPark.mockResolvedValue([sampleEvent]);
+
+      await eventController.getEventsByPark(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith([sampleEvent]);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('getAllEvents returns 200', async () => {
+      const req = { method: 'GET', path: '/events' } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getAllEvents.mockResolvedValue([sampleEvent]);
+
+      await eventController.getAllEvents(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith([sampleEvent]);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('getUpcomingEvents returns 200', async () => {
+      const req = { method: 'GET', path: '/events/upcoming' } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getUpcomingEvents.mockResolvedValue([sampleEvent]);
+
+      await eventController.getUpcomingEvents(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith([sampleEvent]);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('getEventsByOrganizer validation error', async () => {
+      const req = { method: 'GET', path: '/organizers/abc/events', params: { organizerId: 'abc' } as any } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      await eventController.getEventsByOrganizer(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+      expect(mockEventService.getEventsByOrganizer).not.toHaveBeenCalled();
+    });
+
+    test('getEventsByOrganization validation error', async () => {
+      const req = { method: 'GET', path: '/organizations/abc/events', params: { organizationId: 'abc' } as any } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      await eventController.getEventsByOrganization(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+      expect(mockEventService.getEventsByOrganization).not.toHaveBeenCalled();
+    });
+
+    test('getEventsByPark validation error', async () => {
+      const req = { method: 'GET', path: '/parks/abc/events', params: { parkId: 'abc' } as any } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      await eventController.getEventsByPark(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+      expect(mockEventService.getEventsByPark).not.toHaveBeenCalled();
+    });
+
+    test('getAllEvents service error via next', async () => {
+      const req = { method: 'GET', path: '/events' } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getAllEvents.mockRejectedValue(new Error('DB error'));
+
+      await eventController.getAllEvents(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('getUpcomingEvents service error via next', async () => {
+      const req = { method: 'GET', path: '/events/upcoming' } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getUpcomingEvents.mockRejectedValue(new Error('DB error'));
+
+      await eventController.getUpcomingEvents(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+    });
+  });
+
+  describe('isEvent', () => {
+    test('returns exists true', async () => {
+      const req = { method: 'GET', path: '/events/1/exists', params: { eventId: 1 } as any } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.isEvent.mockResolvedValue(true);
+
+      await eventController.isEvent(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ exists: true });
+    });
+
+    test('handles service error', async () => {
+      const req = { method: 'GET', path: '/events/1/exists', params: { eventId: 1 } as any } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.isEvent.mockRejectedValue(new Error('Database error'));
+
+      await eventController.isEvent(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('validation error: invalid eventId param', async () => {
+      const req = { method: 'GET', path: '/events/abc/exists', params: { eventId: 'abc' } as any } as unknown as Request;
+      const res = makeRes();
+      const next = makeNext();
+
+      await eventController.isEvent(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+      expect(mockEventService.isEvent).not.toHaveBeenCalled();
+    });
+  });
+});

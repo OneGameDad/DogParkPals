@@ -1,10 +1,7 @@
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-
-// Placeholder Pages (Move these to src/pages/ later)
-const Home = () => <h1 className="text-3xl font-bold">🐶🐶🐶🐶🐶 DogTinderInc 🐶🐶🐶🐶</h1>;
-const Login = () => <h1>Login Page</h1>;
-const Dashboard = () => <h1>User Dashboard</h1>;
-
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
 function App() {
   return (
     <BrowserRouter>

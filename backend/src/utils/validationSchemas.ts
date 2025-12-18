@@ -355,3 +355,59 @@ export const removeOwnerFromDogSchema = z.object({
   userId: z.number().int().positive('User ID must be a positive integer'),
 });
 export type RemoveOwnerFromDogRequest = z.infer<typeof removeOwnerFromDogSchema>;
+
+// Event Validation Schemas
+export const createEventSchema = z.object({
+  title: z.string().min(1, 'Event title is required').min(3, 'Event title must be at least 3 characters').max(255, 'Event title cannot exceed 255 characters'),
+  description: z.string().max(2000, 'Description cannot exceed 2000 characters').optional(),
+  date: z.coerce.date().refine((date) => date > new Date(), 'Event date must be in the future'),
+  startTime: z.coerce.date().refine((date) => date > new Date(), 'Event start time must be in the future'),
+  endTime: z.coerce.date(),
+  parkId: z.number().int().positive('Park ID must be a positive integer'),
+  organizerId: z.number().int().positive('Organizer ID must be a positive integer'),
+  private: z.enum(['PUBLIC', 'PRIVATE']).default('PUBLIC').optional(),
+});
+
+export type CreateEventRequest = z.infer<typeof createEventSchema>;
+
+export const updateEventSchema = z.object({
+  title: z.string().min(3, 'Event title must be at least 3 characters').max(255, 'Event title cannot exceed 255 characters').optional(),
+  description: z.string().max(2000, 'Description cannot exceed 2000 characters').optional(),
+  date: z.coerce.date().optional(),
+  startTime: z.coerce.date().optional(),
+  endTime: z.coerce.date().optional(),
+  parkId: z.number().int().positive('Park ID must be a positive integer').optional(),
+  private: z.enum(['PUBLIC', 'PRIVATE']).optional(),
+});
+
+export type UpdateEventRequest = z.infer<typeof updateEventSchema>;
+
+export const getEventByIdSchema = z.object({
+  eventId: z.number().int().positive('Event ID must be a positive integer'),
+});
+
+export type GetEventByIdRequest = z.infer<typeof getEventByIdSchema>;
+
+export const deleteEventSchema = z.object({
+  eventId: z.number().int().positive('Event ID must be a positive integer'),
+});
+
+export type DeleteEventRequest = z.infer<typeof deleteEventSchema>;
+
+export const getEventsByOrganizerSchema = z.object({
+  organizerId: z.number().int().positive('Organizer ID must be a positive integer'),
+});
+
+export type GetEventsByOrganizerRequest = z.infer<typeof getEventsByOrganizerSchema>;
+
+export const getEventsByOrganizationSchema = z.object({
+  organizationId: z.number().int().positive('Organization ID must be a positive integer'),
+});
+
+export type GetEventsByOrganizationRequest = z.infer<typeof getEventsByOrganizationSchema>;
+
+export const getEventsByParkSchema = z.object({
+  parkId: z.number().int().positive('Park ID must be a positive integer'),
+});
+
+export type GetEventsByParkRequest = z.infer<typeof getEventsByParkSchema>;

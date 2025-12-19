@@ -3,6 +3,7 @@ import express from "express";
 import typeSafeLogger from "../utils/typeSafeLogger";
 import { toAppError, ConflictError, NotFoundError, ForbiddenError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
+import { sanitizeOrganization } from "../utils/organizationSanitizer";
 import {
   createOrganizationSchema,
   updateOrganizationSchema,
@@ -57,7 +58,8 @@ const organizationController = {
             await organizationService.addMember(newOrg.id, userId, 'OWNER');
             
             typeSafeLogger.logUserAction("Organization created", { organizationId: newOrg.id, name, ownerId: userId });
-            res.status(201).json(newOrg);
+            const sanitized = sanitizeOrganization(newOrg, true, 'OWNER');
+            res.status(201).json(sanitized);
         } catch (error) {
             return next(
                 toAppError(error, { message: "Failed to create organization", code: "INTERNAL_ERROR", statusCode: 500 })
@@ -74,8 +76,13 @@ const organizationController = {
             if (!org) {
                 throw NotFoundError("Organization not found");
             }
+            const userId = (req as any).user?.id;
+            const userRole = (req as any).user?.role;
+            const memberRole = userId ? (await organizationService.getMember(org.id, userId))?.role : undefined;
+            const isMember = memberRole !== undefined;
             typeSafeLogger.logUserAction("Organization retrieved", { organizationId: org.id, name });
-            res.status(200).json(org);
+            const sanitized = sanitizeOrganization(org, isMember, memberRole);
+            res.status(200).json(sanitized);
         } catch (error) {
             return next(
                 toAppError(error, { message: "Failed to retrieve organization", code: "INTERNAL_ERROR", statusCode: 500 })
@@ -93,8 +100,12 @@ const organizationController = {
             if (!org) {
                 throw NotFoundError("Organization not found");
             }
+            const userId = (req as any).user?.id;
+            const memberRole = userId ? (await organizationService.getMember(orgId, userId))?.role : undefined;
+            const isMember = memberRole !== undefined;
             typeSafeLogger.logUserAction("Organization retrieved", { organizationId: org.id });
-            res.status(200).json(org);
+            const sanitized = sanitizeOrganization(org, isMember, memberRole);
+            res.status(200).json(sanitized);
         } catch (error) {
             return next(
                 toAppError(error, { message: "Failed to retrieve organization", code: "INTERNAL_ERROR", statusCode: 500 })
@@ -107,8 +118,16 @@ const organizationController = {
             typeSafeLogger.logRequest("Received request to fetch all organizations", { method: req.method, path: req.path });
 
             const orgs = await organizationService.getOrganizations();
+            const userId = (req as any).user?.id;
+            const sanitizedOrgs = await Promise.all(
+              orgs.map(async (org) => {
+                const memberRole = userId ? (await organizationService.getMember(org.id, userId))?.role : undefined;
+                const isMember = memberRole !== undefined;
+                return sanitizeOrganization(org, isMember, memberRole);
+              })
+            );
             typeSafeLogger.logUserAction("Organizations retrieved", { organizationCount: orgs.length });
-            res.status(200).json(orgs);
+            res.status(200).json(sanitizedOrgs);
         } catch (error) {
             return next(
                 toAppError(error, { message: "Failed to retrieve organizations", code: "INTERNAL_ERROR", statusCode: 500 })
@@ -127,8 +146,10 @@ const organizationController = {
             const { name, description, websiteUrl, profilePictureUrl } = parseValidation(updateOrganizationSchema, req.body);
 
             const updatedOrg = await organizationService.updateOrganization(orgId, { name, description, websiteUrl, profilePictureUrl });
+            const memberRole = (await organizationService.getMember(orgId, userId))?.role;
             typeSafeLogger.logUserAction("Organization updated", { organizationId: updatedOrg.id });
-            res.status(200).json(updatedOrg);
+            const sanitized = sanitizeOrganization(updatedOrg, true, memberRole);
+            res.status(200).json(sanitized);
         } catch (error) {
             return next(
                 toAppError(error, { message: "Failed to update organization", code: "INTERNAL_ERROR", statusCode: 500 })

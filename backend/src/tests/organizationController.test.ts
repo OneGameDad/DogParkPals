@@ -52,6 +52,11 @@ jest.mock('../utils/validator', () => ({
   parseValidation: mockParseValidation,
 }));
 
+const mockSanitizeOrganization = jest.fn();
+jest.mock('../utils/organizationSanitizer', () => ({
+  sanitizeOrganization: mockSanitizeOrganization,
+}));
+
 // Import after all mocks
 import organizationController from '../controllers/organizationController';
 
@@ -63,6 +68,17 @@ const mockOrgData = {
   websiteUrl: 'https://dogloversclub.com',
   ownerId: 1,
   memberRole: 'OWNER',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+
+const mockSanitizedOrgData = {
+  id: 1,
+  name: 'Dog Lovers Club',
+  profilePictureUrl: 'https://example.com/org.jpg',
+  websiteUrl: 'https://dogloversclub.com',
+  description: 'A club for dog lovers',
+  ownerId: 1,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -107,6 +123,9 @@ describe('Organization Controller', () => {
 
     // Default parseValidation behavior
     mockParseValidation.mockImplementation((schema, data) => data);
+    
+    // Default sanitizeOrganization behavior
+    mockSanitizeOrganization.mockImplementation((org) => mockSanitizedOrgData);
   });
 
   describe('createOrganization', () => {
@@ -121,8 +140,9 @@ describe('Organization Controller', () => {
 
       expect(mockCreateOrganization).toHaveBeenCalledWith('Dog Lovers Club', 'A club', 'https://example.com');
       expect(mockAddMember).toHaveBeenCalledWith(1, 1, 'OWNER');
+      expect(mockSanitizeOrganization).toHaveBeenCalledWith(mockOrgData, true, 'OWNER');
       expect(mockStatus).toHaveBeenCalledWith(201);
-      expect(mockJson).toHaveBeenCalledWith(mockOrgData);
+      expect(mockJson).toHaveBeenCalledWith(mockSanitizedOrgData);
     });
 
     test('should return conflict error when organization name exists', async () => {
@@ -150,14 +170,18 @@ describe('Organization Controller', () => {
   describe('getOrganizationByName', () => {
     test('should return organization when found', async () => {
       mockReq.params = { name: 'Dog Lovers Club' };
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
       mockParseValidation.mockReturnValue({ name: 'Dog Lovers Club' });
       mockGetOrganizationByName.mockResolvedValue(mockOrgData);
+      mockGetMember.mockResolvedValue(null);
 
       await organizationController.getOrganizationByName(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockGetOrganizationByName).toHaveBeenCalledWith('Dog Lovers Club');
+      expect(mockGetMember).toHaveBeenCalledWith(1, 1);
+      expect(mockSanitizeOrganization).toHaveBeenCalled();
       expect(mockStatus).toHaveBeenCalledWith(200);
-      expect(mockJson).toHaveBeenCalledWith(mockOrgData);
+      expect(mockJson).toHaveBeenCalledWith(mockSanitizedOrgData);
     });
 
     test('should throw not found error when organization does not exist', async () => {
@@ -174,14 +198,18 @@ describe('Organization Controller', () => {
   describe('getOrganizationById', () => {
     test('should return organization when found', async () => {
       mockReq.params = { id: '1' };
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
       mockParseValidation.mockReturnValue({ organizationId: 1 });
       mockGetOrganizationById.mockResolvedValue(mockOrgData);
+      mockGetMember.mockResolvedValue(null);
 
       await organizationController.getOrganizationById(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockGetOrganizationById).toHaveBeenCalledWith(1);
+      expect(mockGetMember).toHaveBeenCalledWith(1, 1);
+      expect(mockSanitizeOrganization).toHaveBeenCalled();
       expect(mockStatus).toHaveBeenCalledWith(200);
-      expect(mockJson).toHaveBeenCalledWith(mockOrgData);
+      expect(mockJson).toHaveBeenCalledWith(mockSanitizedOrgData);
     });
 
     test('should throw not found error when organization does not exist', async () => {
@@ -197,14 +225,18 @@ describe('Organization Controller', () => {
 
   describe('getOrganizations', () => {
     test('should return all organizations', async () => {
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
       const orgs = [mockOrgData, { ...mockOrgData, id: 2, name: 'Cat Lovers Club' }];
       mockGetOrganizations.mockResolvedValue(orgs);
+      mockGetMember.mockResolvedValue(null);
 
       await organizationController.getOrganizations(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockGetOrganizations).toHaveBeenCalled();
+      expect(mockGetMember).toHaveBeenCalledTimes(2);
+      expect(mockSanitizeOrganization).toHaveBeenCalledTimes(2);
       expect(mockStatus).toHaveBeenCalledWith(200);
-      expect(mockJson).toHaveBeenCalledWith(orgs);
+      expect(mockJson).toHaveBeenCalledWith([mockSanitizedOrgData, mockSanitizedOrgData]);
     });
 
     test('should handle service errors', async () => {
@@ -225,12 +257,15 @@ describe('Organization Controller', () => {
         .mockReturnValueOnce({ name: 'Updated Name' });
       mockGetOrganizationById.mockResolvedValue(mockOrgData);
       mockGetMember.mockResolvedValue({ ...mockMemberData, userId: 1, role: 'OWNER' });
-      mockUpdateOrganization.mockResolvedValue({ ...mockOrgData, name: 'Updated Name' });
+      const updatedOrg = { ...mockOrgData, name: 'Updated Name' };
+      mockUpdateOrganization.mockResolvedValue(updatedOrg);
 
       await organizationController.updateOrganization(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockUpdateOrganization).toHaveBeenCalled();
+      expect(mockSanitizeOrganization).toHaveBeenCalledWith(updatedOrg, true, 'OWNER');
       expect(mockStatus).toHaveBeenCalledWith(200);
+      expect(mockJson).toHaveBeenCalledWith(mockSanitizedOrgData);
     });
 
     test('should throw forbidden error when user is not authorized', async () => {

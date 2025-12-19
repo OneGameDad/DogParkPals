@@ -257,8 +257,28 @@ const organizationService = {
           user: true,
         },
       });
-      typeSafeLogger.info('Organization members fetched successfully', { organizationId, count: members.length });
-      return members;
+      
+      // Sort members by role priority: INVITEE(1) < MEMBER(2) < MODERATOR(3) < OWNER(4) < BANNER(5)
+      const roleOrder: Record<string, number> = {
+        INVITEE: 1,
+        MEMBER: 2,
+        MODERATOR: 3,
+        OWNER: 4,
+        BANNED: 5,
+      };
+      
+      const sortedMembers = members.sort((a, b) => {
+        const orderA = roleOrder[a.role] ?? 0;
+        const orderB = roleOrder[b.role] ?? 0;
+        if (orderA !== orderB) {
+          return orderA - orderB;
+        }
+        // Secondary sort by joinedAt (oldest first)
+        return new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime();
+      });
+      
+      typeSafeLogger.info('Organization members fetched successfully', { organizationId, count: sortedMembers.length });
+      return sortedMembers;
     } catch (error) {
       const appError = toAppError(error, {
         message: 'Failed to fetch organization members',
@@ -318,8 +338,27 @@ const organizationService = {
         }),
       ]);
 
-      typeSafeLogger.info('Organization details fetched successfully', { organizationId, memberCount: members.length, eventCount: events.length });
-      return { org, members, events };
+      // Sort members by role priority: INVITEE(1) < MEMBER(2) < MODERATOR(3) < OWNER(4) < BANNER(5)
+      const roleOrder: Record<string, number> = {
+        INVITEE: 1,
+        MEMBER: 2,
+        MODERATOR: 3,
+        OWNER: 4,
+        BANNED: 5,
+      };
+      
+      const sortedMembers = members.sort((a, b) => {
+        const orderA = roleOrder[a.role] ?? 0;
+        const orderB = roleOrder[b.role] ?? 0;
+        if (orderA !== orderB) {
+          return orderA - orderB;
+        }
+        // Secondary sort by joinedAt (oldest first)
+        return new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime();
+      });
+
+      typeSafeLogger.info('Organization details fetched successfully', { organizationId, memberCount: sortedMembers.length, eventCount: events.length });
+      return { org, members: sortedMembers, events };
     } catch (error) {
       const appError = toAppError(error, {
         message: 'Failed to fetch organization with details',

@@ -9,6 +9,7 @@ const router = express.Router();
 // TODO: Add authenticate middleware to all routes: router.use(authenticate)
 router.post("/organizations", organizationController.createOrganization);
 router.get("/organizations/name/:name", organizationController.getOrganizationByName);
+router.get("/organizations/:id/details", organizationController.getOrganizationWithDetails);
 router.get("/organizations/:id", organizationController.getOrganizationById);
 router.get("/organizations", organizationController.getOrganizations);
 router.put("/organizations/:id", organizationController.updateOrganization);

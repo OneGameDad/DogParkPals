@@ -739,8 +739,9 @@ describe('Organization Service', () => {
       const result = await organizationService.getOrganizationWithDetails(1);
 
       expect(result!.members[0].user).toBeDefined();
-      expect(result!.members[0].user.username).toBe('alice');
-      expect(result!.members[1].user.username).toBe('bob');
+      // Members are sorted by role: MEMBER (bob) comes before OWNER (alice)
+      expect(result!.members[0].user.username).toBe('bob');
+      expect(result!.members[1].user.username).toBe('alice');
     });
 
     test('should include organizer and park details in event objects', async () => {

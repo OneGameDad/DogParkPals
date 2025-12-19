@@ -281,6 +281,96 @@ const organizationController = {
             );
         }
     },
+
+    getOrganizationWithDetails: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            typeSafeLogger.logRequest("Received request to fetch organization with full details", { method: req.method, path: req.path });
+            const { organizationId } = parseValidation(getOrganizationByIdSchema, { organizationId: parseInt(req.params.id, 10) });
+            const orgId = organizationId;
+
+            const details = await organizationService.getOrganizationWithDetails(orgId);
+            if (!details) {
+                throw NotFoundError("Organization not found");
+            }
+
+            const userId = (req as any).user?.id;
+            const userRole = (req as any).user?.role;
+            const member = userId ? await organizationService.getMember(orgId, userId) : null;
+            const memberRole = member?.role;
+            const isMember = memberRole !== undefined;
+            const isAdmin = userRole === 'ADMIN' || userRole === 'DEVELOPER';
+
+            // Sanitize base org data
+            const sanitized = sanitizeOrganization(details.org, isMember, memberRole);
+
+            // Filter members based on membership level
+            let visibleMembers = details.members;
+            let visibleEvents = details.events;
+
+            if (!isMember && !isAdmin) {
+                // Non-members: only see OWNER info and public events
+                visibleMembers = details.members.filter(m => m.role === 'OWNER');
+                visibleEvents = details.events.filter(e => e.private === 'PUBLIC');
+            } else if (isMember && memberRole === 'MEMBER') {
+                // Regular members: see all events
+                visibleEvents = details.events;
+            }
+            // Moderators/Owners/Admins: see all members and events
+
+            // Sanitize member data based on access level
+            const sanitizedMembers = visibleMembers.map(m => ({
+                userId: m.userId,
+                organizationId: m.organizationId,
+                role: m.role,
+                joinedAt: m.joinedAt,
+                user: isMember || isAdmin ? {
+                    id: m.user.id,
+                    username: m.user.username,
+                    first_name: m.user.first_name,
+                    last_name: m.user.last_name,
+                    profilePictureUrl: m.user.profilePictureUrl,
+                } : {
+                    id: m.user.id,
+                    username: m.user.username,
+                },
+            }));
+
+            // Sanitize event data based on access level
+            const sanitizedEvents = visibleEvents.map(e => ({
+                id: e.id,
+                title: e.title,
+                description: e.description,
+                date: e.date,
+                startTime: e.startTime,
+                endTime: e.endTime,
+                private: e.private,
+                parkId: e.parkId,
+                park: e.park,
+                organizerId: e.organizerId,
+                organizer: {
+                    id: e.organizer.id,
+                    username: e.organizer.username,
+                    profilePictureUrl: e.organizer.profilePictureUrl,
+                },
+                ...(isMember || isAdmin ? {
+                    createdAt: e.createdAt,
+                    updatedAt: e.updatedAt,
+                } : {}),
+            }));
+
+            typeSafeLogger.logUserAction("Organization with details retrieved", { organizationId: orgId, accessLevel: isMember ? memberRole : (isAdmin ? 'ADMIN' : 'PUBLIC') });
+            res.status(200).json({
+                ...sanitized,
+                members: sanitizedMembers,
+                events: sanitizedEvents,
+                accessLevel: isMember ? memberRole : (isAdmin ? 'ADMIN' : 'PUBLIC'),
+            });
+        } catch (error) {
+            return next(
+                toAppError(error, { message: "Failed to retrieve organization details", code: "INTERNAL_ERROR", statusCode: 500 })
+            );
+        }
+    },
 };
 
 export default organizationController;

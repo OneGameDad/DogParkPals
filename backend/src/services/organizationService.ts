@@ -293,6 +293,42 @@ const organizationService = {
       throw appError;
     }
   },
+
+  async getOrganizationWithDetails(organizationId: number) {
+    const validated = getOrganizationByIdSchema.parse({ organizationId });
+    typeSafeLogger.info('Fetching organization with details', { organizationId: validated.organizationId });
+    try {
+      const org = await prisma.organization.findUnique({
+        where: { id: validated.organizationId },
+      });
+
+      if (!org) {
+        typeSafeLogger.warn('Organization not found for details fetch', { organizationId });
+        return null;
+      }
+
+      const [members, events] = await Promise.all([
+        prisma.organizationMember.findMany({
+          where: { organizationId: validated.organizationId },
+          include: { user: true },
+        }),
+        prisma.event.findMany({
+          where: { organizationId: validated.organizationId },
+          include: { organizer: true, park: true },
+        }),
+      ]);
+
+      typeSafeLogger.info('Organization details fetched successfully', { organizationId, memberCount: members.length, eventCount: events.length });
+      return { org, members, events };
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to fetch organization with details',
+        code: 'FETCH_ORGANIZATION_DETAILS_FAILED',
+      });
+      typeSafeLogger.logError('Failed to fetch organization with details', appError, { organizationId });
+      throw appError;
+    }
+  },
 };
 
 export default organizationService;

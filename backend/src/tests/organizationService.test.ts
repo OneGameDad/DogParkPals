@@ -17,6 +17,9 @@ const mockPrisma: any = {
     update: jest.fn(),
     delete: jest.fn(),
   },
+  event: {
+    findMany: jest.fn(),
+  },
 };
 
 jest.mock('@prisma/client', () => {
@@ -545,6 +548,212 @@ describe('Organization Service', () => {
       mockPrisma.organizationMember.findUnique.mockRejectedValue(new Error('Database error'));
 
       await expect(organizationService.isMember(1, 2)).rejects.toThrow();
+    });
+  });
+
+  describe('getOrganizationWithDetails', () => {
+    const sampleMembers = [
+      {
+        ...mockMemberData,
+        userId: 1,
+        role: 'OWNER',
+        user: {
+          id: 1,
+          email: 'alice@example.com',
+          username: 'alice',
+          first_name: 'Alice',
+          last_name: null,
+          profilePictureUrl: null,
+          password_hash: 'hash',
+          latitude: null,
+          longitude: null,
+          role: 'CLIENT',
+          ExpPoints: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      },
+      {
+        ...mockMemberData,
+        userId: 2,
+        role: 'MEMBER',
+        user: {
+          id: 2,
+          email: 'bob@example.com',
+          username: 'bob',
+          first_name: 'Bob',
+          last_name: null,
+          profilePictureUrl: null,
+          password_hash: 'hash',
+          latitude: null,
+          longitude: null,
+          role: 'CLIENT',
+          ExpPoints: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      },
+    ];
+
+    const sampleEvents = [
+      {
+        id: 1,
+        title: 'Event 1',
+        description: 'First event',
+        date: new Date(),
+        startTime: new Date(),
+        endTime: new Date(),
+        private: 'PUBLIC',
+        parkId: 1,
+        organizerId: 1,
+        organizationId: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        park: { id: 1, name: 'Central Park', latitude: 40.7, longitude: -73.9, description: null, separateSmallDogArea: false, amenities: null, profilePictureUrl: null, createdAt: new Date(), updatedAt: new Date() },
+        organizer: { id: 1, email: 'alice@example.com', username: 'alice', first_name: 'Alice', last_name: null, profilePictureUrl: null, password_hash: 'hash', latitude: null, longitude: null, role: 'CLIENT', ExpPoints: 0, createdAt: new Date(), updatedAt: new Date() },
+      },
+      {
+        id: 2,
+        title: 'Event 2',
+        description: 'Second event',
+        date: new Date(),
+        startTime: new Date(),
+        endTime: new Date(),
+        private: 'PRIVATE',
+        parkId: 1,
+        organizerId: 1,
+        organizationId: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        park: { id: 1, name: 'Central Park', latitude: 40.7, longitude: -73.9, description: null, separateSmallDogArea: false, amenities: null, profilePictureUrl: null, createdAt: new Date(), updatedAt: new Date() },
+        organizer: { id: 1, email: 'alice@example.com', username: 'alice', first_name: 'Alice', last_name: null, profilePictureUrl: null, password_hash: 'hash', latitude: null, longitude: null, role: 'CLIENT', ExpPoints: 0, createdAt: new Date(), updatedAt: new Date() },
+      },
+    ];
+
+    test('should return organization with members and events', async () => {
+      mockPrisma.organization.findUnique.mockResolvedValue(mockOrgData);
+      mockPrisma.organizationMember.findMany.mockResolvedValue(sampleMembers);
+      mockPrisma.event.findMany.mockResolvedValue(sampleEvents);
+
+      const result = await organizationService.getOrganizationWithDetails(1);
+
+      expect(result).toBeDefined();
+      expect(result!.org).toEqual(mockOrgData);
+      expect(result!.members).toEqual(sampleMembers);
+      expect(result!.events).toEqual(sampleEvents);
+      expect(result!.members.length).toBe(2);
+      expect(result!.events.length).toBe(2);
+    });
+
+    test('should fetch members with user include', async () => {
+      mockPrisma.organization.findUnique.mockResolvedValue(mockOrgData);
+      mockPrisma.organizationMember.findMany.mockResolvedValue(sampleMembers);
+      mockPrisma.event.findMany.mockResolvedValue([]);
+
+      await organizationService.getOrganizationWithDetails(1);
+
+      expect(mockPrisma.organizationMember.findMany).toHaveBeenCalledWith({
+        where: { organizationId: 1 },
+        include: { user: true },
+      });
+    });
+
+    test('should fetch events with organizer and park include', async () => {
+      mockPrisma.organization.findUnique.mockResolvedValue(mockOrgData);
+      mockPrisma.organizationMember.findMany.mockResolvedValue([]);
+      mockPrisma.event.findMany.mockResolvedValue(sampleEvents);
+
+      await organizationService.getOrganizationWithDetails(1);
+
+      expect(mockPrisma.event.findMany).toHaveBeenCalledWith({
+        where: { organizationId: 1 },
+        include: { organizer: true, park: true },
+      });
+    });
+
+    test('should return null when organization not found', async () => {
+      mockPrisma.organization.findUnique.mockResolvedValue(null);
+
+      const result = await organizationService.getOrganizationWithDetails(999);
+
+      expect(result).toBeNull();
+      expect(mockPrisma.organizationMember.findMany).not.toHaveBeenCalled();
+      expect(mockPrisma.event.findMany).not.toHaveBeenCalled();
+    });
+
+    test('should fetch members and events in parallel', async () => {
+      mockPrisma.organization.findUnique.mockResolvedValue(mockOrgData);
+      mockPrisma.organizationMember.findMany.mockResolvedValue(sampleMembers);
+      mockPrisma.event.findMany.mockResolvedValue(sampleEvents);
+
+      const result = await organizationService.getOrganizationWithDetails(1);
+
+      expect(result).toBeDefined();
+      expect(result!.members).toHaveLength(2);
+      expect(result!.events).toHaveLength(2);
+      // Verify both were called (would fail if one wasn't called due to early return)
+      expect(mockPrisma.organizationMember.findMany).toHaveBeenCalled();
+      expect(mockPrisma.event.findMany).toHaveBeenCalled();
+    });
+
+    test('should return empty members and events arrays when none exist', async () => {
+      mockPrisma.organization.findUnique.mockResolvedValue(mockOrgData);
+      mockPrisma.organizationMember.findMany.mockResolvedValue([]);
+      mockPrisma.event.findMany.mockResolvedValue([]);
+
+      const result = await organizationService.getOrganizationWithDetails(1);
+
+      expect(result).toBeDefined();
+      expect(result!.members).toEqual([]);
+      expect(result!.events).toEqual([]);
+      expect(result!.org).toEqual(mockOrgData);
+    });
+
+    test('should throw error when member fetch fails', async () => {
+      mockPrisma.organization.findUnique.mockResolvedValue(mockOrgData);
+      mockPrisma.organizationMember.findMany.mockRejectedValue(new Error('Database error'));
+      mockPrisma.event.findMany.mockResolvedValue([]);
+
+      await expect(organizationService.getOrganizationWithDetails(1)).rejects.toThrow('Failed to fetch organization with details');
+    });
+
+    test('should throw error when event fetch fails', async () => {
+      mockPrisma.organization.findUnique.mockResolvedValue(mockOrgData);
+      mockPrisma.organizationMember.findMany.mockResolvedValue(sampleMembers);
+      mockPrisma.event.findMany.mockRejectedValue(new Error('Database error'));
+
+      await expect(organizationService.getOrganizationWithDetails(1)).rejects.toThrow('Failed to fetch organization with details');
+    });
+
+    test('should throw error when organization fetch fails', async () => {
+      mockPrisma.organization.findUnique.mockRejectedValue(new Error('Database error'));
+
+      await expect(organizationService.getOrganizationWithDetails(1)).rejects.toThrow('Failed to fetch organization with details');
+    });
+
+    test('should include user details in member objects', async () => {
+      mockPrisma.organization.findUnique.mockResolvedValue(mockOrgData);
+      mockPrisma.organizationMember.findMany.mockResolvedValue(sampleMembers);
+      mockPrisma.event.findMany.mockResolvedValue([]);
+
+      const result = await organizationService.getOrganizationWithDetails(1);
+
+      expect(result!.members[0].user).toBeDefined();
+      expect(result!.members[0].user.username).toBe('alice');
+      expect(result!.members[1].user.username).toBe('bob');
+    });
+
+    test('should include organizer and park details in event objects', async () => {
+      mockPrisma.organization.findUnique.mockResolvedValue(mockOrgData);
+      mockPrisma.organizationMember.findMany.mockResolvedValue([]);
+      mockPrisma.event.findMany.mockResolvedValue(sampleEvents);
+
+      const result = await organizationService.getOrganizationWithDetails(1);
+
+      expect(result!.events[0].organizer).toBeDefined();
+      expect(result!.events[0].organizer.username).toBe('alice');
+      expect(result!.events[0].park).toBeDefined();
+      expect(result!.events[0].park.name).toBe('Central Park');
     });
   });
 });

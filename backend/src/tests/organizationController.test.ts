@@ -454,9 +454,9 @@ describe('Organization Controller', () => {
       ];
       mockGetMembers.mockResolvedValue(members);
 
-      await organizationController.getMembers(mockReq as Request, mockRes as Response, mockNext);
+      const result = await organizationController.getMembers(mockReq as Request, mockRes as Response, mockNext);
 
-      expect(mockGetMembers).toHaveBeenCalledWith(1);
+      expect(mockGetMembers).toHaveBeenCalledWith(1, 'role', 'asc');
       expect(mockStatus).toHaveBeenCalledWith(200);
       expect(mockJson).toHaveBeenCalledWith(members);
     });
@@ -551,7 +551,7 @@ describe('Organization Controller', () => {
 
       await organizationController.getOrganizationWithDetails(mockReq as Request, mockRes as Response, mockNext);
 
-      expect(mockGetOrganizationWithDetails).toHaveBeenCalledWith(1);
+      expect(mockGetOrganizationWithDetails).toHaveBeenCalledWith(1, 'role', 'asc');
       expect(mockStatus).toHaveBeenCalledWith(200);
       const call = mockJson.mock.calls[0][0] as any;
       expect(call.members).toHaveLength(1);
@@ -573,7 +573,7 @@ describe('Organization Controller', () => {
 
       await organizationController.getOrganizationWithDetails(mockReq as Request, mockRes as Response, mockNext);
 
-      expect(mockGetOrganizationWithDetails).toHaveBeenCalledWith(1);
+      expect(mockGetOrganizationWithDetails).toHaveBeenCalledWith(1, 'role', 'asc');
       expect(mockStatus).toHaveBeenCalledWith(200);
       const call = mockJson.mock.calls[0][0] as any;
       expect(call.members).toHaveLength(1);

@@ -16,6 +16,8 @@ const mockGetMember = jest.fn<any>();
 const mockGetMembers = jest.fn<any>();
 const mockIsMember = jest.fn<any>();
 
+const mockGetOrganizationWithDetails = jest.fn<any>();
+
 jest.mock('../services/organizationService', () => ({
   __esModule: true,
   default: {
@@ -31,6 +33,7 @@ jest.mock('../services/organizationService', () => ({
     getMember: mockGetMember,
     getMembers: mockGetMembers,
     isMember: mockIsMember,
+    getOrganizationWithDetails: mockGetOrganizationWithDetails,
   },
 }));
 
@@ -492,6 +495,144 @@ describe('Organization Controller', () => {
       expect(mockIsMember).toHaveBeenCalledWith(1, 999);
       expect(mockStatus).toHaveBeenCalledWith(200);
       expect(mockJson).toHaveBeenCalledWith({ isMember: false });
+    });
+  });
+
+  describe('getOrganizationWithDetails', () => {
+    const sampleMember = {
+      userId: 2,
+      organizationId: 1,
+      role: 'MODERATOR',
+      joinedAt: new Date(),
+      user: {
+        id: 2,
+        email: 'bob@example.com',
+        username: 'bob',
+        first_name: 'Bob',
+        last_name: 'Smith',
+        profilePictureUrl: 'https://example.com/bob.jpg',
+        password_hash: 'hash',
+        latitude: null,
+        longitude: null,
+        role: 'CLIENT',
+        ExpPoints: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    };
+
+    const sampleEvent = {
+      id: 1,
+      title: 'Organization Event',
+      description: 'An event for members',
+      date: new Date(),
+      startTime: new Date(),
+      endTime: new Date(),
+      private: 'PUBLIC',
+      parkId: 1,
+      park: { id: 1, name: 'Central Park', latitude: 40.7, longitude: -73.9, description: null, separateSmallDogArea: false, amenities: null, profilePictureUrl: null, createdAt: new Date(), updatedAt: new Date() },
+      organizerId: 1,
+      organizer: { id: 1, email: 'alice@example.com', username: 'alice', first_name: 'Alice', last_name: null, profilePictureUrl: null, password_hash: 'hash', latitude: null, longitude: null, role: 'CLIENT', ExpPoints: 0, createdAt: new Date(), updatedAt: new Date() },
+      organizationId: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    test('should return organization with details for member with OWNER role', async () => {
+      mockReq.params = { id: '1' };
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+      mockParseValidation.mockReturnValue({ organizationId: 1 });
+      mockGetOrganizationWithDetails.mockResolvedValue({
+        org: mockOrgData,
+        members: [sampleMember],
+        events: [sampleEvent],
+      });
+      mockGetMember.mockResolvedValue({ ...sampleMember, role: 'OWNER' });
+
+      await organizationController.getOrganizationWithDetails(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockGetOrganizationWithDetails).toHaveBeenCalledWith(1);
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      const call = mockJson.mock.calls[0][0] as any;
+      expect(call.members).toHaveLength(1);
+      expect(call.events).toHaveLength(1);
+      expect(call.accessLevel).toBe('OWNER');
+      expect(call.members[0].user.first_name).toBe('Bob');
+    });
+
+    test('should filter data for non-member (only OWNER visible, PUBLIC events)', async () => {
+      mockReq.params = { id: '1' };
+      (mockReq as any).user = { id: 999, role: 'CLIENT' };
+      mockParseValidation.mockReturnValue({ organizationId: 1 });
+      mockGetOrganizationWithDetails.mockResolvedValue({
+        org: mockOrgData,
+        members: [sampleMember, { ...sampleMember, role: 'OWNER', userId: 1 }],
+        events: [sampleEvent, { ...sampleEvent, id: 2, private: 'PRIVATE' }],
+      });
+      mockGetMember.mockResolvedValue(null);
+
+      await organizationController.getOrganizationWithDetails(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockGetOrganizationWithDetails).toHaveBeenCalledWith(1);
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      const call = mockJson.mock.calls[0][0] as any;
+      expect(call.members).toHaveLength(1);
+      expect(call.members[0].role).toBe('OWNER');
+      expect(call.events).toHaveLength(1);
+      expect(call.events[0].private).toBe('PUBLIC');
+      expect(call.accessLevel).toBe('PUBLIC');
+      expect(call.members[0].user.first_name).toBeUndefined();
+    });
+
+    test('should show limited member info for MEMBER role', async () => {
+      mockReq.params = { id: '1' };
+      (mockReq as any).user = { id: 2, role: 'CLIENT' };
+      mockParseValidation.mockReturnValue({ organizationId: 1 });
+      mockGetOrganizationWithDetails.mockResolvedValue({
+        org: mockOrgData,
+        members: [sampleMember],
+        events: [sampleEvent],
+      });
+      mockGetMember.mockResolvedValue({ ...sampleMember, role: 'MEMBER' });
+
+      await organizationController.getOrganizationWithDetails(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      const call = mockJson.mock.calls[0][0] as any;
+      expect(call.accessLevel).toBe('MEMBER');
+      expect(call.members[0].user.first_name).toBe('Bob');
+      expect(call.events[0].createdAt).toBeDefined();
+    });
+
+    test('should show full details for ADMIN user', async () => {
+      mockReq.params = { id: '1' };
+      (mockReq as any).user = { id: 999, role: 'ADMIN' };
+      mockParseValidation.mockReturnValue({ organizationId: 1 });
+      mockGetOrganizationWithDetails.mockResolvedValue({
+        org: mockOrgData,
+        members: [sampleMember],
+        events: [sampleEvent],
+      });
+      mockGetMember.mockResolvedValue(null);
+
+      await organizationController.getOrganizationWithDetails(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      const call = mockJson.mock.calls[0][0] as any;
+      expect(call.accessLevel).toBe('ADMIN');
+      expect(call.members).toHaveLength(1);
+      expect(call.events).toHaveLength(1);
+      expect(call.events[0].createdAt).toBeDefined();
+    });
+
+    test('should throw not found error when organization does not exist', async () => {
+      mockReq.params = { id: '999' };
+      mockParseValidation.mockReturnValue({ organizationId: 999 });
+      mockGetOrganizationWithDetails.mockResolvedValue(null);
+
+      await organizationController.getOrganizationWithDetails(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalled();
     });
   });
 });

@@ -256,8 +256,13 @@ const organizationController = {
             typeSafeLogger.logRequest("Received request to get members of organization", { method: req.method, path: req.path });
             const { organizationId } = parseValidation(getMembersSchema, { organizationId: parseInt(req.params.id, 10) });
             const orgId = organizationId;
-            const members = await organizationService.getMembers(orgId);
-            typeSafeLogger.logUserAction("Organization members retrieved", { organizationId: orgId, memberCount: members.length });
+            
+            // Extract query parameters for sorting
+            const sortBy = (req.query.sortBy as string) || 'role';
+            const order = (req.query.order as 'asc' | 'desc') || 'asc';
+            
+            const members = await organizationService.getMembers(orgId, sortBy, order);
+            typeSafeLogger.logUserAction("Organization members retrieved", { organizationId: orgId, memberCount: members.length, sortBy, order });
             res.status(200).json(members);
         } catch (error) {
             return next(
@@ -288,7 +293,11 @@ const organizationController = {
             const { organizationId } = parseValidation(getOrganizationByIdSchema, { organizationId: parseInt(req.params.id, 10) });
             const orgId = organizationId;
 
-            const details = await organizationService.getOrganizationWithDetails(orgId);
+            // Extract query parameters for sorting members
+            const sortBy = (req.query.sortBy as string) || 'role';
+            const order = (req.query.order as 'asc' | 'desc') || 'asc';
+
+            const details = await organizationService.getOrganizationWithDetails(orgId, sortBy, order);
             if (!details) {
                 throw NotFoundError("Organization not found");
             }

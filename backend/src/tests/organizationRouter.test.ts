@@ -15,6 +15,7 @@ const mockUpdateMemberRole = jest.fn();
 const mockGetMember = jest.fn();
 const mockGetMembers = jest.fn();
 const mockIsMember = jest.fn();
+const mockGetOrganizationWithDetails = jest.fn();
 
 jest.mock('../controllers/organizationController', () => ({
   __esModule: true,
@@ -31,6 +32,7 @@ jest.mock('../controllers/organizationController', () => ({
     getMember: jest.fn((req: any, res: any, next: any) => mockGetMember(req, res, next)),
     getMembers: jest.fn((req: any, res: any, next: any) => mockGetMembers(req, res, next)),
     isMember: jest.fn((req: any, res: any, next: any) => mockIsMember(req, res, next)),
+    getOrganizationWithDetails: jest.fn((req: any, res: any, next: any) => mockGetOrganizationWithDetails(req, res, next)),
   },
 }));
 
@@ -115,6 +117,63 @@ describe('Organization Router', () => {
       await request(app).get('/organizations/name/Dog%20Lovers%20Club');
 
       expect(mockGetOrganizationByName).toHaveBeenCalled();
+    });
+  });
+
+  describe('GET /organizations/:id/details', () => {
+    test('should call getOrganizationWithDetails with id parameter', async () => {
+      mockGetOrganizationWithDetails.mockImplementation((req: any, res: any) => {
+        res.status(200).json({
+          ...mockOrgData,
+          members: [mockMemberData],
+          events: [],
+          accessLevel: 'OWNER',
+        });
+      });
+
+      await request(app)
+        .get('/organizations/1/details')
+        .expect(200);
+
+      expect(mockGetOrganizationWithDetails).toHaveBeenCalled();
+    });
+
+    test('should pass id parameter correctly', async () => {
+      mockGetOrganizationWithDetails.mockImplementation((req: any, res: any) => {
+        expect(req.params.id).toBe('1');
+        res.status(200).json({
+          ...mockOrgData,
+          members: [],
+          events: [],
+          accessLevel: 'MEMBER',
+        });
+      });
+
+      await request(app).get('/organizations/1/details');
+
+      expect(mockGetOrganizationWithDetails).toHaveBeenCalled();
+    });
+
+    test('should return organization with members and events', async () => {
+      const detailedResponse = {
+        ...mockOrgData,
+        members: [mockMemberData],
+        events: [{ id: 1, title: 'Test Event', organizationId: 1 }],
+        accessLevel: 'OWNER',
+      };
+
+      mockGetOrganizationWithDetails.mockImplementation((req: any, res: any) => {
+        res.status(200).json(detailedResponse);
+      });
+
+      const response = await request(app)
+        .get('/organizations/1/details')
+        .expect(200);
+
+      expect(mockGetOrganizationWithDetails).toHaveBeenCalled();
+      expect(response.body).toHaveProperty('members');
+      expect(response.body).toHaveProperty('events');
+      expect(response.body).toHaveProperty('accessLevel');
     });
   });
 

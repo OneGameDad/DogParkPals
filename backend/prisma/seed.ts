@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { PrismaClient, DogBreed, DogPlaystyle, DogSize, EventPrivacy } from "@prisma/client";
+import { PrismaClient, DogBreed, DogPlaystyle, DogSize, EventPrivacy, OrgRole } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -37,6 +37,24 @@ async function main() {
     },
   });
 
+  // Organizations
+  const org1 = await prisma.organization.create({
+    data: {
+      name: "Friends of Central Dog Park",
+      description: "Community group organizing dog-friendly events.",
+      ownerId: user.id,
+      websiteUrl: "https://central-dog-park.example.com",
+    },
+  });
+
+  const org2 = await prisma.organization.create({
+    data: {
+      name: "Dogs United NYC",
+      description: "Non-profit promoting responsible dog ownership.",
+      ownerId: userBob.id,
+    },
+  });
+
   const dog = await prisma.dog.create({
     data: {
       name: "Rex",
@@ -67,6 +85,25 @@ async function main() {
     create: { userId: user.id, parkId: park.id },
   });
 
+  // Organization memberships
+  await prisma.organizationMember.upsert({
+    where: { userId_organizationId: { userId: user.id, organizationId: org1.id } },
+    update: { role: OrgRole.OWNER },
+    create: { userId: user.id, organizationId: org1.id, role: OrgRole.OWNER },
+  });
+
+  await prisma.organizationMember.upsert({
+    where: { userId_organizationId: { userId: userBob.id, organizationId: org1.id } },
+    update: { role: OrgRole.MEMBER },
+    create: { userId: userBob.id, organizationId: org1.id, role: OrgRole.MEMBER },
+  });
+
+  await prisma.organizationMember.upsert({
+    where: { userId_organizationId: { userId: userBob.id, organizationId: org2.id } },
+    update: { role: OrgRole.OWNER },
+    create: { userId: userBob.id, organizationId: org2.id, role: OrgRole.OWNER },
+  });
+
   await prisma.event.create({
     data: {
       title: "Morning Meetup",
@@ -77,6 +114,21 @@ async function main() {
       private: EventPrivacy.PUBLIC,
       park: { connect: { id: park.id } },
       organizer: { connect: { id: user.id } },
+    },
+  });
+
+  // Event associated to organization
+  await prisma.event.create({
+    data: {
+      title: "Weekend Charity Walk",
+      date: new Date(new Date().setDate(new Date().getDate() + 7)),
+      startTime: new Date(new Date().setHours(10, 0, 0, 0)),
+      endTime: new Date(new Date().setHours(12, 0, 0, 0)),
+      description: "Join us for a charity walk organized by Friends of Central Dog Park.",
+      private: EventPrivacy.PUBLIC,
+      park: { connect: { id: park.id } },
+      organizer: { connect: { id: userBob.id } },
+      organization: { connect: { id: org1.id } },
     },
   });
 

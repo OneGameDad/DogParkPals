@@ -173,7 +173,8 @@ model Organization {
   ownerId   Int
   owner     User     @relation("OrganizationOwner", fields: [ownerId], references: [id])
   membershipRecords OrganizationMember[]
-  memberRole OrgRole @default(MEMBER)
+  memberRole OrgRole @default(INVINTEE)
+  events    Event[] @relation("OrganizationEvents")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -200,6 +201,8 @@ model Event {
   endTime     DateTime
   parkId      Int
   park        Park     @relation(fields: [parkId], references: [id])
+  organizationId Int?
+  organization   Organization? @relation("OrganizationEvents", fields: [organizationId], references: [id])
   organizerId Int
   organizer   User     @relation("EventOrganizer", fields: [organizerId], references: [id])
   comments Comment[]
@@ -267,9 +270,11 @@ model UserLevel {
 
 // Enum for user roles in the organization
 enum OrgRole {
+  INVINTEE
   MEMBER
   MODERATOR
   OWNER
+  BANNED
 }
 
 // Enum for friendship status

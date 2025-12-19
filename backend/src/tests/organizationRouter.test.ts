@@ -175,6 +175,41 @@ describe('Organization Router', () => {
       expect(response.body).toHaveProperty('events');
       expect(response.body).toHaveProperty('accessLevel');
     });
+
+    test('should pass sortBy query parameter for member sorting', async () => {
+      mockGetOrganizationWithDetails.mockImplementation((req: any, res: any) => {
+        expect(req.params.id).toBe('1');
+        expect(req.query.sortBy).toBe('email');
+        res.status(200).json({
+          ...mockOrgData,
+          members: [],
+          events: [],
+          accessLevel: 'MEMBER',
+        });
+      });
+
+      await request(app).get('/organizations/1/details?sortBy=email');
+
+      expect(mockGetOrganizationWithDetails).toHaveBeenCalled();
+    });
+
+    test('should pass both sortBy and order query parameters for member sorting', async () => {
+      mockGetOrganizationWithDetails.mockImplementation((req: any, res: any) => {
+        expect(req.params.id).toBe('1');
+        expect(req.query.sortBy).toBe('role');
+        expect(req.query.order).toBe('desc');
+        res.status(200).json({
+          ...mockOrgData,
+          members: [],
+          events: [],
+          accessLevel: 'OWNER',
+        });
+      });
+
+      await request(app).get('/organizations/1/details?sortBy=role&order=desc');
+
+      expect(mockGetOrganizationWithDetails).toHaveBeenCalled();
+    });
   });
 
   describe('GET /organizations/:id', () => {
@@ -402,6 +437,43 @@ describe('Organization Router', () => {
       });
 
       await request(app).get('/organizations/1/members');
+
+      expect(mockGetMembers).toHaveBeenCalled();
+    });
+
+    test('should pass sortBy query parameter correctly', async () => {
+      mockGetMembers.mockImplementation((req: any, res: any) => {
+        expect(req.params.id).toBe('1');
+        expect(req.query.sortBy).toBe('username');
+        res.status(200).json([mockMemberData]);
+      });
+
+      await request(app).get('/organizations/1/members?sortBy=username');
+
+      expect(mockGetMembers).toHaveBeenCalled();
+    });
+
+    test('should pass order query parameter correctly', async () => {
+      mockGetMembers.mockImplementation((req: any, res: any) => {
+        expect(req.params.id).toBe('1');
+        expect(req.query.order).toBe('desc');
+        res.status(200).json([mockMemberData]);
+      });
+
+      await request(app).get('/organizations/1/members?order=desc');
+
+      expect(mockGetMembers).toHaveBeenCalled();
+    });
+
+    test('should pass both sortBy and order query parameters', async () => {
+      mockGetMembers.mockImplementation((req: any, res: any) => {
+        expect(req.params.id).toBe('1');
+        expect(req.query.sortBy).toBe('joinedAt');
+        expect(req.query.order).toBe('desc');
+        res.status(200).json([mockMemberData]);
+      });
+
+      await request(app).get('/organizations/1/members?sortBy=joinedAt&order=desc');
 
       expect(mockGetMembers).toHaveBeenCalled();
     });

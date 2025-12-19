@@ -639,9 +639,11 @@ describe('Organization Service', () => {
 
       expect(result).toBeDefined();
       expect(result!.org).toEqual(mockOrgData);
-      expect(result!.members).toEqual(sampleMembers);
-      expect(result!.events).toEqual(sampleEvents);
+      // Members are sorted: MEMBER (bob) before OWNER (alice)
       expect(result!.members.length).toBe(2);
+      expect(result!.members[0].user.username).toBe('bob'); // MEMBER comes first
+      expect(result!.members[1].user.username).toBe('alice'); // OWNER comes second
+      expect(result!.events).toEqual(sampleEvents);
       expect(result!.events.length).toBe(2);
     });
 

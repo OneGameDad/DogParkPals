@@ -1,0 +1,5 @@
+services is for all interaction with the backends api
+
+example:
+
+const getDogs = () => api.get('/dogs')

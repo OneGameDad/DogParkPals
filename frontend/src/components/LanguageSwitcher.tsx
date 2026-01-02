@@ -18,7 +18,7 @@ const LanguageSwitcher = () => {
           aria-label={`Switch to ${lang.label}`}
           className={`px-3 py-1 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
             i18n.language === lang.code 
-              ? 'bg-green-600 text-white' 
+              ? 'bg-indigo-600 text-white' 
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >

@@ -1,9 +1,11 @@
 import LanguageSwitcher from "../components/LanguageSwitcher";
 
-export default function Settings() {
+const Settings = () => {
     return (
         <div>
             <LanguageSwitcher />
         </div>
     );
-}
+};
+
+export default Settings;

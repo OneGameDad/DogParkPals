@@ -40,7 +40,7 @@ describe('friendController', () => {
 
 		mockJson = jest.fn();
 		mockStatus = jest.fn().mockReturnValue({ json: mockJson });
-		mockReq = { body: {}, params: {} };
+		mockReq = { body: {}, params: {}, query: {} };
 		mockRes = { status: mockStatus, json: mockJson } as Partial<Response> as Response;
 		mockNext = jest.fn() as unknown as jest.MockedFunction<NextFunction>;
 	});
@@ -49,17 +49,16 @@ describe('friendController', () => {
 		test('creates friend request successfully', async () => {
 			const requesterId = 1;
 			const addresseeId = 2;
-			const mockFriendship = { requesterId, addresseeId, status: 'PENDING' };
+			const requesterDogId = undefined;
+			const addresseeDogId = undefined;
+			const mockFriendship = { id: 1, requesterId, addresseeId, requesterDogId: null, addresseeDogId: null, status: 'PENDING' };
 
-			mockParseValidation
-				.mockReturnValueOnce({ requesterId, addresseeId })
-				.mockReturnValueOnce({ requesterId, addresseeId });
-			mockGetFriend.mockResolvedValueOnce([]);
+			mockParseValidation.mockReturnValue({ requesterId, addresseeId, requesterDogId, addresseeDogId });
 			mockSendFriendRequest.mockResolvedValueOnce(mockFriendship);
 
 			await friendController.addFriend(mockReq as Request, mockRes as Response, mockNext);
 
-			expect(mockSendFriendRequest).toHaveBeenCalledWith(requesterId, addresseeId);
+			expect(mockSendFriendRequest).toHaveBeenCalledWith(requesterId, addresseeId, requesterDogId, addresseeDogId);
 			expect(mockStatus).toHaveBeenCalledWith(201);
 			expect(mockJson).toHaveBeenCalledWith(mockFriendship);
 			expect(mockNext).not.toHaveBeenCalled();
@@ -83,16 +82,15 @@ describe('friendController', () => {
 
 	describe('acceptFriendRequest', () => {
 		test('accepts request successfully', async () => {
-			const requesterId = 1;
-			const addresseeId = 2;
-			const updated = { requesterId, addresseeId, status: 'ACCEPTED' };
+			const friendshipId = 1;
+			const updated = { id: friendshipId, requesterId: 1, addresseeId: 2, requesterDogId: null, addresseeDogId: null, status: 'ACCEPTED' };
 
-			mockParseValidation.mockReturnValue({ requesterId, addresseeId });
+			mockParseValidation.mockReturnValue({ friendshipId });
 			mockAcceptFriendRequest.mockResolvedValue(updated);
 
 			await friendController.acceptFriendRequest(mockReq as Request, mockRes as Response, mockNext);
 
-			expect(mockAcceptFriendRequest).toHaveBeenCalledWith(requesterId, addresseeId);
+			expect(mockAcceptFriendRequest).toHaveBeenCalledWith(friendshipId);
 			expect(mockStatus).toHaveBeenCalledWith(200);
 			expect(mockJson).toHaveBeenCalledWith(updated);
 		});
@@ -115,16 +113,15 @@ describe('friendController', () => {
 
 	describe('declineFriendRequest', () => {
 		test('declines request successfully', async () => {
-			const requesterId = 1;
-			const addresseeId = 2;
-			const updated = { requesterId, addresseeId, status: 'REJECTED' };
+			const friendshipId = 1;
+			const updated = { id: friendshipId, requesterId: 1, addresseeId: 2, requesterDogId: null, addresseeDogId: null, status: 'REJECTED' };
 
-			mockParseValidation.mockReturnValue({ requesterId, addresseeId });
+			mockParseValidation.mockReturnValue({ friendshipId });
 			mockDeclineFriendRequest.mockResolvedValue(updated);
 
 			await friendController.declineFriendRequest(mockReq as Request, mockRes as Response, mockNext);
 
-			expect(mockDeclineFriendRequest).toHaveBeenCalledWith(requesterId, addresseeId);
+			expect(mockDeclineFriendRequest).toHaveBeenCalledWith(friendshipId);
 			expect(mockStatus).toHaveBeenCalledWith(200);
 			expect(mockJson).toHaveBeenCalledWith(updated);
 		});
@@ -149,45 +146,48 @@ describe('friendController', () => {
 		test('removes friendship successfully', async () => {
 			const userId = 1;
 			const friendId = 2;
+			const dogId = undefined;
+			const friendDogId = undefined;
 
-			mockParseValidation
-				.mockReturnValueOnce({ userId, friendId })
-				.mockReturnValueOnce({ userId, friendId });
-			mockGetFriend.mockResolvedValueOnce([{ id: friendId }]);
+			mockParseValidation.mockReturnValue({ userId, friendId, dogId, friendDogId });
 			mockRemoveFriend.mockResolvedValueOnce({ count: 1 });
 
 			await friendController.removeFriend(mockReq as Request, mockRes as Response, mockNext);
 
-			expect(mockRemoveFriend).toHaveBeenCalledWith(userId, friendId);
+			expect(mockRemoveFriend).toHaveBeenCalledWith(userId, friendId, dogId, friendDogId);
 			expect(mockStatus).toHaveBeenCalledWith(200);
 			expect(mockJson).toHaveBeenCalledWith({ message: 'Friend removed successfully' });
 		});
 
-		test('forwards not found when friendship missing', async () => {
-			const userId = 1;
-			const friendId = 2;
-
-			mockParseValidation.mockReturnValue({ userId, friendId });
-			mockGetFriend.mockResolvedValueOnce([]);
+		test('forwards validation error', async () => {
+			const validationError = new AppError('Validation failed', {
+				code: 'VALIDATION_ERROR',
+				statusCode: 400,
+			});
+			mockParseValidation.mockImplementation(() => {
+				throw validationError;
+			});
 
 			await friendController.removeFriend(mockReq as Request, mockRes as Response, mockNext);
 
-			expect(mockRemoveFriend).not.toHaveBeenCalled();
-			expect(mockNext).toHaveBeenCalled();
+			expect(mockStatus).not.toHaveBeenCalled();
+			expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
 		});
 	});
 
 	describe('getFriendsList', () => {
 		test('returns friends list', async () => {
 			const userId = 1;
-			const friends = [{ id: 2 }, { id: 3 }];
+			const dogId = undefined;
+			const friends = { users: [{ id: 2 }, { id: 3 }], dogs: [] };
 
-			mockParseValidation.mockReturnValue({ userId });
+			mockReq.query = { userId: '1' };
+			mockParseValidation.mockReturnValue({ userId, dogId });
 			mockGetFriendsList.mockResolvedValue(friends);
 
 			await friendController.getFriendsList(mockReq as Request, mockRes as Response, mockNext);
 
-			expect(mockGetFriendsList).toHaveBeenCalledWith(userId);
+			expect(mockGetFriendsList).toHaveBeenCalledWith(userId, dogId);
 			expect(mockStatus).toHaveBeenCalledWith(200);
 			expect(mockJson).toHaveBeenCalledWith(friends);
 		});
@@ -209,34 +209,35 @@ describe('friendController', () => {
 	});
 
 	describe('getFriend', () => {
-		test('returns single friend when exists', async () => {
+		test('returns friends when requested', async () => {
 			const userId = 1;
-			const friendId = 2;
-			const friends = [{ id: friendId }];
+			const dogId = undefined;
+			const friends = { users: [{ id: 2 }], dogs: [] };
 
-			mockParseValidation
-				.mockReturnValueOnce({ userId, friendId })
-				.mockReturnValueOnce({ userId });
-			mockGetFriend.mockResolvedValueOnce(friends).mockResolvedValueOnce(friends);
+			mockReq.query = { userId: '1' };
+			mockParseValidation.mockReturnValue({ userId, dogId });
+			mockGetFriend.mockResolvedValue(friends);
 
 			await friendController.getFriend(mockReq as Request, mockRes as Response, mockNext);
 
-			expect(mockGetFriend).toHaveBeenCalledWith(userId);
+			expect(mockGetFriend).toHaveBeenCalledWith(userId, dogId);
 			expect(mockStatus).toHaveBeenCalledWith(200);
 			expect(mockJson).toHaveBeenCalledWith(friends);
 		});
 
-		test('forwards not found when friendship missing', async () => {
-			const userId = 1;
-			const friendId = 2;
-
-			mockParseValidation.mockReturnValueOnce({ userId, friendId });
-			mockGetFriend.mockResolvedValueOnce([]);
+		test('forwards validation error', async () => {
+			const validationError = new AppError('Validation failed', {
+				code: 'VALIDATION_ERROR',
+				statusCode: 400,
+			});
+			mockParseValidation.mockImplementation(() => {
+				throw validationError;
+			});
 
 			await friendController.getFriend(mockReq as Request, mockRes as Response, mockNext);
 
 			expect(mockStatus).not.toHaveBeenCalled();
-			expect(mockNext).toHaveBeenCalled();
+			expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
 		});
 	});
 });

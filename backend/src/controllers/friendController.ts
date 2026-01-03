@@ -3,29 +3,16 @@ import express from "express";
 import typeSafeLogger from "../utils/typeSafeLogger";
 import { toAppError, NotFoundError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
-import { createFriendRequestSchema, getUserIdSchema, removeFriendSchema } from "../utils/validationSchemas";
+import { createFriendRequestSchema, getUserIdSchema, removeFriendSchema, friendshipIdSchema, getFriendsSchema } from "../utils/validationSchemas";
 
 const friendController = {
     addFriend: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-        //TODO check if friendship already exists
-        try {
-            typeSafeLogger.logRequest("Received request to add friend, checking if it already exists", { method: req.method, path: req.path });
-            const { requesterId, addresseeId } = parseValidation(createFriendRequestSchema, req.body);
-
-            const existingFriends = await friendService.getFriend(requesterId);
-            const alreadyFriends = existingFriends.some(friend => friend.id === addresseeId);
-        }
-        catch (error) {
-            return next(
-                toAppError(error, { message: "Failed to check existing friends", code: "INTERNAL_ERROR", statusCode: 500 })
-            );
-        }
         try {
             typeSafeLogger.logRequest("Received request to add friend", { method: req.method, path: req.path });
-            const { requesterId, addresseeId } = parseValidation(createFriendRequestSchema, req.body);
+            const { requesterId, addresseeId, requesterDogId, addresseeDogId } = parseValidation(createFriendRequestSchema, req.body);
 
-            const newFriendship = await friendService.sendFriendRequest(requesterId, addresseeId);
-            typeSafeLogger.logUserAction("Friend added", { requesterId, addresseeId });
+            const newFriendship = await friendService.sendFriendRequest(requesterId, addresseeId, requesterDogId, addresseeDogId);
+            typeSafeLogger.logUserAction("Friend added", { requesterId, addresseeId, requesterDogId, addresseeDogId });
             res.status(201).json(newFriendship);
         } catch (error) {
             return next(
@@ -37,10 +24,10 @@ const friendController = {
     acceptFriendRequest: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             typeSafeLogger.logRequest("Received request to accept friend request", { method: req.method, path: req.path });
-            const { requesterId, addresseeId } = parseValidation(createFriendRequestSchema, req.body);
+            const { friendshipId } = parseValidation(friendshipIdSchema, req.body);
 
-            const updatedFriendship = await friendService.acceptFriendRequest(requesterId, addresseeId);
-            typeSafeLogger.logUserAction("Friend request accepted", { requesterId, addresseeId });
+            const updatedFriendship = await friendService.acceptFriendRequest(friendshipId);
+            typeSafeLogger.logUserAction("Friend request accepted", { friendshipId });
             res.status(200).json(updatedFriendship);
         } catch (error) {
             return next(
@@ -52,10 +39,10 @@ const friendController = {
     declineFriendRequest: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             typeSafeLogger.logRequest("Received request to decline friend request", { method: req.method, path: req.path });
-            const { requesterId, addresseeId } = parseValidation(createFriendRequestSchema, req.body);
+            const { friendshipId } = parseValidation(friendshipIdSchema, req.body);
 
-            const updatedFriendship = await friendService.declineFriendRequest(requesterId, addresseeId);
-            typeSafeLogger.logUserAction("Friend request declined", { requesterId, addresseeId });
+            const updatedFriendship = await friendService.declineFriendRequest(friendshipId);
+            typeSafeLogger.logUserAction("Friend request declined", { friendshipId });
             res.status(200).json(updatedFriendship);
         } catch (error) {
             return next(
@@ -66,26 +53,11 @@ const friendController = {
 
     removeFriend: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
-            typeSafeLogger.logRequest("Received request to remove friend, checking if friendship exists", { method: req.method, path: req.path });
-            const { userId, friendId } = parseValidation(removeFriendSchema, req.body);
-
-            const existingFriends = await friendService.getFriend(userId);
-            const friendshipExists = existingFriends.some(friend => friend.id === friendId);
-            if (!friendshipExists) {
-                throw NotFoundError("Friendship does not exist");
-            }
-        }
-        catch (error) {
-            return next(
-                toAppError(error, { message: "Failed to check existing friendship", code: "INTERNAL_ERROR", statusCode: 500 })
-            );
-        }
-        try {
             typeSafeLogger.logRequest("Received request to remove friend", { method: req.method, path: req.path });
-            const { userId, friendId } = parseValidation(removeFriendSchema, req.body);
+            const { userId, friendId, dogId, friendDogId } = parseValidation(removeFriendSchema, req.body);
 
-            await friendService.removeFriend(userId, friendId);
-            typeSafeLogger.logUserAction("Friend removed", { userId, friendId });
+            await friendService.removeFriend(userId, friendId, dogId, friendDogId);
+            typeSafeLogger.logUserAction("Friend removed", { userId, friendId, dogId, friendDogId });
             res.status(200).json({ message: "Friend removed successfully" });
         } catch (error) {
             return next(
@@ -97,10 +69,13 @@ const friendController = {
     getFriendsList: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             typeSafeLogger.logRequest("Received request to get friends list", { method: req.method, path: req.path });
-            const { userId } = parseValidation(getUserIdSchema, req.params);
+            const userId = req.query.userId ? Number(req.query.userId) : undefined;
+            const dogId = req.query.dogId ? Number(req.query.dogId) : undefined;
+            const validatedParams = parseValidation(getFriendsSchema, { userId, dogId });
 
-            const friendsList = await friendService.getFriendsList(userId);
-            typeSafeLogger.logUserAction("Friends list retrieved", { userId, friendsCount: friendsList.length });
+            const friendsList = await friendService.getFriendsList(validatedParams.userId, validatedParams.dogId);
+            const totalCount = friendsList.users.length + friendsList.dogs.length;
+            typeSafeLogger.logUserAction("Friends list retrieved", { userId: validatedParams.userId, dogId: validatedParams.dogId, userFriendsCount: friendsList.users.length, dogFriendsCount: friendsList.dogs.length });
             res.status(200).json(friendsList);
         } catch (error) {
             return next(
@@ -111,25 +86,14 @@ const friendController = {
 
     getFriend: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
-            typeSafeLogger.logRequest("Received request to get friend, checking if friendship exists", { method: req.method, path: req.path });
-            const { userId, friendId } = parseValidation(removeFriendSchema, req.body);
-
-            const existingFriends = await friendService.getFriend(userId);
-            const friendshipExists = existingFriends.some(friend => friend.id === friendId);
-            if (!friendshipExists) {
-                throw NotFoundError("Friendship does not exist");
-            }
-        } catch (error) {
-            return next(
-                toAppError(error, { message: "Failed to check existing friendship", code: "INTERNAL_ERROR", statusCode: 500 })
-            );
-        }
-        try {
             typeSafeLogger.logRequest("Received request to get a friend", { method: req.method, path: req.path });
-            const { userId } = parseValidation(getUserIdSchema, req.params);
+            const userId = req.query.userId ? Number(req.query.userId) : undefined;
+            const dogId = req.query.dogId ? Number(req.query.dogId) : undefined;
+            const validatedParams = parseValidation(getFriendsSchema, { userId, dogId });
 
-            const friends = await friendService.getFriend(userId);
-            typeSafeLogger.logUserAction("Friend retrieved", { userId, friendsCount: friends.length });
+            const friends = await friendService.getFriend(validatedParams.userId, validatedParams.dogId);
+            const totalCount = friends.users.length + friends.dogs.length;
+            typeSafeLogger.logUserAction("Friend retrieved", { userId: validatedParams.userId, dogId: validatedParams.dogId, userFriendsCount: friends.users.length, dogFriendsCount: friends.dogs.length });
             res.status(200).json(friends);
         } catch (error) {
             return next(

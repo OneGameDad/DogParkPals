@@ -132,6 +132,15 @@ async function main() {
     },
   });
 
+  // Friendships (user-to-user only)
+  await prisma.friendship.create({
+    data: {
+      requesterId: user.id,
+      addresseeId: userBob.id,
+      status: "ACCEPTED",
+    },
+  });
+
   // Messages between users
   await prisma.messages.create({
     data: {

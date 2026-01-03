@@ -58,6 +58,8 @@ model Dog {
   playstyle  DogPlaystyle @default(SOCIAL)
   description String?
   checkIns  CheckIn[]
+  friendshipsRequested Friendship[] @relation("FriendshipRequesterDog")
+  friendshipsReceived Friendship[] @relation("FriendshipAddresseeDog")
   ownerOfEnemies enemies[] @relation("EnemiesOwnerDog")
   enemyOf enemies[] @relation("EnemyDog")
   createdAt DateTime @default(now())
@@ -65,16 +67,18 @@ model Dog {
 }
 
 model Friendship {
-  requesterId Int
-  addresseeId Int
-  status      FriendshipStatus @default(PENDING)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  requester   User @relation("FriendshipRequester", fields: [requesterId], references: [id])
-  addressee   User @relation("FriendshipAddressee", fields: [addresseeId], references: [id])
-
-  @@id([requesterId, addresseeId])
+  id              Int      @id @default(autoincrement())
+  requesterId     Int?
+  requester       User?    @relation("FriendshipRequester", fields: [requesterId], references: [id])
+  requesterDogId  Int?
+  requesterDog    Dog?     @relation("FriendshipRequesterDog", fields: [requesterDogId], references: [id])
+  addresseeId     Int?
+  addressee       User?    @relation("FriendshipAddressee", fields: [addresseeId], references: [id])
+  addresseeDogId  Int?
+  addresseeDog    Dog?     @relation("FriendshipAddresseeDog", fields: [addresseeDogId], references: [id])
+  status          FriendshipStatus @default(PENDING)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Messages {
@@ -173,7 +177,7 @@ model Organization {
   ownerId   Int
   owner     User     @relation("OrganizationOwner", fields: [ownerId], references: [id])
   membershipRecords OrganizationMember[]
-  memberRole OrgRole @default(INVINTEE)
+  memberRole OrgRole @default(INVITEE)
   events    Event[] @relation("OrganizationEvents")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -270,7 +274,7 @@ model UserLevel {
 
 // Enum for user roles in the organization
 enum OrgRole {
-  INVINTEE
+  INVITEE
   MEMBER
   MODERATOR
   OWNER

@@ -122,6 +122,7 @@ export const createFriendRequestSchema = z.object({
   addresseeId: z.number().int().positive('Addressee ID must be a positive integer').optional(),
   requesterDogId: z.number().int().positive('Requester Dog ID must be a positive integer').optional(),
   addresseeDogId: z.number().int().positive('Addressee Dog ID must be a positive integer').optional(),
+  confirmRemoveEnemy: z.boolean().optional(),
 }).refine(
   (data) => {
     // At least one requester (user or dog) must be provided

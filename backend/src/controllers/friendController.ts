@@ -1,4 +1,5 @@
 import friendService from "../services/friendService";
+import enemyService from "../services/enemyService";
 import express from "express";
 import typeSafeLogger from "../utils/typeSafeLogger";
 import { toAppError, NotFoundError } from "../utils/errors";
@@ -9,7 +10,29 @@ const friendController = {
     addFriend: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             typeSafeLogger.logRequest("Received request to add friend", { method: req.method, path: req.path });
-            const { requesterId, addresseeId, requesterDogId, addresseeDogId } = parseValidation(createFriendRequestSchema, req.body);
+            const { requesterId, addresseeId, requesterDogId, addresseeDogId, confirmRemoveEnemy } = parseValidation(createFriendRequestSchema, req.body);
+
+            // Check if addressee is on requester's enemy list (only for user-to-user relationships)
+            if (requesterId && addresseeId) {
+                const isEnemyRelation = await enemyService.isEnemy(requesterId, addresseeId);
+                
+                if (isEnemyRelation && !confirmRemoveEnemy) {
+                    // Enemy found and no confirmation provided - ask for confirmation
+                    typeSafeLogger.logUserAction("Friend request blocked - addressee is enemy, confirmation required", { requesterId, addresseeId });
+                    return res.status(409).json({
+                        requiresConfirmation: true,
+                        message: 'This user is currently on your enemy list. Adding as friend will remove them from enemies.',
+                        existingRelationship: 'enemy',
+                        code: 'ENEMY_CONFIRMATION_REQUIRED'
+                    });
+                }
+                
+                if (isEnemyRelation && confirmRemoveEnemy) {
+                    // Enemy found and confirmation provided - remove from enemy list first
+                    typeSafeLogger.logUserAction("Removing user from enemy list before adding as friend", { requesterId, addresseeId });
+                    await enemyService.removeEnemy(requesterId, addresseeId);
+                }
+            }
 
             const newFriendship = await friendService.sendFriendRequest(requesterId, addresseeId, requesterDogId, addresseeDogId);
             typeSafeLogger.logUserAction("Friend added", { requesterId, addresseeId, requesterDogId, addresseeDogId });

@@ -9,6 +9,8 @@ const mockDeclineFriendRequest = jest.fn<any>();
 const mockRemoveFriend = jest.fn<any>();
 const mockGetFriendsList = jest.fn<any>();
 const mockGetFriend = jest.fn<any>();
+const mockIsEnemy = jest.fn<any>();
+const mockRemoveEnemy = jest.fn<any>();
 
 jest.mock('../utils/validator', () => ({
 	parseValidation: mockParseValidation,
@@ -23,6 +25,14 @@ jest.mock('../services/friendService', () => ({
 		removeFriend: mockRemoveFriend,
 		getFriendsList: mockGetFriendsList,
 		getFriend: mockGetFriend,
+	},
+}));
+
+jest.mock('../services/enemyService', () => ({
+	__esModule: true,
+	default: {
+		isEnemy: mockIsEnemy,
+		removeEnemy: mockRemoveEnemy,
 	},
 }));
 
@@ -54,14 +64,78 @@ describe('friendController', () => {
 			const mockFriendship = { id: 1, requesterId, addresseeId, requesterDogId: null, addresseeDogId: null, status: 'PENDING' };
 
 			mockParseValidation.mockReturnValue({ requesterId, addresseeId, requesterDogId, addresseeDogId });
+			mockIsEnemy.mockResolvedValue(false);
 			mockSendFriendRequest.mockResolvedValueOnce(mockFriendship);
 
 			await friendController.addFriend(mockReq as Request, mockRes as Response, mockNext);
 
+			expect(mockIsEnemy).toHaveBeenCalledWith(requesterId, addresseeId);
 			expect(mockSendFriendRequest).toHaveBeenCalledWith(requesterId, addresseeId, requesterDogId, addresseeDogId);
 			expect(mockStatus).toHaveBeenCalledWith(201);
 			expect(mockJson).toHaveBeenCalledWith(mockFriendship);
 			expect(mockNext).not.toHaveBeenCalled();
+		});
+
+		test('requires confirmation when addressee is on enemy list', async () => {
+			const requesterId = 1;
+			const addresseeId = 2;
+			const requesterDogId = undefined;
+			const addresseeDogId = undefined;
+
+			mockParseValidation.mockReturnValue({ requesterId, addresseeId, requesterDogId, addresseeDogId, confirmRemoveEnemy: false });
+			mockIsEnemy.mockResolvedValue(true);
+
+			await friendController.addFriend(mockReq as Request, mockRes as Response, mockNext);
+
+			expect(mockIsEnemy).toHaveBeenCalledWith(requesterId, addresseeId);
+			expect(mockRemoveEnemy).not.toHaveBeenCalled();
+			expect(mockSendFriendRequest).not.toHaveBeenCalled();
+			expect(mockStatus).toHaveBeenCalledWith(409);
+			expect(mockJson).toHaveBeenCalledWith({
+				requiresConfirmation: true,
+				message: 'This user is currently on your enemy list. Adding as friend will remove them from enemies.',
+				existingRelationship: 'enemy',
+				code: 'ENEMY_CONFIRMATION_REQUIRED'
+			});
+		});
+
+		test('removes enemy and adds friend when confirmation provided', async () => {
+			const requesterId = 1;
+			const addresseeId = 2;
+			const requesterDogId = undefined;
+			const addresseeDogId = undefined;
+			const mockFriendship = { id: 1, requesterId, addresseeId, requesterDogId: null, addresseeDogId: null, status: 'PENDING' };
+
+			mockParseValidation.mockReturnValue({ requesterId, addresseeId, requesterDogId, addresseeDogId, confirmRemoveEnemy: true });
+			mockIsEnemy.mockResolvedValue(true);
+			mockRemoveEnemy.mockResolvedValue(undefined);
+			mockSendFriendRequest.mockResolvedValueOnce(mockFriendship);
+
+			await friendController.addFriend(mockReq as Request, mockRes as Response, mockNext);
+
+			expect(mockIsEnemy).toHaveBeenCalledWith(requesterId, addresseeId);
+			expect(mockRemoveEnemy).toHaveBeenCalledWith(requesterId, addresseeId);
+			expect(mockSendFriendRequest).toHaveBeenCalledWith(requesterId, addresseeId, requesterDogId, addresseeDogId);
+			expect(mockStatus).toHaveBeenCalledWith(201);
+			expect(mockJson).toHaveBeenCalledWith(mockFriendship);
+		});
+
+		test('skips enemy check for dog friendships', async () => {
+			const requesterId = undefined;
+			const addresseeId = undefined;
+			const requesterDogId = 1;
+			const addresseeDogId = 2;
+			const mockFriendship = { id: 1, requesterId: null, addresseeId: null, requesterDogId, addresseeDogId, status: 'ACCEPTED' };
+
+			mockParseValidation.mockReturnValue({ requesterId, addresseeId, requesterDogId, addresseeDogId });
+			mockSendFriendRequest.mockResolvedValueOnce(mockFriendship);
+
+			await friendController.addFriend(mockReq as Request, mockRes as Response, mockNext);
+
+			expect(mockIsEnemy).not.toHaveBeenCalled();
+			expect(mockSendFriendRequest).toHaveBeenCalledWith(requesterId, addresseeId, requesterDogId, addresseeDogId);
+			expect(mockStatus).toHaveBeenCalledWith(201);
+			expect(mockJson).toHaveBeenCalledWith(mockFriendship);
 		});
 
 		test('forwards validation error', async () => {

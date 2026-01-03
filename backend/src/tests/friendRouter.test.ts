@@ -8,7 +8,6 @@ const acceptFriendRequestMock = jest.fn<(req: Request, res: Response, next: Next
 const declineFriendRequestMock = jest.fn<(req: Request, res: Response, next: NextFunction) => unknown>();
 const removeFriendMock = jest.fn<(req: Request, res: Response, next: NextFunction) => unknown>();
 const getFriendsListMock = jest.fn<(req: Request, res: Response, next: NextFunction) => unknown>();
-const getFriendMock = jest.fn<(req: Request, res: Response, next: NextFunction) => unknown>();
 
 jest.mock('../controllers/friendController', () => ({
 	__esModule: true,
@@ -18,13 +17,12 @@ jest.mock('../controllers/friendController', () => ({
 		declineFriendRequest: declineFriendRequestMock,
 		removeFriend: removeFriendMock,
 		getFriendsList: getFriendsListMock,
-		getFriend: getFriendMock,
 	},
 }));
 
 import friendRouter from '../routes/friendRouter';
 
-const okHandler = (name: string) => (req: Request, res: Response) => res.status(200).json({ handler: name, params: req.params, body: req.body });
+const okHandler = (name: string) => (req: Request, res: Response) => res.status(200).json({ handler: name, params: req.params, body: req.body, query: req.query });
 
 const defaultHandlers = () => {
 	addFriendMock.mockImplementation(okHandler('addFriend'));
@@ -32,7 +30,6 @@ const defaultHandlers = () => {
 	declineFriendRequestMock.mockImplementation(okHandler('declineFriendRequest'));
 	removeFriendMock.mockImplementation(okHandler('removeFriend'));
 	getFriendsListMock.mockImplementation(okHandler('getFriendsList'));
-	getFriendMock.mockImplementation(okHandler('getFriend'));
 };
 
 const buildApp = () => {
@@ -89,20 +86,22 @@ describe('friendRouter', () => {
 	});
 
 	test('GET /friends routes to getFriendsList', async () => {
-		const response = await request(buildApp()).get('/friends');
+		const response = await request(buildApp()).get('/friends?userId=1');
 
 		expect(response.status).toBe(200);
 		expect(response.body.handler).toBe('getFriendsList');
+		expect(response.body.query.userId).toBe('1');
 		expect(getFriendsListMock).toHaveBeenCalledTimes(1);
+		expect(getFriendsListMock.mock.calls[0][0].query.userId).toBe('1');
 	});
 
-	test('GET /friends/:friendId routes to getFriend with params', async () => {
-		const response = await request(buildApp()).get('/friends/42');
+	test('GET /friends with dogId routes to getFriendsList', async () => {
+		const response = await request(buildApp()).get('/friends?dogId=2');
 
 		expect(response.status).toBe(200);
-		expect(response.body.handler).toBe('getFriend');
-		expect(response.body.params.friendId).toBe('42');
-		expect(getFriendMock).toHaveBeenCalledTimes(1);
-		expect(getFriendMock.mock.calls[0][0].params.friendId).toBe('42');
+		expect(response.body.handler).toBe('getFriendsList');
+		expect(response.body.query.dogId).toBe('2');
+		expect(getFriendsListMock).toHaveBeenCalledTimes(1);
+		expect(getFriendsListMock.mock.calls[0][0].query.dogId).toBe('2');
 	});
 });

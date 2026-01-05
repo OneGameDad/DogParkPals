@@ -116,3 +116,138 @@ export const isMemberSchema = z.object({
 });
 
 export type IsMemberRequest = z.infer<typeof isMemberSchema>;
+
+export const createFriendRequestSchema = z.object({
+  requesterId: z.number().int().positive('Requester ID must be a positive integer').optional(),
+  addresseeId: z.number().int().positive('Addressee ID must be a positive integer').optional(),
+  requesterDogId: z.number().int().positive('Requester Dog ID must be a positive integer').optional(),
+  addresseeDogId: z.number().int().positive('Addressee Dog ID must be a positive integer').optional(),
+  confirmRemoveEnemy: z.boolean().optional(),
+}).refine(
+  (data) => {
+    // At least one requester (user or dog) must be provided
+    const hasRequester = data.requesterId || data.requesterDogId;
+    // At least one addressee (user or dog) must be provided
+    const hasAddressee = data.addresseeId || data.addresseeDogId;
+    return hasRequester && hasAddressee;
+  },
+  {
+    message: 'Both requester and addressee must be specified (either as user or dog)',
+  }
+).refine(
+  (data) => {
+    // Cannot friend yourself
+    if (data.requesterId && data.addresseeId && data.requesterId === data.addresseeId) {
+      return false;
+    }
+    // Cannot friend the same dog
+    if (data.requesterDogId && data.addresseeDogId && data.requesterDogId === data.addresseeDogId) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: 'Cannot create friendship with yourself/same entity',
+    path: ['addresseeId'],
+  }
+);
+
+export type CreateFriendRequest = z.infer<typeof createFriendRequestSchema>;
+
+export const respondToFriendRequestSchema = z.object({
+  friendshipId: z.number().int().positive('Friendship ID must be a positive integer'),
+  accept: z.boolean(),
+});
+
+export type RespondToFriendRequest = z.infer<typeof respondToFriendRequestSchema>;
+
+export const getUserIdSchema = z.object({
+  userId: z.number().int().positive('User ID must be a positive integer'),
+});
+
+export type GetUserIdRequest = z.infer<typeof getUserIdSchema>;
+
+export const removeFriendSchema = z.object({
+  userId: z.number().int().positive('User ID must be a positive integer').optional(),
+  friendId: z.number().int().positive('Friend ID must be a positive integer').optional(),
+  dogId: z.number().int().positive('Dog ID must be a positive integer').optional(),
+  friendDogId: z.number().int().positive('Friend Dog ID must be a positive integer').optional(),
+}).refine(
+  (data) => {
+    // At least one entity (user or dog) must be provided
+    const hasEntity = data.userId || data.dogId;
+    // At least one friend (user or dog) must be provided
+    const hasFriend = data.friendId || data.friendDogId;
+    return hasEntity && hasFriend;
+  },
+  {
+    message: 'Both entity and friend must be specified (either as user or dog)',
+  }
+).refine(
+  (data) => {
+    // Cannot remove yourself
+    if (data.userId && data.friendId && data.userId === data.friendId) {
+      return false;
+    }
+    // Cannot remove the same dog
+    if (data.dogId && data.friendDogId && data.dogId === data.friendDogId) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: 'Cannot remove friendship with yourself/same entity',
+    path: ['friendId'],
+  }
+);
+
+export type RemoveFriendRequest = z.infer<typeof removeFriendSchema>;
+
+export const friendshipIdSchema = z.object({
+  friendshipId: z.number().int().positive('Friendship ID must be a positive integer'),
+});
+
+export type FriendshipIdRequest = z.infer<typeof friendshipIdSchema>;
+
+export const getFriendsSchema = z.object({
+  userId: z.number().int().positive('User ID must be a positive integer').optional(),
+  dogId: z.number().int().positive('Dog ID must be a positive integer').optional(),
+}).refine(
+  (data) => data.userId || data.dogId,
+  {
+    message: 'Either userId or dogId must be provided',
+  }
+);
+
+export type GetFriendsRequest = z.infer<typeof getFriendsSchema>;
+
+export const addEnemySchema = z.object({
+  userId: z.number().int().positive('User ID must be a positive integer'),
+  enemyUserId: z.number().int().positive('Enemy User ID must be a positive integer'),
+  confirmed: z.boolean().optional().default(false),
+}).refine((data) => data.userId !== data.enemyUserId, {
+  message: 'User ID and Enemy User ID must be different',
+  path: ['enemyUserId'],
+});
+
+export type AddEnemyRequest = z.infer<typeof addEnemySchema>;
+
+export const removeEnemySchema = z.object({
+  userId: z.number().int().positive('User ID must be a positive integer'),
+  enemyUserId: z.number().int().positive('Enemy User ID must be a positive integer'),
+}).refine((data) => data.userId !== data.enemyUserId, {
+  message: 'User ID and Enemy User ID must be different',
+  path: ['enemyUserId'],
+});
+
+export type RemoveEnemyRequest = z.infer<typeof removeEnemySchema>;
+
+export const checkEnemySchema = z.object({
+  userId: z.number().int().positive('User ID must be a positive integer'),
+  potentialEnemyUserId: z.number().int().positive('Potential Enemy User ID must be a positive integer'),
+}).refine((data) => data.userId !== data.potentialEnemyUserId, {
+  message: 'User ID and Potential Enemy User ID must be different',
+  path: ['potentialEnemyUserId'],
+});
+
+export type CheckEnemyRequest = z.infer<typeof checkEnemySchema>;

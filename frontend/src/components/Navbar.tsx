@@ -5,10 +5,11 @@ const Navbar = () => {
     const { t } = useTranslation();
 
     return (
-        <nav className='p-4 border-b border-gray-200 bg-white flex gap-6 shadow-sm items-center'>
-            <Link to="/" className='text-gray-600 hover:text-blue-600 font-medium transition-colors'>{t('home')}</Link>
-            <Link to="/login" className='text-gray-600 hover:text-blue-600 font-medium transition-colors'>{t('login')}</Link>
-            <Link to="/dashboard" className='text-gray-600 hover:text-blue-600 font-medium transition-colors'>{t('dashboard')}</Link>
+        <nav className="p-4 border-b border-gray-200 flex items-center gap-4">
+            <Link to="/" className="text-gray-600 hover:underline font-medium">{t('home')}</Link>
+            <Link to="/login" className="text-gray-600 hover:underline font-medium">{t('login')}</Link>
+            <Link to="/dashboard" className="text-gray-600 hover:underline font-medium">{t('dashboard')}</Link>
+            <Link to="/settings" className="text-gray-600 hover:underline font-medium">{t('settings')}</Link>
         </nav>
     );
 }

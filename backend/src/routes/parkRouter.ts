@@ -17,5 +17,8 @@ router.post("/parks/favorites/:userId/:parkId", parkController.addParkToUserFavo
 router.put("/parks/:id", parkController.updatePark);
 router.delete("/parks/favorites/:userId/:parkId", parkController.removeParkFromUserFavorites);
 router.delete("/parks/:id", parkController.deletePark);
+router.post("/parks/:parkId/check-in", parkController.checkInAtPark);
+router.post("/parks/:parkId/check-out", parkController.checkOutFromPark);
+router.get("/parks/:parkId/check-ins", parkController.getActiveCheckInsForPark);
 
 export default router;

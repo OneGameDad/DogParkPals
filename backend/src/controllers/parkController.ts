@@ -193,6 +193,21 @@ const parkController = {
           toAppError(error, { message: "Failed to delete park", code: "INTERNAL_ERROR", statusCode: 500 })
         );
       }
+    },
+
+    checkInAtPark: async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const userId = (req as any).user?.id;
+        const parkId = parseInt(req.params.parkId, 10);
+        const dogId = req.body.dogId ? parseInt(req.body.dogId, 10) : undefined;
+
+        const checkIn = await parkService.checkIn(userId, parkId, dogId);
+        res.status(201).json(checkIn);
+      } catch (error) {
+        return next(
+          toAppError(error, { message: "Failed to check in", code: "INTERNAL_ERROR", statusCode: 500 })
+        );
+      }
     }
 };
 

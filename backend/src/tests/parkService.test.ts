@@ -467,6 +467,7 @@ describe('Park Service', () => {
     });
   
     describe('checkIn', () => {
+      // test one user/dog checked in
       test('should create a check-in when no active check-in exists', async () => {
         mockPrisma.checkIn.findFirst.mockResolvedValue(null);
         mockPrisma.checkIn.create.mockResolvedValue(mockCheckInData);
@@ -482,6 +483,7 @@ describe('Park Service', () => {
         expect(result).toEqual(mockCheckInData);
       });
   
+      // test for user attempting to check in when already checked in
       test('should throw error if user already has an active check-in', async () => {
         mockPrisma.checkIn.findFirst.mockResolvedValue(mockCheckInData);
   
@@ -550,6 +552,51 @@ describe('Park Service', () => {
         mockPrisma.checkIn.findMany.mockRejectedValue(new Error('DB error'));
   
         await expect(parkService.getActiveCheckInsForPark(1)).rejects.toThrow('Failed to fetch active check-ins');
+      });
+      // multiple users/dogs checked in
+      test('should return multiple active check-ins with different dogs', async () => {
+        const activeCheckIns = [
+          {
+            id: 1,
+            userId: 1,
+            parkId: 1,
+            dogId: 101,
+            checkedInAt: new Date(),
+            checkedOutAt: null,
+            user: { id: 1, username: 'alice' },
+            dog: { id: 101, name: 'Rex' },
+          },
+          {
+            id: 2,
+            userId: 2,
+            parkId: 1,
+            dogId: 202,
+            checkedInAt: new Date(),
+            checkedOutAt: null,
+            user: { id: 2, username: 'bob' },
+            dog: { id: 202, name: 'Luna' },
+          },
+        ];
+      
+        mockPrisma.checkIn.findMany.mockResolvedValue(activeCheckIns);
+      
+        const result = await parkService.getActiveCheckInsForPark(1);
+      
+        expect(mockPrisma.checkIn.findMany).toHaveBeenCalledWith({
+          where: {
+            parkId: 1,
+            checkedOutAt: null,
+          },
+          include: {
+            user: true,
+            dog: true,
+          },
+        });
+      
+        expect(result).toHaveLength(2);
+        expect(result.map(ci => ci.dog.name)).toEqual(
+          expect.arrayContaining(['Rex', 'Luna'])
+        );
       });
     });
   

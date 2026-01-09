@@ -1,10 +1,9 @@
 import cron from "node-cron";
 import parkService from "../services/parkService";
 import typeSafeLogger from "../utils/typeSafeLogger";
-import { errorMonitor } from "stream";
 
 // Every 15 minutes check if the user has been checked in for over an hour. If so, check them out.
-cron.schedule("*/15 * * * *", async () => {
+export async function runAutoCheckOutJob () {
     typeSafeLogger.info("Running 15-minute auto-checkout job");
     try {
         const now = new Date();
@@ -19,4 +18,8 @@ cron.schedule("*/15 * * * *", async () => {
     } catch (error) {
         typeSafeLogger.logError("15-minute auto-checkout job failed", error);
     }
-});
+};
+
+if (process.env.NODE_ENV !== "test") {
+    cron.schedule("*/15 * * * *", runAutoCheckOutJob);
+}

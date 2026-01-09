@@ -20,6 +20,23 @@ As this is an MVP it is limited in scope to only included the public dog parks i
   - `npm run dev` (TypeScript watch mode) or `npm run build && node dist/server.js` (production)
   - Server listens on `http://localhost:3000`
   - Health check: `GET /health`
+ 
+### Frontend Setup (Local Development)
+- Install dependencies:
+   ```bash
+   npm install
+   ```
+-  (Optional) Create `.env` file if you need custom API URL:
+   ```bash
+   echo 'VITE_API_URL=http://localhost:3000' > .env
+   ```
+   Note: Defaults to `http://localhost:3000` if not specified
+- Start the frontend dev server:
+   ```bash
+   npm run dev
+   ```
+   - Frontend runs on `http://localhost:5173`
+   - Open in browser: `http://localhost:5173`
 
 ### Notes
 - Do not commit `backend/prisma/generated/client/` (generated Prisma client; run `npx prisma generate` after pulling).

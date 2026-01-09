@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 import type { Request, Response, NextFunction } from 'express';
 import { NotFoundError, ForbiddenError } from '../utils/errors';
+import parkService from '../services/parkService';
 
 // Mock parkService
 const mockGetParkById = jest.fn<any>();
@@ -13,6 +14,9 @@ const mockUpdatePark = jest.fn<any>();
 const mockDeletePark = jest.fn<any>();
 const mockAddParkToUserFavorites = jest.fn<any>();
 const mockRemoveParkFromUserFavorites = jest.fn<any>();
+const mockCheckIn = jest.fn<any>();
+const mockCheckOut = jest.fn<any>();
+const mockGetActiveCheckInsForPark = jest.fn<any>();
 
 jest.mock('../services/parkService', () => ({
   __esModule: true,
@@ -27,6 +31,9 @@ jest.mock('../services/parkService', () => ({
     deletePark: mockDeletePark,
     addParkToUserFavorites: mockAddParkToUserFavorites,
     removeParkFromUserFavorites: mockRemoveParkFromUserFavorites,
+    checkIn: mockCheckIn,
+    checkOut: mockCheckOut,
+    getActiveCheckInsForPark: mockGetActiveCheckInsForPark,
   },
 }));
 
@@ -453,4 +460,84 @@ describe('Park Controller', () => {
       expect(mockNext).toHaveBeenCalled();
     });
   });
+
+  describe('checkInAtPark', () => {
+    test('should call service and return 200 with check-in info', async () => {
+      mockReq.params = { parkId: '1' };
+      mockReq.body = { dogId: 123 };
+      (mockReq as any).user = { id: 1 };
+  
+      const checkInData = { id: 1, userId: 1, parkId: 1, checkedInAt: new Date() };
+      mockCheckIn.mockResolvedValue(checkInData);
+  
+      await parkController.checkInAtPark(mockReq as Request, mockRes as Response, mockNext as any);
+  
+      expect(mockCheckIn).toHaveBeenCalledWith(1, 1, 123);
+      expect(mockStatus).toHaveBeenCalledWith(201);
+      expect(mockJson).toHaveBeenCalledWith(checkInData);
+    });
+  
+    test('should call next if already checked in', async () => {
+      mockReq.params = { parkId: '1' };
+      (mockReq as any).user = { id: 1 };
+      mockCheckIn.mockRejectedValue(new Error('Already checked in'));
+  
+      await parkController.checkInAtPark(mockReq as Request, mockRes as Response, mockNext as any);
+  
+      expect(mockNext).toHaveBeenCalled();
+    });
+  });
+  
+  describe('checkOutFromPark', () => {
+    test('should call service and return 200 with check-out info', async () => {
+      mockReq.params = { parkId: '1' };
+      (mockReq as any).user = { id: 1 };
+  
+      const checkOutData = { id: 1, userId: 1, parkId: 1, checkedOutAt: new Date() };
+      mockCheckOut.mockResolvedValue(checkOutData);
+  
+      await parkController.checkOutFromPark(mockReq as Request, mockRes as Response, mockNext as any);
+  
+      expect(mockCheckOut).toHaveBeenCalledWith(1, 1);
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      expect(mockJson).toHaveBeenCalledWith(checkOutData);
+    });
+  
+    test('should call next if no active check-in exists', async () => {
+      mockReq.params = { parkId: '1' };
+      (mockReq as any).user = { id: 1 };
+      mockCheckOut.mockRejectedValue(new Error('No active check-in'));
+  
+      await parkController.checkOutFromPark(mockReq as Request, mockRes as Response, mockNext as any);
+  
+      expect(mockNext).toHaveBeenCalled();
+    });
+  });
+  
+  describe('getActiveCheckInsForPark', () => {
+    test('should call service and return 200 with active check-ins', async () => {
+      mockReq.params = { parkId: '1' };
+      const activeCheckIns = [
+        { id: 1, userId: 1, parkId: 1, checkedInAt: new Date() },
+        { id: 2, userId: 2, parkId: 1, checkedInAt: new Date() },
+      ];
+      mockGetActiveCheckInsForPark.mockResolvedValue(activeCheckIns);
+  
+      await parkController.getActiveCheckInsForPark(mockReq as Request, mockRes as Response, mockNext as any);
+  
+      expect(mockGetActiveCheckInsForPark).toHaveBeenCalledWith(1);
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      expect(mockJson).toHaveBeenCalledWith(activeCheckIns);
+    });
+  
+    test('should call next on service error', async () => {
+      mockReq.params = { parkId: '1' };
+      mockGetActiveCheckInsForPark.mockRejectedValue(new Error('Database error'));
+  
+      await parkController.getActiveCheckInsForPark(mockReq as Request, mockRes as Response, mockNext as any);
+  
+      expect(mockNext).toHaveBeenCalled();
+    });
+  });
+  
 });

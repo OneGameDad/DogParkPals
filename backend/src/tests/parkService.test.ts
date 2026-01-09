@@ -444,4 +444,146 @@ describe('Park Service', () => {
       await expect(parkService.removeParkFromUserFavorites(1, 1)).rejects.toThrow();
     });
   });
+
+  describe('Check-In Service', () => {
+    const mockCheckInData = {
+      id: 1,
+      userId: 1,
+      parkId: 1,
+      dogId: 123,
+      checkedInAt: new Date(),
+      checkedOutAt: null,
+    };
+  
+    beforeEach(() => {
+      jest.clearAllMocks();
+      // Ensure checkIn table is mocked
+      mockPrisma.checkIn = {
+        findFirst: jest.fn(),
+        findMany: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+      };
+    });
+  
+    describe('checkIn', () => {
+      test('should create a check-in when no active check-in exists', async () => {
+        mockPrisma.checkIn.findFirst.mockResolvedValue(null);
+        mockPrisma.checkIn.create.mockResolvedValue(mockCheckInData);
+  
+        const result = await parkService.checkIn(1, 1, 123);
+  
+        expect(mockPrisma.checkIn.findFirst).toHaveBeenCalledWith({
+          where: { userId: 1, checkedOutAt: null },
+        });
+        expect(mockPrisma.checkIn.create).toHaveBeenCalledWith({
+          data: { userId: 1, parkId: 1, dogId: 123 },
+        });
+        expect(result).toEqual(mockCheckInData);
+      });
+  
+      test('should throw error if user already has an active check-in', async () => {
+        mockPrisma.checkIn.findFirst.mockResolvedValue(mockCheckInData);
+  
+        await expect(parkService.checkIn(1, 1, 123)).rejects.toThrow(
+          'User already has an active check-in.'
+        );
+      });
+  
+      test('should throw error when creation fails', async () => {
+        mockPrisma.checkIn.findFirst.mockResolvedValue(null);
+        mockPrisma.checkIn.create.mockRejectedValue(new Error('DB error'));
+  
+        await expect(parkService.checkIn(1, 1, 123)).rejects.toThrow('Failed to check in');
+      });
+    });
+  
+    describe('checkOut', () => {
+      test('should check out successfully if active check-in exists', async () => {
+        mockPrisma.checkIn.findFirst.mockResolvedValue(mockCheckInData);
+        const updatedCheckIn = { ...mockCheckInData, checkedOutAt: new Date() };
+        mockPrisma.checkIn.update.mockResolvedValue(updatedCheckIn);
+  
+        const result = await parkService.checkOut(1, 1);
+  
+        expect(mockPrisma.checkIn.findFirst).toHaveBeenCalledWith({
+          where: { userId: 1, parkId: 1, checkedOutAt: null },
+        });
+        expect(mockPrisma.checkIn.update).toHaveBeenCalledWith({
+          where: { id: 1 },
+          data: { checkedOutAt: expect.any(Date) },
+        });
+        expect(result.checkedOutAt).not.toBeNull();
+      });
+  
+      test('should throw error if no active check-in exists', async () => {
+        mockPrisma.checkIn.findFirst.mockResolvedValue(null);
+  
+        await expect(parkService.checkOut(1, 1)).rejects.toThrow(
+          'No active check-in found for this park'
+        );
+      });
+  
+      test('should throw error when update fails', async () => {
+        mockPrisma.checkIn.findFirst.mockResolvedValue(mockCheckInData);
+        mockPrisma.checkIn.update.mockRejectedValue(new Error('DB error'));
+  
+        await expect(parkService.checkOut(1, 1)).rejects.toThrow('Failed to check out');
+      });
+    });
+  
+    describe('getActiveCheckInsForPark', () => {
+      test('should return active check-ins', async () => {
+        const activeCheckIns = [mockCheckInData];
+        mockPrisma.checkIn.findMany.mockResolvedValue(activeCheckIns);
+  
+        const result = await parkService.getActiveCheckInsForPark(1);
+  
+        expect(mockPrisma.checkIn.findMany).toHaveBeenCalledWith({
+          where: { parkId: 1, checkedOutAt: null },
+          include: { user: true, dog: true },
+        });
+        expect(result).toEqual(activeCheckIns);
+      });
+  
+      test('should throw error when query fails', async () => {
+        mockPrisma.checkIn.findMany.mockRejectedValue(new Error('DB error'));
+  
+        await expect(parkService.getActiveCheckInsForPark(1)).rejects.toThrow('Failed to fetch active check-ins');
+      });
+    });
+  
+    describe('getStaleCheckIns', () => {
+      test('should return check-ins before a certain date', async () => {
+        const staleCheckIns = [mockCheckInData];
+        const beforeDate = new Date();
+        mockPrisma.checkIn.findMany.mockResolvedValue(staleCheckIns);
+  
+        const result = await parkService.getStaleCheckIns(beforeDate);
+  
+        expect(mockPrisma.checkIn.findMany).toHaveBeenCalledWith({
+          where: {
+            checkedOutAt: null,
+            checkedInAt: { lt: beforeDate },
+          },
+        });
+        expect(result).toEqual(staleCheckIns);
+      });
+    });
+  
+    describe('autoCheckOut', () => {
+      test('should set checkedOutAt for a given check-in', async () => {
+        const updatedCheckIn = { ...mockCheckInData, checkedOutAt: new Date() };
+        mockPrisma.checkIn.update.mockResolvedValue(updatedCheckIn);
+  
+        const result = await parkService.autoCheckOut(1);
+  
+        expect(mockPrisma.checkIn.update).toHaveBeenCalledWith({
+          where: { id: 1 },
+          data: { checkedOutAt: expect.any(Date) },
+        });
+        expect(result.checkedOutAt).not.toBeNull();
+      });
+    });
+  });
 });

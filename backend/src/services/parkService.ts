@@ -307,7 +307,7 @@ const parkService = {
   async getActiveCheckInsForPark(parkId: number) {
     typeSafeLogger.info('Fetching active check-ins for park', { parkId });
     try {
-      const activeCheckIns = await getParksNearLocationSchema.checkIn.findMany({
+      const activeCheckIns = await prisma.checkIn.findMany({
         where: {
           parkId,
           checkedOutAt: null,

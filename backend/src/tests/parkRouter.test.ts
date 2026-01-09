@@ -14,6 +14,9 @@ const mockUpdatePark = jest.fn();
 const mockDeletePark = jest.fn();
 const mockAddParkToUserFavorites = jest.fn();
 const mockRemoveParkFromUserFavorites = jest.fn();
+const mockCheckInAtPark = jest.fn();
+const mockCheckOutFromPark = jest.fn();
+const mockGetActiveCheckInsForPark = jest.fn();
 
 jest.mock('../controllers/parkController', () => ({
   __esModule: true,
@@ -28,6 +31,9 @@ jest.mock('../controllers/parkController', () => ({
     deletePark: (req: any, res: any, next: any) => mockDeletePark(req, res, next),
     addParkToUserFavorites: (req: any, res: any, next: any) => mockAddParkToUserFavorites(req, res, next),
     removeParkFromUserFavorites: (req: any, res: any, next: any) => mockRemoveParkFromUserFavorites(req, res, next),
+    checkInAtPark: (req: any, res: any, next: any) => mockCheckInAtPark(req, res, next),
+    checkOutFromPark: (req: any, res: any, next: any) => mockCheckOutFromPark(req, res, next),
+    getActiveCheckInsForPark: (req: any, res: any, next: any) => mockGetActiveCheckInsForPark(req, res, next),
   },
 }));
 
@@ -400,4 +406,67 @@ describe('Park Router', () => {
       expect(mockDeletePark).toHaveBeenCalled();
     });
   });
+
+  describe('Check-in / Check-out routes', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+  
+    // Tests for POST /parks/:parkId/check-in
+    test('should call checkInAtPark controller with parkId', async () => {
+      // Mock implementation of the controller
+      mockCheckInAtPark.mockImplementation((req, res) => {
+        // Check that parkId is passed correctly
+        expect(req.params.parkId).toBe('123');
+        res.status(200).json({ message: 'Checked in successfully' });
+      });
+  
+      // Make request to the route
+      const response = await request(app)
+        .post('/parks/123/check-in')
+        .expect(200);
+  
+      // Check response body
+      expect(response.body.message).toBe('Checked in successfully');
+      // Ensure controller was called
+      expect(mockCheckInAtPark).toHaveBeenCalled();
+    });
+  
+    // Tests for POST /parks/:parkId/check-out
+    test('should call checkOutFromPark controller with parkId', async () => {
+      mockCheckOutFromPark.mockImplementation((req, res) => {
+        expect(req.params.parkId).toBe('123');
+        res.status(200).json({ message: 'Checked out successfully' });
+      });
+  
+      const response = await request(app)
+        .post('/parks/123/check-out')
+        .expect(200);
+  
+      expect(response.body.message).toBe('Checked out successfully');
+      expect(mockCheckOutFromPark).toHaveBeenCalled();
+    });
+  
+    // Tests for GET /parks/:parkId/check-ins
+    test('should call getActiveCheckInsForPark controller with parkId', async () => {
+      mockGetActiveCheckInsForPark.mockImplementation((req, res) => {
+        expect(req.params.parkId).toBe('123');
+        // Return a fake list of active check-ins
+        res.status(200).json([
+          { userId: 1, parkId: 123, checkedInAt: new Date() },
+          { userId: 2, parkId: 123, checkedInAt: new Date() },
+        ]);
+      });
+  
+      const response = await request(app)
+        .get('/parks/123/check-ins')
+        .expect(200);
+  
+      // Expect array of check-ins
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(2);
+      expect(mockGetActiveCheckInsForPark).toHaveBeenCalled();
+    });
+  });
+  
 });

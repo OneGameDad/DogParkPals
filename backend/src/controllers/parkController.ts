@@ -193,6 +193,52 @@ const parkController = {
           toAppError(error, { message: "Failed to delete park", code: "INTERNAL_ERROR", statusCode: 500 })
         );
       }
+    },
+
+    checkInAtPark: async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const userId = (req as any).user?.id;
+        const parkId = parseInt(req.params.parkId, 10);
+        const dogId = req.body.dogId ? parseInt(req.body.dogId, 10) : undefined;
+
+        const checkIn = await parkService.checkIn(userId, parkId, dogId);
+        res.status(201).json(checkIn);
+      } catch (error) {
+        return next(
+          toAppError(error, { message: "Failed to check in", code: "INTERNAL_ERROR", statusCode: 500 })
+        );
+      }
+    },
+
+    checkOutFromPark: async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const userId = (req as any).user?.id;
+        const parkId = parseInt(req.params.parkId, 10);
+
+        const checkOut = await parkService.checkOut(userId, parkId);
+        res.status(200).json(checkOut);
+      } catch (error) {
+        return next(
+          toAppError(error, {
+            message: "Failed to check out",
+            code: "INTERNAL_ERROR",
+            statusCode: 500,
+          })
+        );
+      }
+    },
+
+    getActiveCheckInsForPark: async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const parkId = parseInt(req.params.parkId, 10);
+        const activeCheckIns = await parkService.getActiveCheckInsForPark(parkId);
+
+        res.status(200).json(activeCheckIns);
+      } catch (error) {
+        return next(
+          toAppError(error, { message: 'Failed to get active check-ins', code: 'INTERNAL_ERROR', statusCode: 500 })
+        );
+      }
     }
 };
 

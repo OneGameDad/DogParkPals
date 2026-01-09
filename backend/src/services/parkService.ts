@@ -1,7 +1,7 @@
 
 import { PrismaClient, Prisma } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
-import { toAppError } from '../utils/errors';
+import { NotFoundError, toAppError } from '../utils/errors';
 import { createParkSchema, updateParkSchema } from '../utils/validationSchemas';
 
 const prisma = new PrismaClient();
@@ -237,6 +237,113 @@ const parkService = {
     }
   },
 
+  async checkIn (userId: number, parkId: number, dogId?: number) {
+    typeSafeLogger.logUserAction('User attempting to check in', { userId, parkId, dogId });
+    const existingCheckIn = await prisma.checkIn.findFirst({
+      where: {
+        userId,
+        checkedOutAt: null,
+      },
+    });
+    if (existingCheckIn) {
+      throw new Error('User already has an active check-in.'); // TODO: or USER_ALREADY_CHECKED_IN?
+    }
+
+    try {
+      const newCheckIn = await prisma.checkIn.create({
+        data: {
+          userId,
+          parkId,
+          dogId,
+        },
+      });
+      typeSafeLogger.logUserAction('Check-in created successfully', { checkInId: newCheckIn.id });
+      return newCheckIn;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to check in',
+        code: 'CHECK_IN_FAILED',
+      });
+      typeSafeLogger.logError('Check-in failed', appError, { userId, parkId, dogId });
+      throw appError;
+    }
+  },
+
+  async checkOut (userId: number, parkId: number) {
+    typeSafeLogger.logUserAction("User attempting to check out", { userId, parkId });
+    try {
+      const activeCheckIn = await prisma.checkIn.findFirst({
+        where: {
+          userId,
+          parkId,
+          checkedOutAt: null,
+        },
+      });
+      if (!activeCheckIn) {
+        throw NotFoundError("No active check-in found for this park");
+      }
+      const updatedCheckIn = await prisma.checkIn.update({
+        where: { id: activeCheckIn.id },
+        data: {
+          checkedOutAt: new Date(),
+        },
+      });
+      typeSafeLogger.logUserAction("User checked out successfully", {
+        checkInId: updatedCheckIn.id,
+        userId,
+        parkId,
+      });
+      return updatedCheckIn;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: "Failed to check out",
+        code: "CHECK_OUT_FAILED",
+      });
+      typeSafeLogger.logError("Check-out failed", appError, { userId, parkId });
+      throw appError;
+    }
+  },
+
+  async getActiveCheckInsForPark(parkId: number) {
+    typeSafeLogger.info('Fetching active check-ins for park', { parkId });
+    try {
+      const activeCheckIns = await prisma.checkIn.findMany({
+        where: {
+          parkId,
+          checkedOutAt: null,
+        },
+        include: {
+          user: true,
+          dog: true,
+        },
+      });
+      typeSafeLogger.logUserAction('Active check-ins retrieved', { parkId, count: activeCheckIns.length });
+      return activeCheckIns;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to fetch active check-ins',
+        code: 'FETCH_ACTIVE_CHECKINS_FAILED',
+      });
+      typeSafeLogger.logError('Failed to fetch active check-ins', appError, { parkId });
+      throw appError;
+    }
+  },
+
+  async getStaleCheckIns(beforeDate: Date) {
+    return prisma.checkIn.findMany({
+      where: {
+        checkedOutAt: null,
+        checkedInAt: { lt: beforeDate },
+      },
+    });
+  },
+
+  async autoCheckOut(checkInId: number) {
+    return prisma.checkIn.update({
+      where: { id: checkInId },
+      data: { checkedOutAt: new Date() },
+    });
+  }
 };
 
 export default parkService;

@@ -3,6 +3,7 @@ import userRouter from "./routes/userRouter";
 import typeSafeLogger from "./utils/typeSafeLogger";
 import { requestIdMiddleware } from "./middlewares/requestId";
 import { errorHandler } from "./middlewares/errorHandler";
+import "./jobs/autoCheckoutJob"
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;

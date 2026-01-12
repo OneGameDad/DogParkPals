@@ -5,14 +5,17 @@ import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
+import Profile from './pages/Profile';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import DogProfile from './pages/DogProfile';
 
 
 function App() {
   return (
     <BrowserRouter>
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-cover bg-center bg-fixed" 
+     style={{backgroundImage: "url('/imgs/background.png')"}}>
       <Navbar />
       {/* The Router Switch */}
       <div className="flex-grow p-8">
@@ -23,6 +26,8 @@ function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/dog/:id" element={<DogProfile />} />
         </Routes>
       </div>
 

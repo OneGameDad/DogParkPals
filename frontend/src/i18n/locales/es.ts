@@ -5,6 +5,11 @@ export const es = {
     login: "Spanish Login",
     dashboard: "Spanish Dashboard",
     settings: "Spanish Settings",
+    profile: "Spanish Profile",
+    exampleData: "Spanish Example Data",
+    memberSince: "Spanish Member Since",
+    exampleDate: "Spanish January 2026",
+    owner: "Spanish Owner",
     footer: {
       privacy: "Spanish Privacy Policy",
       terms: "Spanish Terms of Service",

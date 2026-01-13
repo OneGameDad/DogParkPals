@@ -251,3 +251,22 @@ export const checkEnemySchema = z.object({
 });
 
 export type CheckEnemyRequest = z.infer<typeof checkEnemySchema>;
+
+export const sendMessageSchema = z.object({
+  senderId: z.number().int().positive('Sender ID must be a positive integer'),
+  receiverId: z.number().int().positive('Receiver ID must be a positive integer'),
+  content: z.string().min(1, 'Message content cannot be empty').max(1000, 'Message too long'), // TODO: ideal message length?
+}).refine((data) => data.senderId !== data.receiverId, {
+  message: 'Sender cannot message themselves',
+  path: ['receiverId'],
+});
+
+export type SendMessageRequest = z.infer<typeof sendMessageSchema>;
+
+export const updateMessageStatusSchema = z.object({
+  status: z.enum(['SENT', 'DELIVERED', 'READ', 'ARCHIVED', 'DELETED'], {
+    message: 'Invalid status value',
+  }),
+});
+
+export type UpdateMessageStatusRequest = z.infer<typeof updateMessageStatusSchema>;

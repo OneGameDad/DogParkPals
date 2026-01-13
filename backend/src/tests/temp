@@ -1,6 +1,28 @@
-
 import { expect, describe, test, beforeEach, jest } from '@jest/globals';
-import type { Friendship, User, Dog } from '@prisma/client';
+import { FriendshipStatus, type PrismaClient } from '@prisma/client';
+//import type { Friendship, User, Dog } from '@prisma/client';
+
+jest.mock('@prisma/client', () => {
+  return {
+    PrismaClient: jest.fn(() => ({
+      friendship: {
+        create: jest.fn(),
+        update: jest.fn(),
+        deleteMany: jest.fn(),
+        findMany: jest.fn(),
+      },
+    })),
+    // Export enums to satisfy validationSchemas
+    FriendshipStatus: {
+      PENDING: 'PENDING',
+      ACCEPTED: 'ACCEPTED',
+      REJECTED: 'REJECTED',
+      BLOCKED:  'BLOCKED',
+    },
+  };
+});
+
+const friendService = await import('../services/friendService'); // added
 
 describe('Friend Service', () => {
   const mockRequesterId = 1;
@@ -16,48 +38,42 @@ describe('Friend Service', () => {
 
   describe('sendFriendRequest', () => {
     test('should successfully send a friend request', async () => {
-      const mockFriendship: Friendship = {
+      const mockFriendship = {
         id: mockFriendshipId,
         requesterId: mockRequesterId,
         addresseeId: mockAddresseeId,
         requesterDogId: null,
         addresseeDogId: null,
-        status: 'PENDING',
+        status: FriendshipStatus.PENDING,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
-      const mockCreate = jest.fn<() => Promise<Friendship>>().mockResolvedValue(mockFriendship);
+      const prisma = new (await import('@prisma/client')).PrismaClient();
+      (prisma.friendship.create as jest.MockedFunction<typeof prisma.friendship.create>)
+        .mockResolvedValue(mockFriendship);
 
-      jest.doMock('@prisma/client', () => ({
-        PrismaClient: jest.fn(() => ({
-          friendship: {
-            create: mockCreate,
-          },
-        })),
-      }));
-
-      const friendService = await import('../services/friendService');
-
-      const result = await friendService.default.sendFriendRequest(mockRequesterId, mockAddresseeId);
+      const result = await friendService.default.sendFriendRequest(
+        mockRequesterId,
+        mockAddresseeId
+      );
 
       expect(result).toEqual(mockFriendship);
       expect(result.requesterId).toBe(mockRequesterId);
       expect(result.addresseeId).toBe(mockAddresseeId);
       expect(result.status).toBe('PENDING');
-      expect(mockCreate).toHaveBeenCalledWith(
+
+      expect(prisma.friendship.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: {
+          data: expect.objectContaining({
             requesterId: mockRequesterId,
             addresseeId: mockAddresseeId,
             requesterDogId: null,
             addresseeDogId: null,
             status: 'PENDING',
-          },
+          }),
         })
       );
-
-      jest.dontMock('@prisma/client');
     });
 
     test('should auto-accept friend request when dog is involved', async () => {

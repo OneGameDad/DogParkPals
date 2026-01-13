@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { MessageStatus } from '@prisma/client';
 
 export const createUserSchema = z.object({
   username: z.string().min(1, 'Username is required').min(3, 'Username must be at least 3 characters'),
@@ -265,7 +264,7 @@ export const sendMessageSchema = z.object({
 export type SendMessageRequest = z.infer<typeof sendMessageSchema>;
 
 export const updateMessageStatusSchema = z.object({
-  status: z.enum(Object.values(MessageStatus), {
+  status: z.enum(['SENT', 'DELIVERED', 'READ', 'ARCHIVED', 'DELETED'], {
     message: 'Invalid status value',
   }),
 });

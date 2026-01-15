@@ -2,9 +2,19 @@ import userService from "../services/userServices";
 import express from "express";
 import { sanitizeUser } from "../utils/userSanitizer";
 import typeSafeLogger from "../utils/typeSafeLogger";
-import { toAppError, ConflictError, NotFoundError } from "../utils/errors";
+import { toAppError, ConflictError, NotFoundError, ForbiddenError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
-import { createUserSchema, getUserByEmailSchema } from "../utils/validationSchemas";
+import {
+    changePasswordSchema,
+    createUserSchema,
+    deleteUserSchema,
+    forgotPasswordSchema,
+    getUserByEmailSchema,
+    getUserByIdSchema,
+    getUserByUsernameSchema,
+    listUsersSchema,
+    resetPasswordSchema,
+} from "../utils/validationSchemas";
 
 const userController = {
     createUser: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -41,6 +51,112 @@ const userController = {
         } catch (error) {
             return next(
                 toAppError(error, { message: "Failed to retrieve user", code: "INTERNAL_ERROR", statusCode: 500 })
+            );
+        }
+    },
+
+    getUserById: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            typeSafeLogger.logRequest("Received request to fetch user by id", { method: req.method, path: req.path });
+            const { id } = parseValidation(getUserByIdSchema, req.params);
+
+            const user = await userService.getUserById(id);
+            if (!user) {
+                throw NotFoundError("User not found");
+            }
+            res.status(200).json(sanitizeUser(user));
+        } catch (error) {
+            return next(
+                toAppError(error, { message: "Failed to retrieve user", code: "INTERNAL_ERROR", statusCode: 500 })
+            );
+        }
+    },
+
+    getUserByUsername: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            typeSafeLogger.logRequest("Received request to fetch user by username", { method: req.method, path: req.path });
+            const { username } = parseValidation(getUserByUsernameSchema, req.params);
+
+            const user = await userService.getUserByUsername(username);
+            if (!user) {
+                throw NotFoundError("User not found");
+            }
+            res.status(200).json(sanitizeUser(user));
+        } catch (error) {
+            return next(
+                toAppError(error, { message: "Failed to retrieve user", code: "INTERNAL_ERROR", statusCode: 500 })
+            );
+        }
+    },
+
+    getAllUsers: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            typeSafeLogger.logRequest("Received request to list users", { method: req.method, path: req.path });
+            const { page = 1, pageSize = 50 } = parseValidation(listUsersSchema, req.query);
+
+            const users = await userService.listUsers(page, pageSize);
+            res.status(200).json(users.map(sanitizeUser));
+        } catch (error) {
+            return next(
+                toAppError(error, { message: "Failed to list users", code: "INTERNAL_ERROR", statusCode: 500 })
+            );
+        }
+    },
+
+    deleteUser: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            typeSafeLogger.logRequest("Received request to delete user", { method: req.method, path: req.path });
+            const { id } = parseValidation(deleteUserSchema, req.params);
+
+            if (!req.userId || req.userId !== Number(id)) {
+                throw ForbiddenError("You can only delete your own account");
+            }
+
+            await userService.deleteUser(Number(id));
+            res.status(204).send();
+        } catch (error) {
+            return next(
+                toAppError(error, { message: "Failed to delete user", code: "INTERNAL_ERROR", statusCode: 500 })
+            );
+        }
+    },
+
+    changePassword: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            if (!req.userId) {
+                throw ForbiddenError("Authentication required");
+            }
+
+            const { oldPassword, newPassword } = parseValidation(changePasswordSchema, req.body);
+            await userService.changePassword(req.userId, oldPassword, newPassword);
+            res.status(200).json({ message: "Password changed successfully" });
+        } catch (error) {
+            return next(
+                toAppError(error, { message: "Failed to change password", code: "INTERNAL_ERROR", statusCode: 500 })
+            );
+        }
+    },
+
+    forgotPassword: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            const { email } = parseValidation(forgotPasswordSchema, req.body);
+            const token = await userService.requestPasswordReset(email);
+            res.status(200).json({ message: "Password reset token generated", resetToken: token });
+        } catch (error) {
+            return next(
+                toAppError(error, { message: "Failed to generate reset token", code: "INTERNAL_ERROR", statusCode: 500 })
+            );
+        }
+    },
+
+    resetPassword: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            const { token, newPassword } = parseValidation(resetPasswordSchema, req.body);
+            await userService.resetPassword(token, newPassword);
+            res.status(200).json({ message: "Password reset successfully" });
+        } catch (error) {
+            return next(
+                toAppError(error, { message: "Failed to reset password", code: "INTERNAL_ERROR", statusCode: 500 })
             );
         }
     }

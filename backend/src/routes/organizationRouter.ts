@@ -1,12 +1,10 @@
 import express from "express";
 import organizationController from "../controllers/organizationController";
-// TODO: Import authentication middleware when implemented
-// import { authenticate } from "../middleware/authenticate";
+import { requireAuth } from "../middlewares/authMiddleware";
 
 const router = express.Router();
 
-// All routes require authentication (add authenticate middleware when available)
-// TODO: Add authenticate middleware to all routes: router.use(authenticate)
+router.use(requireAuth);
 router.post("/organizations", organizationController.createOrganization);
 router.get("/organizations/name/:name", organizationController.getOrganizationByName);
 router.get("/organizations/:id/details", organizationController.getOrganizationWithDetails);

@@ -1,5 +1,6 @@
 import express from "express";
 import userRouter from "./routes/userRouter";
+import authRouter from "./routes/authRouter";
 import typeSafeLogger from "./utils/typeSafeLogger";
 import { requestIdMiddleware } from "./middlewares/requestId";
 import { errorHandler } from "./middlewares/errorHandler";
@@ -10,6 +11,7 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 app.use(requestIdMiddleware);
 app.use(express.json());
+app.use(authRouter);
 app.use(userRouter);
 
 app.get("/health", (_req, res) => {

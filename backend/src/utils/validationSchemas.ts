@@ -8,11 +8,68 @@ export const createUserSchema = z.object({
 
 export type CreateUserRequest = z.infer<typeof createUserSchema>;
 
+export const loginSchema = z.object({
+  email: z.string().min(1, 'Email is required').email('Invalid email format'),
+  password: z.string().min(1, 'Password is required'),
+});
+
+export type LoginRequest = z.infer<typeof loginSchema>;
+
 export const getUserByEmailSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Invalid email format'),
 });
 
 export type GetUserByEmailRequest = z.infer<typeof getUserByEmailSchema>;
+
+export const getUserByIdSchema = z.object({
+  id: z.coerce.number().int().positive('User ID must be a positive integer'),
+});
+
+export type GetUserByIdRequest = z.infer<typeof getUserByIdSchema>;
+
+export const getUserByUsernameSchema = z.object({
+  username: z.string().min(1, 'Username is required'),
+});
+
+export type GetUserByUsernameRequest = z.infer<typeof getUserByUsernameSchema>;
+
+export const listUsersSchema = z.object({
+  page: z.coerce.number().int().positive('Page must be a positive integer').optional(),
+  pageSize: z.coerce
+    .number()
+    .int()
+    .positive('Page size must be a positive integer')
+    .max(100, 'Page size cannot exceed 100')
+    .optional(),
+});
+
+export type ListUsersRequest = z.infer<typeof listUsersSchema>;
+
+export const deleteUserSchema = z.object({
+  id: z.coerce.number().int().positive('User ID must be a positive integer'),
+});
+
+export type DeleteUserRequest = z.infer<typeof deleteUserSchema>;
+
+export const changePasswordSchema = z.object({
+  oldPassword: z.string().min(8, 'Old password must be at least 8 characters'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+});
+
+export type ChangePasswordRequest = z.infer<typeof changePasswordSchema>;
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().min(1, 'Email is required').email('Invalid email format'),
+});
+
+export type ForgotPasswordRequest = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Reset token is required'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+});
+
+export type ResetPasswordRequest = z.infer<typeof resetPasswordSchema>;
 
 export const createParkSchema = z.object({
   name: z.string().min(1, 'Park name is required'),

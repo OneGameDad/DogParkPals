@@ -11,7 +11,7 @@ router.get("/users/username/:username", (req, res, next) => userController.getUs
 router.get("/users", (req, res, next) => userController.getAllUsers(req, res, next));
 router.delete("/users/:id", requireAuth, (req, res, next) => userController.deleteUser(req, res, next));
 router.post("/users/change-password", requireAuth, (req, res, next) => userController.changePassword(req, res, next));
-router.post("/users/forgot-password", (req, res, next) => userController.forgotPassword(req, res, next));
-router.post("/users/reset-password", (req, res, next) => userController.resetPassword(req, res, next));
+// router.post("/users/forgot-password", (req, res, next) => userController.forgotPassword(req, res, next));
+// router.post("/users/reset-password", (req, res, next) => userController.resetPassword(req, res, next));
 
 export default router;

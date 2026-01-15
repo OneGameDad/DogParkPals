@@ -1,12 +1,10 @@
 import express from "express";
 import parkController from "../controllers/parkController";
-// TODO: Import authentication middleware when implemented
-// import { authenticate } from "../middleware/authenticate";
+import { requireAuth } from "../middlewares/authMiddleware";
 
 const router = express.Router();
 
-// All routes require authentication (add authenticate middleware when available)
-// TODO: Add authenticate middleware to all routes: router.use(authenticate)
+router.use(requireAuth);
 router.get("/parks/name/:name", parkController.getParkByName);
 router.get("/parks/amenities", parkController.getParksByAmenity);
 router.get("/parks/nearby", parkController.getParksNearLocation);

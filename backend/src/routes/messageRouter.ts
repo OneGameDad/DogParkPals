@@ -1,9 +1,11 @@
 import express from "express";
 import parkController from "../controllers/messageController";
 import messageController from "../controllers/messageController";
+import { requireAuth } from "../middlewares/authMiddleware";
 
 const router = express.Router();
 
+router.use(requireAuth);
 router.post("/:friendId", messageController.sendMessage);
 router.get("/:friendId", messageController.getConversation);
 router.get("/", messageController.getAllMessages);

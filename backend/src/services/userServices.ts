@@ -1,8 +1,9 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
-import { hashPassword } from '../utils/password';
+import crypto from 'crypto';
+import { hashPassword, verifyPassword } from '../utils/password';
 import typeSafeLogger from '../utils/typeSafeLogger';
-import { toAppError } from '../utils/errors';
+import { AuthError, NotFoundError, toAppError } from '../utils/errors';
 
 const prisma = new PrismaClient();
 
@@ -54,6 +55,174 @@ const userService = {
         code: 'FETCH_USER_FAILED',
       });
       typeSafeLogger.logError('Failed to fetch user by email', appError, { email });
+      throw appError;
+    }
+  },
+
+  async getUserById(id: number) {
+    typeSafeLogger.info('Fetching user by id', { id });
+    try {
+      const user = await prisma.user.findUnique({ where: { id } });
+      if (user) {
+        typeSafeLogger.logUserAction('User found by id', { userId: user.id });
+      } else {
+        typeSafeLogger.warn('User not found by id', { id });
+      }
+      return user;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to fetch user by id',
+        code: 'FETCH_USER_FAILED',
+      });
+      typeSafeLogger.logError('Failed to fetch user by id', appError, { id });
+      throw appError;
+    }
+  },
+
+  async getUserByUsername(username: string) {
+    typeSafeLogger.info('Fetching user by username', { username });
+    try {
+      const user = await prisma.user.findUnique({ where: { username } });
+      if (user) {
+        typeSafeLogger.logUserAction('User found by username', { userId: user.id, username });
+      } else {
+        typeSafeLogger.warn('User not found by username', { username });
+      }
+      return user;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to fetch user by username',
+        code: 'FETCH_USER_FAILED',
+      });
+      typeSafeLogger.logError('Failed to fetch user by username', appError, { username });
+      throw appError;
+    }
+  },
+
+  async listUsers(page = 1, pageSize = 50) {
+    typeSafeLogger.info('Listing users', { page, pageSize });
+    try {
+      const skip = (page - 1) * pageSize;
+      const users = await prisma.user.findMany({ skip, take: pageSize, orderBy: { id: 'asc' } });
+      return users;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to list users',
+        code: 'FETCH_USER_FAILED',
+      });
+      typeSafeLogger.logError('Failed to list users', appError, { page, pageSize });
+      throw appError;
+    }
+  },
+
+  async deleteUser(id: number) {
+    typeSafeLogger.logUserAction('Deleting user', { id });
+    try {
+      await prisma.user.delete({ where: { id } });
+      typeSafeLogger.logUserAction('User deleted', { id });
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to delete user',
+        code: 'DELETE_USER_FAILED',
+      });
+      typeSafeLogger.logError('Failed to delete user', appError, { id });
+      throw appError;
+    }
+  },
+
+  async changePassword(userId: number, oldPassword: string, newPassword: string) {
+    typeSafeLogger.logUserAction('Changing password', { userId });
+    try {
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        throw NotFoundError('User not found');
+      }
+
+      const isValid = await verifyPassword(oldPassword, user.password_hash);
+      if (!isValid) {
+        throw AuthError('Invalid credentials');
+      }
+
+      const hashedPassword = await hashPassword(newPassword);
+      await prisma.user.update({
+        where: { id: userId },
+        data: { password_hash: hashedPassword },
+      });
+      typeSafeLogger.logUserAction('Password changed', { userId });
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to change password',
+        code: 'CHANGE_PASSWORD_FAILED',
+      });
+      typeSafeLogger.logError('Failed to change password', appError, { userId });
+      throw appError;
+    }
+  },
+
+  async requestPasswordReset(email: string) {
+    typeSafeLogger.logUserAction('Requesting password reset', { email });
+    try {
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user) {
+        throw NotFoundError('User not found');
+      }
+
+      const token = crypto.randomBytes(32).toString('hex');
+      const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+      const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          resetToken: hashedToken,
+          resetTokenExpiry: expiry,
+        } as any,
+      });
+
+      typeSafeLogger.logUserAction('Password reset token generated', { userId: user.id });
+      return token;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to request password reset',
+        code: 'RESET_PASSWORD_FAILED',
+      });
+      typeSafeLogger.logError('Failed to request password reset', appError, { email });
+      throw appError;
+    }
+  },
+
+  async resetPassword(token: string, newPassword: string) {
+    typeSafeLogger.logUserAction('Resetting password with token', {});
+    try {
+      const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+      const user = await prisma.user.findFirst({
+        where: {
+          resetToken: hashedToken,
+          resetTokenExpiry: { gt: new Date() },
+        } as any,
+      });
+
+      if (!user) {
+        throw NotFoundError('Invalid or expired reset token');
+      }
+
+      const hashedPassword = await hashPassword(newPassword);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          password_hash: hashedPassword,
+          resetToken: null,
+          resetTokenExpiry: null,
+        } as any,
+      });
+
+      typeSafeLogger.logUserAction('Password reset completed', { userId: user.id });
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to reset password',
+        code: 'RESET_PASSWORD_FAILED',
+      });
+      typeSafeLogger.logError('Failed to reset password', appError);
       throw appError;
     }
   }

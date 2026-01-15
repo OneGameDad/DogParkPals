@@ -6,6 +6,13 @@ import { AppError, ConflictError, NotFoundError } from '../utils/errors';
 // Create mock functions first
 const mockGetUserByEmail = jest.fn<any>();
 const mockCreateUser = jest.fn<any>();
+const mockGetUserById = jest.fn<any>();
+const mockGetUserByUsername = jest.fn<any>();
+const mockListUsers = jest.fn<any>();
+const mockDeleteUser = jest.fn<any>();
+const mockChangePassword = jest.fn<any>();
+const mockRequestPasswordReset = jest.fn<any>();
+const mockResetPassword = jest.fn<any>();
 
 // Mock the entire userServices module
 jest.mock('../services/userServices', () => ({
@@ -13,6 +20,13 @@ jest.mock('../services/userServices', () => ({
   default: {
     getUserByEmail: mockGetUserByEmail,
     createUser: mockCreateUser,
+    getUserById: mockGetUserById,
+    getUserByUsername: mockGetUserByUsername,
+    listUsers: mockListUsers,
+    deleteUser: mockDeleteUser,
+    changePassword: mockChangePassword,
+    requestPasswordReset: mockRequestPasswordReset,
+    resetPassword: mockResetPassword,
   },
 }));
 
@@ -38,6 +52,7 @@ describe('User Controller', () => {
     mockReq = {
       body: {},
       params: {},
+        query: {},
     };
 
     // Create fresh Express response mock
@@ -113,7 +128,7 @@ describe('User Controller', () => {
         password: 'password123',
       };
 
-      const existingUser: Omit<User, 'dogs' | 'favoriteParks' | 'eventsOwned' | 'eventsAttending'> = {
+      const existingUser = {
         id: 1,
         email: 'existing@example.com',
         username: 'existinguser',
@@ -123,9 +138,11 @@ describe('User Controller', () => {
         profilePictureUrl: null,
         role: 'CLIENT',
         ExpPoints: 0,
+        resetToken: null,
+        resetTokenExpiry: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-      };
+      } as unknown as User;
 
       mockGetUserByEmail.mockResolvedValue(existingUser);
 
@@ -148,7 +165,7 @@ describe('User Controller', () => {
         password: 'password123',
       };
 
-      const newUser: Omit<User, 'dogs' | 'favoriteParks' | 'eventsOwned' | 'eventsAttending'> = {
+      const newUser = {
         id: 1,
         username: 'newuser',
         email: 'new@example.com',
@@ -158,9 +175,11 @@ describe('User Controller', () => {
         profilePictureUrl: null,
         role: 'CLIENT',
         ExpPoints: 0,
+        resetToken: null,
+        resetTokenExpiry: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-      };
+      } as unknown as User;
 
       mockGetUserByEmail.mockResolvedValue(null);
       mockCreateUser.mockResolvedValue(newUser);
@@ -221,7 +240,7 @@ describe('User Controller', () => {
     test('returns 200 and user data when user is found', async () => {
       mockReq.params = { email: 'test@example.com' };
 
-      const foundUser: Omit<User, 'dogs' | 'favoriteParks' | 'eventsOwned' | 'eventsAttending'> = {
+      const foundUser = {
         id: 1,
         username: 'testuser',
         email: 'test@example.com',
@@ -231,9 +250,11 @@ describe('User Controller', () => {
         profilePictureUrl: 'https://example.com/pic.jpg',
         role: 'CLIENT',
         ExpPoints: 100,
+        resetToken: null,
+        resetTokenExpiry: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-      };
+      } as unknown as User;
 
       mockGetUserByEmail.mockResolvedValue(foundUser);
 
@@ -264,6 +285,180 @@ describe('User Controller', () => {
       expect(forwardedError.statusCode).toBe(500);
       expect(forwardedError.code).toBe('INTERNAL_ERROR');
       expect(forwardedError.message).toBe('Failed to retrieve user');
+    });
+  });
+
+  describe('getUserById', () => {
+    test('forwards not found error when user is not found', async () => {
+      mockReq.params = { id: '5' } as any;
+
+      mockGetUserById.mockResolvedValue(null);
+
+      await userController.getUserById(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockGetUserById).toHaveBeenCalledWith(5);
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError.statusCode).toBe(404);
+    });
+
+    test('returns 200 and user data when user is found', async () => {
+      mockReq.params = { id: '2' } as any;
+
+      const foundUser: Partial<User> = {
+        id: 2,
+        username: 'testuser',
+        email: 'test@example.com',
+        password_hash: 'hashed',
+      } as User;
+
+      mockGetUserById.mockResolvedValue(foundUser);
+
+      await userController.getUserById(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      const responseCall = mockJson.mock.calls[0][0] as any;
+      expect(responseCall).not.toHaveProperty('password_hash');
+      expect(responseCall.id).toBe(2);
+    });
+
+    test('forwards 500 error when service throws', async () => {
+      mockReq.params = { id: '3' } as any;
+      mockGetUserById.mockRejectedValue(new Error('Database error'));
+
+      await userController.getUserById(mockReq as Request, mockRes as Response, mockNext as any);
+
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError.statusCode).toBe(500);
+      expect(forwardedError.code).toBe('INTERNAL_ERROR');
+    });
+  });
+
+  describe('getUserByUsername', () => {
+    test('forwards not found error when user is not found', async () => {
+      mockReq.params = { username: 'missing' };
+      mockGetUserByUsername.mockResolvedValue(null);
+
+      await userController.getUserByUsername(mockReq as Request, mockRes as Response, mockNext as any);
+
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError.statusCode).toBe(404);
+    });
+
+    test('returns 200 and user data when user is found', async () => {
+      mockReq.params = { username: 'founduser' };
+      mockGetUserByUsername.mockResolvedValue({
+        id: 10,
+        username: 'founduser',
+        email: 'found@example.com',
+        password_hash: 'hashed',
+      } as User);
+
+      await userController.getUserByUsername(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      const responseCall = mockJson.mock.calls[0][0] as any;
+      expect(responseCall.username).toBe('founduser');
+      expect(responseCall).not.toHaveProperty('password_hash');
+    });
+  });
+
+  describe('getAllUsers', () => {
+    test('returns sanitized list of users', async () => {
+      mockReq.query = { page: '1', pageSize: '2' } as any;
+      mockListUsers.mockResolvedValue([
+        { id: 1, username: 'a', email: 'a@example.com', password_hash: 'h1' },
+        { id: 2, username: 'b', email: 'b@example.com', password_hash: 'h2' },
+      ] as User[]);
+
+      await userController.getAllUsers(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockListUsers).toHaveBeenCalledWith(1, 2);
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      const responseCall = mockJson.mock.calls[0][0] as any[];
+      expect(responseCall[0]).not.toHaveProperty('password_hash');
+      expect(responseCall.length).toBe(2);
+    });
+
+    test('forwards 500 when service throws', async () => {
+      mockListUsers.mockRejectedValue(new Error('boom'));
+
+      await userController.getAllUsers(mockReq as Request, mockRes as Response, mockNext as any);
+
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError.statusCode).toBe(500);
+    });
+  });
+
+  describe('deleteUser', () => {
+    test('forwards forbidden when userId does not match', async () => {
+      mockReq.params = { id: '3' } as any;
+      (mockReq as any).userId = 2;
+
+      await userController.deleteUser(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockDeleteUser).not.toHaveBeenCalled();
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError.statusCode).toBe(403);
+    });
+
+    test('returns 204 when deletion succeeds', async () => {
+      mockReq.params = { id: '5' } as any;
+      (mockReq as any).userId = 5;
+      mockDeleteUser.mockResolvedValue(undefined);
+
+      await userController.deleteUser(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockDeleteUser).toHaveBeenCalledWith(5);
+      expect(mockStatus).toHaveBeenCalledWith(204);
+    });
+  });
+
+  describe('changePassword', () => {
+    test('forwards forbidden when not authenticated', async () => {
+      mockReq.body = { oldPassword: 'oldpass123', newPassword: 'newpass123' };
+      (mockReq as any).userId = undefined;
+
+      await userController.changePassword(mockReq as Request, mockRes as Response, mockNext as any);
+
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError.statusCode).toBe(403);
+    });
+
+    test('returns 200 when change succeeds', async () => {
+      mockReq.body = { oldPassword: 'oldpass123', newPassword: 'newpass123' };
+      (mockReq as any).userId = 7;
+      mockChangePassword.mockResolvedValue(undefined);
+
+      await userController.changePassword(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockChangePassword).toHaveBeenCalledWith(7, 'oldpass123', 'newpass123');
+      expect(mockStatus).toHaveBeenCalledWith(200);
+    });
+  });
+
+  describe('forgotPassword', () => {
+    test('returns token when reset requested', async () => {
+      mockReq.body = { email: 'reset@example.com' };
+      mockRequestPasswordReset.mockResolvedValue('token123');
+
+      await userController.forgotPassword(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockRequestPasswordReset).toHaveBeenCalledWith('reset@example.com');
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      const responseCall = mockJson.mock.calls[0][0] as any;
+      expect(responseCall.resetToken).toBe('token123');
+    });
+  });
+
+  describe('resetPassword', () => {
+    test('returns 200 when password reset succeeds', async () => {
+      mockReq.body = { token: 'reset123', newPassword: 'newpass123' };
+      mockResetPassword.mockResolvedValue(undefined);
+
+      await userController.resetPassword(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockResetPassword).toHaveBeenCalledWith('reset123', 'newpass123');
+      expect(mockStatus).toHaveBeenCalledWith(200);
     });
   });
 });

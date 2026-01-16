@@ -14,6 +14,16 @@ const mockAddOwnerToDog = jest.fn<any>();
 const mockRemoveOwnerFromDog = jest.fn<any>();
 const mockGetOwnersOfDog = jest.fn<any>();
 
+// Mock friend service
+const mockGetFriend = jest.fn<any>();
+
+jest.mock('../services/friendService', () => ({
+  __esModule: true,
+  default: {
+    getFriend: mockGetFriend,
+  },
+}));
+
 // Mock dogService
 jest.mock('../services/dogService', () => ({
   __esModule: true,
@@ -71,6 +81,7 @@ describe('Dog Controller', () => {
     mockReq = {
       body: {},
       params: {},
+      userId: undefined,
       user: undefined,
     };
 
@@ -211,7 +222,8 @@ describe('Dog Controller', () => {
     test('updates dog when user is owner', async () => {
       mockReq.params = { id: '1' };
       mockReq.body = { name: 'Rex Jr' };
-      mockReq.user = { id: 1, role: 'CLIENT' };
+      mockReq.userId = 1;
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
       mockGetDogById.mockResolvedValue(mockDog);
       mockGetOwnersOfDog.mockResolvedValue([mockOwner]);
       mockUpdateDog.mockResolvedValue({ ...mockDog, name: 'Rex Jr' });
@@ -226,7 +238,8 @@ describe('Dog Controller', () => {
     test('updates dog when user is admin', async () => {
       mockReq.params = { id: '1' };
       mockReq.body = { name: 'Rex Jr' };
-      mockReq.user = { id: 99, role: 'ADMIN' };
+      mockReq.userId = 99;
+      (mockReq as any).user = { id: 99, role: 'ADMIN' };
       mockGetDogById.mockResolvedValue(mockDog);
       mockGetOwnersOfDog.mockResolvedValue([mockOwner]);
       mockUpdateDog.mockResolvedValue({ ...mockDog, name: 'Rex Jr' });
@@ -240,7 +253,8 @@ describe('Dog Controller', () => {
     test('updates dog when user is developer', async () => {
       mockReq.params = { id: '1' };
       mockReq.body = { name: 'Rex Jr' };
-      mockReq.user = { id: 99, role: 'DEVELOPER' };
+      mockReq.userId = 99;
+      (mockReq as any).user = { id: 99, role: 'DEVELOPER' };
       mockGetDogById.mockResolvedValue(mockDog);
       mockGetOwnersOfDog.mockResolvedValue([mockOwner]);
       mockUpdateDog.mockResolvedValue({ ...mockDog, name: 'Rex Jr' });
@@ -254,7 +268,8 @@ describe('Dog Controller', () => {
     test('forwards ForbiddenError when user is not owner or admin', async () => {
       mockReq.params = { id: '1' };
       mockReq.body = { name: 'Rex Jr' };
-      mockReq.user = { id: 99, role: 'CLIENT' };
+      mockReq.userId = 99;
+      (mockReq as any).user = { id: 99, role: 'CLIENT' };
       mockGetDogById.mockResolvedValue(mockDog);
       mockGetOwnersOfDog.mockResolvedValue([mockOwner]);
 
@@ -270,7 +285,8 @@ describe('Dog Controller', () => {
     test('forwards NotFoundError when dog does not exist', async () => {
       mockReq.params = { id: '999' };
       mockReq.body = { name: 'Updated' };
-      mockReq.user = { id: 1, role: 'CLIENT' };
+      mockReq.userId = 1;
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
       mockGetDogById.mockResolvedValue(null);
 
       await dogController.updateDog(mockReq as Request, mockRes as Response, mockNext as NextFunction);
@@ -284,7 +300,8 @@ describe('Dog Controller', () => {
   describe('deleteDog', () => {
     test('deletes dog when user is owner', async () => {
       mockReq.params = { id: '1' };
-      mockReq.user = { id: 1, role: 'CLIENT' };
+      mockReq.userId = 1;
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
       mockGetDogById.mockResolvedValue(mockDog);
       mockGetOwnersOfDog.mockResolvedValue([mockOwner]);
       mockDeleteDog.mockResolvedValue(undefined);
@@ -298,7 +315,8 @@ describe('Dog Controller', () => {
 
     test('forwards ForbiddenError when user is not authorized', async () => {
       mockReq.params = { id: '1' };
-      mockReq.user = { id: 99, role: 'CLIENT' };
+      mockReq.userId = 99;
+      (mockReq as any).user = { id: 99, role: 'CLIENT' };
       mockGetDogById.mockResolvedValue(mockDog);
       mockGetOwnersOfDog.mockResolvedValue([mockOwner]);
 
@@ -312,12 +330,14 @@ describe('Dog Controller', () => {
   });
 
   describe('addOwnerToDog', () => {
-    test('adds owner when user is authorized', async () => {
+    test('adds owner when user is authorized and are friends', async () => {
       mockReq.params = { id: '1' };
       mockReq.body = { userId: 2 };
-      mockReq.user = { id: 1, role: 'CLIENT' };
+      mockReq.userId = 1;
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
       mockGetDogById.mockResolvedValue(mockDog);
       mockGetOwnersOfDog.mockResolvedValue([mockOwner]);
+      mockGetFriend.mockResolvedValue({ users: [{ id: 2, username: 'friend', email: 'friend@example.com' }], dogs: [] });
       mockAddOwnerToDog.mockResolvedValue(undefined);
 
       await dogController.addOwnerToDog(mockReq as Request, mockRes as Response, mockNext as NextFunction);
@@ -326,10 +346,28 @@ describe('Dog Controller', () => {
       expect(mockStatus).toHaveBeenCalledWith(204);
     });
 
+    test('forwards ForbiddenError when users are not friends', async () => {
+      mockReq.params = { id: '1' };
+      mockReq.body = { userId: 2 };
+      mockReq.userId = 1;
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+      mockGetDogById.mockResolvedValue(mockDog);
+      mockGetOwnersOfDog.mockResolvedValue([mockOwner]);
+      mockGetFriend.mockResolvedValue({ users: [], dogs: [] });
+
+      await dogController.addOwnerToDog(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockAddOwnerToDog).not.toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalledTimes(1);
+      const error = mockNext.mock.calls[0][0] as AppError;
+      expect(error.statusCode).toBe(403);
+    });
+
     test('forwards ForbiddenError when user is not authorized', async () => {
       mockReq.params = { id: '1' };
       mockReq.body = { userId: 2 };
-      mockReq.user = { id: 99, role: 'CLIENT' };
+      mockReq.userId = 99;
+      (mockReq as any).user = { id: 99, role: 'CLIENT' };
       mockGetDogById.mockResolvedValue(mockDog);
       mockGetOwnersOfDog.mockResolvedValue([mockOwner]);
 
@@ -344,7 +382,8 @@ describe('Dog Controller', () => {
     test('removes owner when user is authorized', async () => {
       mockReq.params = { id: '1' };
       mockReq.body = { userId: 2 };
-      mockReq.user = { id: 1, role: 'CLIENT' };
+      mockReq.userId = 1;
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
       mockGetDogById.mockResolvedValue(mockDog);
       mockGetOwnersOfDog.mockResolvedValue([mockOwner]);
       mockRemoveOwnerFromDog.mockResolvedValue(undefined);
@@ -353,12 +392,14 @@ describe('Dog Controller', () => {
 
       expect(mockRemoveOwnerFromDog).toHaveBeenCalledWith(1, 2);
       expect(mockStatus).toHaveBeenCalledWith(204);
+      expect(mockSend).toHaveBeenCalled();
     });
 
     test('forwards ForbiddenError when user is not authorized', async () => {
       mockReq.params = { id: '1' };
       mockReq.body = { userId: 2 };
-      mockReq.user = { id: 99, role: 'CLIENT' };
+      mockReq.userId = 99;
+      (mockReq as any).user = { id: 99, role: 'CLIENT' };
       mockGetDogById.mockResolvedValue(mockDog);
       mockGetOwnersOfDog.mockResolvedValue([mockOwner]);
 

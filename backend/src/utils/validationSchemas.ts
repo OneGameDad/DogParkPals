@@ -345,3 +345,13 @@ export type AddDogRequest = z.infer<typeof addDogSchema>;
 // For updates, allow partial fields but keep enum/format validation
 export const updateDogSchema = addDogSchema.partial();
 export type UpdateDogRequest = z.infer<typeof updateDogSchema>;
+
+export const addOwnerToDogSchema = z.object({
+  userId: z.number().int().positive('User ID must be a positive integer'),
+});
+export type AddOwnerToDogRequest = z.infer<typeof addOwnerToDogSchema>;
+
+export const removeOwnerFromDogSchema = z.object({
+  userId: z.number().int().positive('User ID must be a positive integer'),
+});
+export type RemoveOwnerFromDogRequest = z.infer<typeof removeOwnerFromDogSchema>;

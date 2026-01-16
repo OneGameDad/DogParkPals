@@ -3,7 +3,8 @@ import typeSafeLogger from "../utils/typeSafeLogger";
 import { toAppError, ConflictError, NotFoundError, ForbiddenError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import dogService from "../services/dogService";
-import { addDogSchema } from "../utils/validationSchemas";
+import friendService from "../services/friendService";
+import { addDogSchema, addOwnerToDogSchema, removeOwnerFromDogSchema } from "../utils/validationSchemas";
 
 /**
  * Check if user is authorized to modify a dog (owner, admin, or developer)
@@ -23,6 +24,31 @@ async function checkDogAuthorization(dogId: number, userId: number | undefined, 
   }
   
   return dog;
+}
+
+/**
+ * Check if two users are friends
+ */
+async function areFriends(userId1: number, userId2: number): Promise<boolean> {
+  try {
+    const friends = await friendService.getFriend(userId1);
+    return friends.users.some(user => user.id === userId2);
+  } catch {
+    return false;
+  }
+}
+
+// Extend Express Request to include user info
+declare global {
+  namespace Express {
+    interface Request {
+      userId?: number;
+      user?: {
+        id: number;
+        role?: string;
+      };
+    }
+  }
 }
 
 const dogController = {
@@ -106,7 +132,9 @@ const dogController = {
   updateDog: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
         const dogId = parseInt(req.params.id, 10);
-        await checkDogAuthorization(dogId, req.user?.id, req.user?.role);
+        const userId = req.userId;
+        const userRole = (req as any).user?.role;
+        await checkDogAuthorization(dogId, userId, userRole);
         
         const updatedDog = await dogService.updateDog(dogId, req.body);
         res.status(200).json(updatedDog);
@@ -118,7 +146,9 @@ const dogController = {
     deleteDog: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
         const dogId = parseInt(req.params.id, 10);
-        await checkDogAuthorization(dogId, req.user?.id, req.user?.role);
+        const userId = req.userId;
+        const userRole = (req as any).user?.role;
+        await checkDogAuthorization(dogId, userId, userRole);
         
         await dogService.deleteDog(dogId);
         res.status(204).send();
@@ -130,9 +160,21 @@ const dogController = {
     addOwnerToDog: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
     const dogId = parseInt(req.params.id, 10);
-    await checkDogAuthorization(dogId, req.user?.id, req.user?.role);
+    const userId = req.userId;
+    const userRole = (req as any).user?.role;
+    await checkDogAuthorization(dogId, userId, userRole);
     
-    await dogService.addOwnerToDog(dogId, req.body.userId);
+    const { userId: newOwnerId } = parseValidation(addOwnerToDogSchema, req.body);
+    
+    // Check if users are friends before adding owner
+    if (userId && userId !== newOwnerId) {
+      const isFriended = await areFriends(userId, newOwnerId);
+      if (!isFriended) {
+        throw ForbiddenError("Can only add owners who are your friends");
+      }
+    }
+    
+    await dogService.addOwnerToDog(dogId, newOwnerId);
     res.status(204).send();
     } catch (error) {
         return next(toAppError(error, { message: "Failed to add owner to dog", code: "INTERNAL_ERROR", statusCode: 500 }));
@@ -142,9 +184,12 @@ const dogController = {
   removeOwnerFromDog: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
         const dogId = parseInt(req.params.id, 10);
-        await checkDogAuthorization(dogId, req.user?.id, req.user?.role);
+        const userId = req.userId;
+        const userRole = (req as any).user?.role;
+        await checkDogAuthorization(dogId, userId, userRole);
         
-        await dogService.removeOwnerFromDog(dogId, req.body.userId);
+        const { userId: ownerIdToRemove } = parseValidation(removeOwnerFromDogSchema, req.body);
+        await dogService.removeOwnerFromDog(dogId, ownerIdToRemove);
         res.status(204).send();
         } catch (error) {
             return next(toAppError(error, { message: "Failed to remove owner from dog", code: "INTERNAL_ERROR", statusCode: 500 }));

@@ -162,9 +162,9 @@ const eventService = {
   async getEventsByOrganization(organizationId: number) {
     typeSafeLogger.info('Fetching events by organization', { organizationId });
     try {
-      const validated = getEventsByOrganizerSchema.parse({ organizerId: organizationId });
+      const validated = getEventsByOrganizationSchema.parse({ organizationId });
       const events = await prisma.event.findMany({
-        where: { organizerId: validated.organizerId },
+        where: { organizerId: validated.organizationId },
       });
       typeSafeLogger.logUserAction('Events fetched by organization', { organizationId, eventCount: events.length });
       return events;

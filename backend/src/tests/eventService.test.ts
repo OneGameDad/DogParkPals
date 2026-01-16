@@ -134,6 +134,26 @@ describe('Event Service', () => {
       ).rejects.toThrow();
     });
 
+    test('should handle validation errors for event less than 30 minutes', async () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 1);
+      const startTime = new Date(futureDate);
+      const endTime = new Date(futureDate);
+      endTime.setMinutes(endTime.getMinutes() + 15); // Only 15 minutes
+
+      await expect(
+        eventService.createEvent(
+          'Dog Park Playdate',
+          'Description',
+          futureDate,
+          startTime,
+          endTime,
+          1,
+          1
+        )
+      ).rejects.toThrow();
+    });
+
     test('should handle database errors', async () => {
       mockEventCreate.mockRejectedValue(new Error('Database error'));
 
@@ -185,6 +205,18 @@ describe('Event Service', () => {
     test('should handle validation errors for invalid title', async () => {
       await expect(
         eventService.updateEvent(1, { title: 'AB' })
+      ).rejects.toThrow();
+    });
+
+    test('should handle validation errors for event less than 30 minutes', async () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 1);
+      const startTime = new Date(futureDate);
+      const endTime = new Date(futureDate);
+      endTime.setMinutes(endTime.getMinutes() + 15); // Only 15 minutes
+
+      await expect(
+        eventService.updateEvent(1, { startTime, endTime })
       ).rejects.toThrow();
     });
 

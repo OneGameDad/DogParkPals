@@ -1,12 +1,10 @@
 import express from "express";
 import dogController from "../controllers/dogController";
-// TODO: Import authentication middleware when implemented
-// import { authenticate } from "../middleware/authenticate";
+import { requireAuth } from "../middlewares/authMiddleware";
 
 const router = express.Router();
 
-// All routes require authentication (add authenticate middleware when available)
-// TODO: Add authenticate middleware to all routes: router.use(authenticate)
+router.use(requireAuth);
 router.post("/dogs", (req, res, next) => dogController.addDog(req, res, next));
 router.get("/dogs", (req, res, next) => dogController.getAllDogs(req, res, next));
 router.get("/dogs/:id", (req, res, next) => dogController.getDogById(req, res, next));

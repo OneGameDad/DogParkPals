@@ -30,6 +30,7 @@ backend/dist/
 
 # Local SQLite databases
 backend/dev.db
+backend/prisma/dev.db
 
 # Tool caches (optional)
 frontend/.vite/

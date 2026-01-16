@@ -1,12 +1,10 @@
 import express from "express";
 import eventController from "../controllers/eventController";
-// TODO: Import authentication middleware when implemented
-// import { authenticate } from "../middleware/authenticate";
+import { requireAuth } from "../middlewares/authMiddleware";
 
 const router = express.Router();
 
-// All routes require authentication (add authenticate middleware when available)
-// TODO: Add authenticate middleware to all routes: router.use(authenticate)
+router.use(requireAuth);
 router.post("/events", eventController.createEvent);
 router.get("/events/park/:parkId", eventController.getEventsByPark);
 router.get("/events/organizer/:organizerId", eventController.getEventsByOrganizer);

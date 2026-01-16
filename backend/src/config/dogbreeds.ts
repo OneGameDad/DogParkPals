@@ -2,6 +2,9 @@
 // This enum can be used throughout the application to ensure consistency when referring to dog breeds.
 
 export enum DogBreed {
+  UNKNOWN,
+  MIXED_BREED,
+  
   AFFENPINSCHER,
   AFGHAN_HOUND,
   AIDI,

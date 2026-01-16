@@ -3,11 +3,9 @@ import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
 import { parseValidation } from '../utils/validator';
 import { addDogSchema, updateDogSchema } from '../utils/validationSchemas';
-import { get } from 'node:http';
 
 const prisma = new PrismaClient();
 
-//TODO dogService.ts
 // Implement dog-related services such as adding a dog, fetching dog profiles, updating dog information, etc.
 const dogService = {
   // Add a new dog with validated enum types
@@ -112,7 +110,14 @@ const dogService = {
     typeSafeLogger.info('Fetching all dogs by park ID', { parkId });
     try {
       const dogs = await prisma.dog.findMany({
-        where: { currentLocationId: parkId },
+        where: {
+          checkIns: {
+            some: {
+              parkId: parkId,
+              checkedOutAt: null, // Only dogs currently checked in
+            },
+          },
+        },
       });
       typeSafeLogger.logUserAction('Dogs fetched by park ID', { parkId, dogCount: dogs.length });
       return dogs;

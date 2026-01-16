@@ -242,15 +242,22 @@ describe('Dog Service', () => {
   describe('getAllDogsByPark', () => {
     test('fetches dogs currently at park', async () => {
       const parkDogs = [
-        { ...mockDogData, id: 3, name: 'Scout', currentLocationId: 10 },
-        { ...mockDogData, id: 4, name: 'Luna', currentLocationId: 10 },
+        { ...mockDogData, id: 3, name: 'Scout' },
+        { ...mockDogData, id: 4, name: 'Luna' },
       ];
       mockPrisma.dog.findMany.mockResolvedValue(parkDogs);
 
       const result = await dogService.getAllDogsByPark(10);
 
       expect(mockPrisma.dog.findMany).toHaveBeenCalledWith({
-        where: { currentLocationId: 10 },
+        where: {
+          checkIns: {
+            some: {
+              parkId: 10,
+              checkedOutAt: null,
+            },
+          },
+        },
       });
       expect(result).toEqual(parkDogs);
     });

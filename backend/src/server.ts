@@ -11,7 +11,8 @@ const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 app.use(cors({
-  origin: "http://localhost:5173",
+  //Hardcoded for development purposes
+  origin: process.env.FRONTEND_URL || "http://localhost:5173",
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,

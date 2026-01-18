@@ -107,7 +107,7 @@ export interface Dog {
   id: number;
   name: string;
   breed: DogBreed;
-  gender: string;
+  gender: DogGender;
   fixed: boolean;
   dateOfBirth: string;
   size: DogSize;

@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '../constants';
-import type { HealthCheckResponse } from '../types';
+import type { HealthCheckResponse, User } from '../types';
 
 class ApiService {
   private baseUrl: string;
@@ -95,8 +95,8 @@ class ApiService {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
 
-  async login(username: string, password: string): Promise<{ token: string; user: any }> {
-    const response = await this.post<{ token: string; user: any }>('/api/auth/login', {
+  async login(username: string, password: string): Promise<{ token: string; user: User }> {
+    const response = await this.post<{ token: string; user: User }>('/api/auth/login', {
       username,
       password,
     });
@@ -104,8 +104,8 @@ class ApiService {
     return response;
   }
 
-  async register(username: string, password: string): Promise<any> {
-    return this.post('/api/auth/register', { username, password });
+  async register(username: string, password: string): Promise<{ token: string; user: User }> {
+    return this.post<{ token: string; user: User }>('/api/auth/register', { username, password });
   }
 
   logout() {

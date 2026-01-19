@@ -54,7 +54,10 @@ const notificationService = {
           }
           return await prisma.notification.update({
             where: { id: notificationId },
-            data: { readAt: new Date() },
+            data: {
+              readAt: new Date(), 
+              read: true
+            },
           });
         } catch (error) {
           const appError = toAppError(error, {
@@ -71,7 +74,10 @@ const notificationService = {
         try {
           const result = await prisma.notification.updateMany({
             where: { userId, readAt: null },
-            data: { readAt: new Date() },
+            data: { 
+              readAt: new Date(),
+              read: true
+            },
           });
           return result.count;
         } catch (error) {

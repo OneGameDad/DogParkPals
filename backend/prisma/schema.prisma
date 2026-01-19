@@ -278,6 +278,7 @@ model Notification {
   userId    Int
   type      NotificationType
   payload   Json
+  read      Boolean  @default(false)
   readAt    DateTime?
   createdAt DateTime @default(now())
 

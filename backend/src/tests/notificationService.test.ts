@@ -72,7 +72,10 @@ describe('notificationService', () => {
       expect(result).toHaveProperty('readAt');
       expect(prisma.notification.update).toHaveBeenCalledWith({
         where: { id: 1 },
-        data: { readAt: expect.any(Date) },
+        data: { 
+            readAt: expect.any(Date),
+            read: true
+        },
       });
     });
 
@@ -102,7 +105,10 @@ describe('notificationService', () => {
       expect(result).toBe(3);
       expect(prisma.notification.updateMany).toHaveBeenCalledWith({
         where: { userId: 1, readAt: null },
-        data: { readAt: expect.any(Date) },
+        data: { 
+            readAt: expect.any(Date),
+            read: true
+        },
       });
     });
 

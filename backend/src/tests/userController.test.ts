@@ -11,8 +11,6 @@ const mockGetUserByUsername = jest.fn<any>();
 const mockListUsers = jest.fn<any>();
 const mockDeleteUser = jest.fn<any>();
 const mockChangePassword = jest.fn<any>();
-const mockRequestPasswordReset = jest.fn<any>();
-const mockResetPassword = jest.fn<any>();
 
 // Mock the entire userServices module
 jest.mock('../services/userServices', () => ({
@@ -25,8 +23,6 @@ jest.mock('../services/userServices', () => ({
     listUsers: mockListUsers,
     deleteUser: mockDeleteUser,
     changePassword: mockChangePassword,
-    requestPasswordReset: mockRequestPasswordReset,
-    resetPassword: mockResetPassword,
   },
 }));
 
@@ -138,8 +134,6 @@ describe('User Controller', () => {
         profilePictureUrl: null,
         role: 'CLIENT',
         ExpPoints: 0,
-        resetToken: null,
-        resetTokenExpiry: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       } as unknown as User;
@@ -175,8 +169,6 @@ describe('User Controller', () => {
         profilePictureUrl: null,
         role: 'CLIENT',
         ExpPoints: 0,
-        resetToken: null,
-        resetTokenExpiry: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       } as unknown as User;
@@ -250,8 +242,6 @@ describe('User Controller', () => {
         profilePictureUrl: 'https://example.com/pic.jpg',
         role: 'CLIENT',
         ExpPoints: 100,
-        resetToken: null,
-        resetTokenExpiry: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       } as unknown as User;
@@ -432,32 +422,6 @@ describe('User Controller', () => {
       await userController.changePassword(mockReq as Request, mockRes as Response, mockNext as any);
 
       expect(mockChangePassword).toHaveBeenCalledWith(7, 'oldpass123', 'newpass123');
-      expect(mockStatus).toHaveBeenCalledWith(200);
-    });
-  });
-
-  describe('forgotPassword', () => {
-    test('returns token when reset requested', async () => {
-      mockReq.body = { email: 'reset@example.com' };
-      mockRequestPasswordReset.mockResolvedValue('token123');
-
-      await userController.forgotPassword(mockReq as Request, mockRes as Response, mockNext as any);
-
-      expect(mockRequestPasswordReset).toHaveBeenCalledWith('reset@example.com');
-      expect(mockStatus).toHaveBeenCalledWith(200);
-      const responseCall = mockJson.mock.calls[0][0] as any;
-      expect(responseCall.resetToken).toBe('token123');
-    });
-  });
-
-  describe('resetPassword', () => {
-    test('returns 200 when password reset succeeds', async () => {
-      mockReq.body = { token: 'reset123', newPassword: 'newpass123' };
-      mockResetPassword.mockResolvedValue(undefined);
-
-      await userController.resetPassword(mockReq as Request, mockRes as Response, mockNext as any);
-
-      expect(mockResetPassword).toHaveBeenCalledWith('reset123', 'newpass123');
       expect(mockStatus).toHaveBeenCalledWith(200);
     });
   });

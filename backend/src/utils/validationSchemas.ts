@@ -58,19 +58,6 @@ export const changePasswordSchema = z.object({
 
 export type ChangePasswordRequest = z.infer<typeof changePasswordSchema>;
 
-export const forgotPasswordSchema = z.object({
-  email: z.string().min(1, 'Email is required').email('Invalid email format'),
-});
-
-export type ForgotPasswordRequest = z.infer<typeof forgotPasswordSchema>;
-
-export const resetPasswordSchema = z.object({
-  token: z.string().min(1, 'Reset token is required'),
-  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
-});
-
-export type ResetPasswordRequest = z.infer<typeof resetPasswordSchema>;
-
 export const createParkSchema = z.object({
   name: z.string().min(1, 'Park name is required'),
   latitude: z.number().min(-90, 'Latitude must be between -90 and 90').max(90, 'Latitude must be between -90 and 90'),

@@ -8,12 +8,10 @@ import {
     changePasswordSchema,
     createUserSchema,
     deleteUserSchema,
-    forgotPasswordSchema,
     getUserByEmailSchema,
     getUserByIdSchema,
     getUserByUsernameSchema,
     listUsersSchema,
-    resetPasswordSchema,
 } from "../utils/validationSchemas";
 
 const userController = {
@@ -133,30 +131,6 @@ const userController = {
         } catch (error) {
             return next(
                 toAppError(error, { message: "Failed to change password", code: "INTERNAL_ERROR", statusCode: 500 })
-            );
-        }
-    },
-
-    forgotPassword: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-        try {
-            const { email } = parseValidation(forgotPasswordSchema, req.body);
-            const token = await userService.requestPasswordReset(email);
-            res.status(200).json({ message: "Password reset token generated", resetToken: token });
-        } catch (error) {
-            return next(
-                toAppError(error, { message: "Failed to generate reset token", code: "INTERNAL_ERROR", statusCode: 500 })
-            );
-        }
-    },
-
-    resetPassword: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-        try {
-            const { token, newPassword } = parseValidation(resetPasswordSchema, req.body);
-            await userService.resetPassword(token, newPassword);
-            res.status(200).json({ message: "Password reset successfully" });
-        } catch (error) {
-            return next(
-                toAppError(error, { message: "Failed to reset password", code: "INTERNAL_ERROR", statusCode: 500 })
             );
         }
     }

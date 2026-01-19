@@ -6,17 +6,17 @@ const router = express.Router();
 
 router.use(requireAuth);
 
-router.get(
-  "/notifications",
-  (req, res, next) => notificationController.getNotifications(req, res, next)
+router.patch(
+  "/read-all",
+  (req, res, next) => notificationController.markAllAsRead(req, res, next)
 );
 router.patch(
-  "/notifications/:id/read",
+  "/:id/read",
   (req, res, next) => notificationController.markAsRead(req, res, next)
 );
-router.patch(
-  "/notifications/read-all",
-  (req, res, next) => notificationController.markAllAsRead(req, res, next)
+router.get(
+  "/",
+  (req, res, next) => notificationController.getNotifications(req, res, next)
 );
 
 export default router;

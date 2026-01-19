@@ -1,6 +1,6 @@
 import express from "express";
 import typeSafeLogger from "../utils/typeSafeLogger";
-import { NotFoundError, ForbiddenError, toAppError } from "../utils/errors";
+import { NotFoundError, ForbiddenError, toAppError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import notificationService from "../services/notificationService";
 
@@ -37,6 +37,9 @@ const notificationController = {
       typeSafeLogger.logUserAction("Notifications retrieved", { userId, count: notifications.length });
       res.status(200).json({ notifications });
     } catch (error) {
+        if (isAppError(error)) {
+            return next(error);
+        }
         return next(
             toAppError(error, { message: "Failed to get notifications", code: "INTERNAL_ERROR", statusCode: 500 }));
       }
@@ -62,6 +65,9 @@ const notificationController = {
       typeSafeLogger.logUserAction("Notification marked as read", { notificationId, userId });
       res.status(200).json(updatedNotification);
     } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
       return next(
         toAppError(error, { message: "Failed to mark notification as read", code: "INTERNAL_ERROR", statusCode: 500 })
       );
@@ -80,6 +86,9 @@ const notificationController = {
         typeSafeLogger.logUserAction("All notifications marked as read", { userId });
         res.status(200).json({ message: "All notifications marked as read" });
       } catch (error) {
+          if (isAppError(error)) {
+              return next(error);
+          }
           return next(
               toAppError(error, { message: "Failed to mark all notifications as read", code: "INTERNAL_ERROR", statusCode: 500 }));
         }

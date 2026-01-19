@@ -1,5 +1,5 @@
 import parkService from "../services/parkService";
-import { NotFoundError, ForbiddenError } from "../utils/errors";
+import { NotFoundError, ForbiddenError, isAppError } from "../utils/errors";
 import { Request, Response, NextFunction } from "express";
 import typeSafeLogger from "../utils/typeSafeLogger";
 import { toAppError } from "../utils/errors";
@@ -37,6 +37,9 @@ const parkController = {
         typeSafeLogger.logUserAction("Park retrieved", { parkId: park.id });
         res.status(200).json(park);
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: "Failed to retrieve park", code: "INTERNAL_ERROR", statusCode: 500 })
         );
@@ -57,6 +60,9 @@ const parkController = {
         typeSafeLogger.logUserAction("Parks retrieved near location", { parkCount: parks.length });
         res.status(200).json(parks);
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: "Failed to retrieve parks near location", code: "INTERNAL_ERROR", statusCode: 500 })
         );
@@ -72,6 +78,9 @@ const parkController = {
         typeSafeLogger.logUserAction("Parks retrieved by amenity", { amenity, parkCount: parks.length });
         res.status(200).json(parks);
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: "Failed to retrieve parks by amenity", code: "INTERNAL_ERROR", statusCode: 500 })
         );
@@ -90,6 +99,9 @@ const parkController = {
         typeSafeLogger.logUserAction("Park retrieved by name", { parkId: park.id, name });
         res.status(200).json(park);
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: "Failed to retrieve park by name", code: "INTERNAL_ERROR", statusCode: 500 })
         );
@@ -104,6 +116,9 @@ const parkController = {
         typeSafeLogger.logUserAction("All parks retrieved", { parkCount: parks.length });
         res.status(200).json(parks);
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: "Failed to retrieve all parks", code: "INTERNAL_ERROR", statusCode: 500 })
         );
@@ -120,6 +135,9 @@ const parkController = {
         typeSafeLogger.logUserAction("Park added to user favorites", { userId, parkId });
         res.status(200).json({ message: "Park added to favorites" });
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: "Failed to add park to user favorites", code: "INTERNAL_ERROR", statusCode: 500 })
         );
@@ -136,6 +154,9 @@ const parkController = {
         typeSafeLogger.logUserAction("Park removed from user favorites", { userId, parkId });
         res.status(200).json({ message: "Park removed from favorites" });
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: "Failed to remove park from user favorites", code: "INTERNAL_ERROR", statusCode: 500 })
         );
@@ -153,6 +174,9 @@ const parkController = {
         typeSafeLogger.logUserAction("Park created", { parkId: newPark.id, name: newPark.name });
         res.status(201).json(newPark);
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: "Failed to create park", code: "INTERNAL_ERROR", statusCode: 500 })
         );
@@ -172,6 +196,9 @@ const parkController = {
             typeSafeLogger.logUserAction("Park updated", { parkId });
             res.status(200).json(updatedPark);
         } catch (error) {
+            if (isAppError(error)) {
+              return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to update park", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -189,6 +216,9 @@ const parkController = {
         typeSafeLogger.logUserAction("Park deleted", { parkId });
         res.status(204).send();
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: "Failed to delete park", code: "INTERNAL_ERROR", statusCode: 500 })
         );
@@ -204,6 +234,9 @@ const parkController = {
         const checkIn = await parkService.checkIn(userId, parkId, dogId);
         res.status(201).json(checkIn);
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: "Failed to check in", code: "INTERNAL_ERROR", statusCode: 500 })
         );
@@ -218,6 +251,9 @@ const parkController = {
         const checkOut = await parkService.checkOut(userId, parkId);
         res.status(200).json(checkOut);
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, {
             message: "Failed to check out",
@@ -235,6 +271,9 @@ const parkController = {
 
         res.status(200).json(activeCheckIns);
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: 'Failed to get active check-ins', code: 'INTERNAL_ERROR', statusCode: 500 })
         );

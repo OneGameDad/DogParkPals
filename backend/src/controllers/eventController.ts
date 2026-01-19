@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import eventService from "../services/eventService";
 import typeSafeLogger from "../utils/typeSafeLogger";
-import { toAppError, ConflictError, NotFoundError, ForbiddenError } from "../utils/errors";
+import { toAppError, ConflictError, NotFoundError, ForbiddenError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import organizationService from "../services/organizationService";
 import type { Event } from "@prisma/client";
@@ -83,6 +83,9 @@ const eventController = {
       typeSafeLogger.logUserAction("Event created", { eventId: newEvent.id, title });
       res.status(201).json(newEvent);
     } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
       return next(
         toAppError(error, { message: "Failed to create event", code: "INTERNAL_ERROR", statusCode: 500 })
       );
@@ -108,6 +111,9 @@ const eventController = {
       typeSafeLogger.logUserAction("Event updated", { eventId });
       res.status(200).json(updatedEvent);
     } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
       return next(
         toAppError(error, { message: "Failed to update event", code: "INTERNAL_ERROR", statusCode: 500 })
       );
@@ -132,6 +138,9 @@ const eventController = {
       typeSafeLogger.logUserAction("Event deleted", { eventId });
       res.status(204).send();
     } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
       return next(
         toAppError(error, { message: "Failed to delete event", code: "INTERNAL_ERROR", statusCode: 500 })
       );
@@ -151,6 +160,9 @@ const eventController = {
       typeSafeLogger.logUserAction("Event retrieved", { eventId });
       res.status(200).json(event);
     } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
       return next(
         toAppError(error, { message: "Failed to retrieve event", code: "INTERNAL_ERROR", statusCode: 500 })
       );
@@ -167,6 +179,9 @@ const eventController = {
       typeSafeLogger.logUserAction("Events retrieved by organizer", { organizerId, eventCount: events.length });
       res.status(200).json(events);
     } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
       return next(
         toAppError(error, { message: "Failed to retrieve events", code: "INTERNAL_ERROR", statusCode: 500 })
       );
@@ -183,6 +198,9 @@ const eventController = {
       typeSafeLogger.logUserAction("Events retrieved by organization", { organizationId, eventCount: events.length });
       res.status(200).json(events);
     } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
       return next(
         toAppError(error, { message: "Failed to retrieve events", code: "INTERNAL_ERROR", statusCode: 500 })
       );
@@ -197,6 +215,9 @@ const eventController = {
         typeSafeLogger.logUserAction("Events retrieved by park", { parkId, eventCount: events.length });
         res.status(200).json(events);
     } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
       return next(
         toAppError(error, { message: "Failed to retrieve events", code: "INTERNAL_ERROR", statusCode: 500 })
       );
@@ -210,6 +231,9 @@ const eventController = {
         typeSafeLogger.logUserAction("All events retrieved", { eventCount: events.length });
         res.status(200).json(events);
     } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
       return next(
         toAppError(error, { message: "Failed to retrieve events", code: "INTERNAL_ERROR", statusCode: 500 })
       );
@@ -223,6 +247,9 @@ const eventController = {
         typeSafeLogger.logUserAction("Upcoming events retrieved", { eventCount: events.length });
         res.status(200).json(events);
     } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
       return next(
         toAppError(error, { message: "Failed to retrieve upcoming events", code: "INTERNAL_ERROR", statusCode: 500 })
       );
@@ -239,6 +266,9 @@ const eventController = {
       typeSafeLogger.logUserAction("Event existence checked", { eventId, exists });
       res.status(200).json({ exists });
     } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
       return next(
         toAppError(error, { message: "Failed to check event existence", code: "INTERNAL_ERROR", statusCode: 500 })
       );

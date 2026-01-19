@@ -1,7 +1,7 @@
 import messageService from "../services/messageService";
 import express from "express";
 import typeSafeLogger from "../utils/typeSafeLogger";
-import { toAppError } from "../utils/errors";
+import { toAppError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import { sendMessageSchema, updateMessageStatusSchema } from "../utils/validationSchemas";
 
@@ -15,6 +15,9 @@ const messageController = {
             typeSafeLogger.logUserAction("Message sent", { senderId, receiverId, messageId: message.id });
              res.status(201).json(message);
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(toAppError(error, { message: "Failed to send message", code: "INTERNAL_ERROR", statusCode: 500 }));
         }
     },
@@ -30,6 +33,9 @@ const messageController = {
             typeSafeLogger.logUserAction("Conversation retrieved", { userId, friendId, messageCount: conversation.length });
             res.status(200).json(conversation);
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(toAppError(error, { message: "Failed to retrieve conversation", code: "INTERNAL_ERROR", statusCode: 500 }));
         }
     },
@@ -44,6 +50,9 @@ const messageController = {
             typeSafeLogger.logUserAction("All messages retrieved", { userId, messageCount: messages.length });
             res.status(200).json(messages);
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(toAppError(error, { message: "Failed to fetch messages", code: "INTERNAL_ERROR", statusCode: 500 }));
         }
     },
@@ -59,6 +68,9 @@ const messageController = {
             typeSafeLogger.logUserAction("Message status updated", { messageId, status });
             res.status(200).json(updatedMessage);
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(toAppError(error, { message: "Failed to update message status", code: "INTERNAL_ERROR", statusCode: 500 }));
         }
     },
@@ -73,6 +85,9 @@ const messageController = {
             typeSafeLogger.logUserAction("Message deleted", { messageId });
             res.status(204).send();
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(toAppError(error, { message: "Failed to delete message", code: "INTERNAL_ERROR", statusCode: 500 }));
         }
     },
@@ -84,6 +99,9 @@ const messageController = {
         typeSafeLogger.logUserAction('Unread messages retrieved', { userId, count: messages.length });
         res.status(200).json(messages);
       } catch (error) {
+        if (isAppError(error)) {
+            return next(error);
+        }
         return next(toAppError(error, { message: 'Failed to fetch unread messages', code: 'INTERNAL_ERROR', statusCode: 500 }));
       }
     },
@@ -95,6 +113,9 @@ const messageController = {
         typeSafeLogger.logUserAction('Unread message count retrieved', { userId, count });
         res.status(200).json({ count });
       } catch (error) {
+        if (isAppError(error)) {
+            return next(error);
+        }
         return next(toAppError(error, { message: 'Failed to fetch unread message count', code: 'INTERNAL_ERROR', statusCode: 500 }));
       }
     },

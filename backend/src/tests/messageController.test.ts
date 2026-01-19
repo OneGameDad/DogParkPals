@@ -30,6 +30,7 @@ jest.mock('../utils/validator', () => ({
 
 jest.mock('../utils/errors', () => ({
   toAppError: jest.fn((err) => err),
+  isAppError: jest.fn((err) => err instanceof Error && (err as any).statusCode !== undefined),
 }));
 
 describe('messageController', () => {

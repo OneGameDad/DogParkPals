@@ -1,5 +1,5 @@
 import typeSafeLogger from "../utils/typeSafeLogger";
-import { toAppError, NotFoundError } from "../utils/errors";
+import { toAppError, NotFoundError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import { addEnemySchema, removeEnemySchema, getUserIdSchema } from "../utils/validationSchemas";
 import enemyService from "../services/enemyService";
@@ -34,6 +34,9 @@ const enemyController = {
         return res.status(201).json(result.enemy);
     } catch (error) {
         typeSafeLogger.error("Failed to add enemy", { userId: req.body.userId, enemyUserId: req.body.enemyUserId, error });
+        if (isAppError(error)) {
+            return next(error);
+        }
         return next(toAppError(error, { 
         message: "Failed to add enemy", 
         code: "ADD_ENEMY_FAILED" 
@@ -51,6 +54,9 @@ const enemyController = {
         return res.status(201).json(enemy);
     } catch (error) {
         typeSafeLogger.error("Failed to confirm adding enemy", { userId: req.body.userId, enemyUserId: req.body.enemyUserId, error });
+        if (isAppError(error)) {
+            return next(error);
+        }
         return next(toAppError(error, { 
         message: "Failed to confirm adding enemy", 
         code: "CONFIRM_ADD_ENEMY_FAILED" 
@@ -68,6 +74,9 @@ const enemyController = {
         return res.status(200).json(enemies);
     } catch (error) {
         typeSafeLogger.error("Failed to get enemies", { userId: req.params.userId, error });
+        if (isAppError(error)) {
+            return next(error);
+        }
         return next(toAppError(error, { 
         message: "Failed to get enemies", 
         code: "GET_ENEMY_FAILED" 
@@ -85,6 +94,9 @@ const enemyController = {
         return res.status(200).json({ message: "Enemy removed successfully" });
     } catch (error) {
         typeSafeLogger.error("Failed to remove enemy", { userId: req.body.userId, enemyUserId: req.body.enemyUserId, error });
+        if (isAppError(error)) {
+            return next(error);
+        }
         return next(toAppError(error, { 
         message: "Failed to remove enemy", 
         code: "REMOVE_ENEMY_FAILED" 
@@ -105,6 +117,9 @@ const enemyController = {
         return res.status(200).json({ isEnemy });
     } catch (error) {
         typeSafeLogger.error("Failed to check enemy status", { userId: req.params.userId, enemyUserId: req.params.enemyUserId, error });
+        if (isAppError(error)) {
+            return next(error);
+        }
         return next(toAppError(error, { 
         message: "Failed to check enemy status", 
         code: "CHECK_ENEMY_STATUS_FAILED" 
@@ -121,6 +136,9 @@ const enemyController = {
         return res.status(200).json(enemiesList);
     } catch (error) {
         typeSafeLogger.error("Failed to get enemies list", { error });
+        if (isAppError(error)) {
+            return next(error);
+        }
         return next(toAppError(error, { 
         message: "Failed to get enemies list", 
         code: "GET_ENEMIES_LIST_FAILED" 

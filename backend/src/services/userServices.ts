@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
-import crypto from 'crypto';
 import { hashPassword, verifyPassword } from '../utils/password';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { AuthError, NotFoundError, toAppError } from '../utils/errors';
@@ -159,73 +158,6 @@ const userService = {
     }
   },
 
-  async requestPasswordReset(email: string) {
-    typeSafeLogger.logUserAction('Requesting password reset', { email });
-    try {
-      const user = await prisma.user.findUnique({ where: { email } });
-      if (!user) {
-        throw NotFoundError('User not found');
-      }
-
-      const token = crypto.randomBytes(32).toString('hex');
-      const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-      const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          resetToken: hashedToken,
-          resetTokenExpiry: expiry,
-        } as any,
-      });
-
-      typeSafeLogger.logUserAction('Password reset token generated', { userId: user.id });
-      return token;
-    } catch (error) {
-      const appError = toAppError(error, {
-        message: 'Failed to request password reset',
-        code: 'RESET_PASSWORD_FAILED',
-      });
-      typeSafeLogger.logError('Failed to request password reset', appError, { email });
-      throw appError;
-    }
-  },
-
-  async resetPassword(token: string, newPassword: string) {
-    typeSafeLogger.logUserAction('Resetting password with token', {});
-    try {
-      const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-      const user = await prisma.user.findFirst({
-        where: {
-          resetToken: hashedToken,
-          resetTokenExpiry: { gt: new Date() },
-        } as any,
-      });
-
-      if (!user) {
-        throw NotFoundError('Invalid or expired reset token');
-      }
-
-      const hashedPassword = await hashPassword(newPassword);
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          password_hash: hashedPassword,
-          resetToken: null,
-          resetTokenExpiry: null,
-        } as any,
-      });
-
-      typeSafeLogger.logUserAction('Password reset completed', { userId: user.id });
-    } catch (error) {
-      const appError = toAppError(error, {
-        message: 'Failed to reset password',
-        code: 'RESET_PASSWORD_FAILED',
-      });
-      typeSafeLogger.logError('Failed to reset password', appError);
-      throw appError;
-    }
-  }
 };
 
 export default userService;

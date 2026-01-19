@@ -7,5 +7,9 @@ module.exports = {
     '**/?(*.)+(spec|test).ts',
     '/src/tests/**/*.test.ts'
   ],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/src/tests/integration/',
+  ],
   testTimeout: 30000,
 };

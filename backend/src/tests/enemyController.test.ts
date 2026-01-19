@@ -358,7 +358,8 @@ describe('enemyController', () => {
 			const userId = 1;
 			const enemyUserId = 2;
 
-			mockReq.params = { userId: '1', enemyUserId: '2' };
+			mockReq.user = { id: userId } as any;
+			mockReq.params = { enemyUserId: '2' };
 			mockParseValidation.mockReturnValue({ userId, enemyUserId });
 			mockIsEnemy.mockResolvedValue(true);
 
@@ -378,7 +379,8 @@ describe('enemyController', () => {
 			const userId = 1;
 			const enemyUserId = 2;
 
-			mockReq.params = { userId: '1', enemyUserId: '2' };
+			mockReq.user = { id: userId } as any;
+			mockReq.params = { enemyUserId: '2' };
 			mockParseValidation.mockReturnValue({ userId, enemyUserId });
 			mockIsEnemy.mockResolvedValue(false);
 
@@ -398,7 +400,8 @@ describe('enemyController', () => {
 				code: 'VALIDATION_ERROR',
 				statusCode: 400,
 			});
-			mockReq.params = { userId: 'invalid', enemyUserId: 'invalid' };
+			mockReq.user = { id: 1 } as any;
+			mockReq.params = { enemyUserId: 'invalid' };
 			mockParseValidation.mockImplementation(() => {
 				throw validationError;
 			});
@@ -415,7 +418,8 @@ describe('enemyController', () => {
 			const enemyUserId = 2;
 			const serviceError = new Error('Service error');
 
-			mockReq.params = { userId: '1', enemyUserId: '2' };
+			mockReq.user = { id: userId } as any;
+			mockReq.params = { enemyUserId: '2' };
 			mockParseValidation.mockReturnValue({ userId, enemyUserId });
 			mockIsEnemy.mockRejectedValue(serviceError);
 

@@ -1,12 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AuthError } from '../utils/errors';
+import { isTokenBlacklisted } from '../utils/tokenBlacklist';
 
 // Extend Express Request to include userId (set by auth middleware)
 declare global {
   namespace Express {
     interface Request {
       userId?: number;
+      user?: {
+        id: number;
+        role?: string;
+      };
     }
   }
 }
@@ -14,6 +19,7 @@ declare global {
 interface JwtPayload {
   userId: number;
   email: string;
+  role?: string;
 }
 
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
@@ -30,7 +36,11 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
     }
 
     const decoded = jwt.verify(token, secret) as JwtPayload;
+    if (isTokenBlacklisted(token)) {
+      throw AuthError('Invalid authentication token');
+    }
     req.userId = decoded.userId;
+    req.user = { id: decoded.userId, role: decoded.role };
 
     next();
   } catch (error) {
@@ -58,7 +68,11 @@ export const optionalAuth = (req: Request, _res: Response, next: NextFunction) =
     }
 
     const decoded = jwt.verify(token, secret) as JwtPayload;
-    req.userId = decoded.userId;
+      if (isTokenBlacklisted(token)) {
+        return next(AuthError('Invalid authentication token'));
+      }
+      req.userId = decoded.userId;
+      req.user = { id: decoded.userId, role: decoded.role };
     next();
   } catch {
     next();

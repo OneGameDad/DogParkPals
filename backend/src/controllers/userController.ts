@@ -12,6 +12,7 @@ import {
     getUserByIdSchema,
     getUserByUsernameSchema,
     listUsersSchema,
+    resetUserPasswordSchema,
 } from "../utils/validationSchemas";
 
 const userController = {
@@ -131,6 +132,26 @@ const userController = {
         } catch (error) {
             return next(
                 toAppError(error, { message: "Failed to change password", code: "INTERNAL_ERROR", statusCode: 500 })
+            );
+        }
+    },
+
+    resetUserPassword: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            typeSafeLogger.logRequest("Received request to reset user password", { method: req.method, path: req.path });
+            
+            // Check if user is admin
+            const userRole = (req as any).user?.role;
+            if (userRole !== 'ADMIN' && userRole !== 'DEVELOPER') {
+                throw ForbiddenError("Only admins can reset passwords");
+            }
+
+            const { userId, newPassword } = parseValidation(resetUserPasswordSchema, req.body);
+            await userService.resetUserPassword(userId, newPassword);
+            res.status(200).json({ message: "Password reset successfully" });
+        } catch (error) {
+            return next(
+                toAppError(error, { message: "Failed to reset password", code: "INTERNAL_ERROR", statusCode: 500 })
             );
         }
     }

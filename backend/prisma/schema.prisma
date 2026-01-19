@@ -40,6 +40,7 @@ model User {
   achievements UserAchievement[]
   levels    UserLevel[]
   ExpPoints   Int      @default(0)
+  notifications Notification[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -270,6 +271,20 @@ model UserLevel {
   level   Levels @relation(fields: [levelId], references: [id], onDelete: Cascade)
 
   @@id([userId, levelId])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      NotificationType
+  payload   Json
+  read      Boolean  @default(false)
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])    
 }
 
 // Enum for user roles in the organization
@@ -653,4 +668,17 @@ enum MessageStatus {
   READ
   ARCHIVED
   DELETED
+}
+
+enum NotificationType {
+  FRIENDSHIP_REQUEST
+  FRIENDSHIP_ACCEPTED
+  MESSAGE_RECEIVED
+  EVENT_INVITATION
+  EVENT_REMINDER
+  ACHIEVEMENT_EARNED
+  LEVEL_UP
+  COMMENT_REPLY
+  PARK_REVIEW
+  ORGANIZATION_INVITE
 }

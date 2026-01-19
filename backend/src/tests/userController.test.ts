@@ -11,6 +11,7 @@ const mockGetUserByUsername = jest.fn<any>();
 const mockListUsers = jest.fn<any>();
 const mockDeleteUser = jest.fn<any>();
 const mockChangePassword = jest.fn<any>();
+const mockResetUserPassword = jest.fn<any>();
 
 // Mock the entire userServices module
 jest.mock('../services/userServices', () => ({
@@ -23,6 +24,7 @@ jest.mock('../services/userServices', () => ({
     listUsers: mockListUsers,
     deleteUser: mockDeleteUser,
     changePassword: mockChangePassword,
+    resetUserPassword: mockResetUserPassword,
   },
 }));
 
@@ -422,6 +424,52 @@ describe('User Controller', () => {
       await userController.changePassword(mockReq as Request, mockRes as Response, mockNext as any);
 
       expect(mockChangePassword).toHaveBeenCalledWith(7, 'oldpass123', 'newpass123');
+      expect(mockStatus).toHaveBeenCalledWith(200);
+    });
+  });
+
+  describe('resetUserPassword', () => {
+    test('forwards forbidden when user is not admin', async () => {
+      mockReq.body = { userId: 2, newPassword: 'newpass123' };
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+
+      await userController.resetUserPassword(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockNext).toHaveBeenCalledTimes(1);
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError.statusCode).toBe(403);
+    });
+
+    test('forwards forbidden when user role is not set', async () => {
+      mockReq.body = { userId: 2, newPassword: 'newpass123' };
+      (mockReq as any).user = { id: 1 };
+
+      await userController.resetUserPassword(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockNext).toHaveBeenCalledTimes(1);
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError.statusCode).toBe(403);
+    });
+
+    test('resets password when user is admin', async () => {
+      mockReq.body = { userId: 2, newPassword: 'newpass123' };
+      (mockReq as any).user = { id: 1, role: 'ADMIN' };
+      mockResetUserPassword.mockResolvedValue(undefined);
+
+      await userController.resetUserPassword(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockResetUserPassword).toHaveBeenCalledWith(2, 'newpass123');
+      expect(mockStatus).toHaveBeenCalledWith(200);
+    });
+
+    test('resets password when user is developer', async () => {
+      mockReq.body = { userId: 2, newPassword: 'newpass123' };
+      (mockReq as any).user = { id: 1, role: 'DEVELOPER' };
+      mockResetUserPassword.mockResolvedValue(undefined);
+
+      await userController.resetUserPassword(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockResetUserPassword).toHaveBeenCalledWith(2, 'newpass123');
       expect(mockStatus).toHaveBeenCalledWith(200);
     });
   });

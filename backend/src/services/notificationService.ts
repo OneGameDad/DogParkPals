@@ -7,10 +7,18 @@ const prisma = new PrismaClient();
 const notificationService = {
     async getNotifications(
         userId: number,
+        options: {
+            page?: number;
+            limit?: number;
+            unreadOnly?: boolean;
+        }
+    ) {
+        const {
         page = 1,
         limit = 20,
-        unreadOnly = false
-    ) {
+        unreadOnly = false,
+        } = options;
+
       typeSafeLogger.info("Fetching notifications", { userId, page, limit, unreadOnly });
       try {
         const skip = (page - 1) * limit;

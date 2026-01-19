@@ -24,6 +24,13 @@ async function checkParkAuthorization(parkId: number, userRole: string | undefin
   return park;
 }
 
+function requireAdmin(userRole: string | undefined) {
+  const isAdmin = userRole === 'ADMIN' || userRole === 'DEVELOPER';
+  if (!isAdmin) {
+    throw ForbiddenError('Not authorized to perform this action');
+  }
+}
+
 const parkController = {
     getParkById: async (req: Request, res: Response, next: NextFunction) => {
       try {
@@ -131,6 +138,17 @@ const parkController = {
         const userId = parseInt(req.params.userId, 10);
         const parkId = parseInt(req.params.parkId, 10);
 
+        const caller = (req as any).user;
+        const isAdmin = caller?.role === 'ADMIN' || caller?.role === 'DEVELOPER';
+        if (!caller || (caller.id !== userId && !isAdmin)) {
+          throw ForbiddenError('Not authorized to modify favorites for this user');
+        }
+
+        const parkExists = await parkService.parkExists(parkId);
+        if (!parkExists) {
+          throw NotFoundError('Park not found');
+        }
+
         await parkService.addParkToUserFavorites(userId, parkId);
         typeSafeLogger.logUserAction("Park added to user favorites", { userId, parkId });
         res.status(200).json({ message: "Park added to favorites" });
@@ -150,6 +168,17 @@ const parkController = {
         const userId = parseInt(req.params.userId, 10);
         const parkId = parseInt(req.params.parkId, 10);
 
+        const caller = (req as any).user;
+        const isAdmin = caller?.role === 'ADMIN' || caller?.role === 'DEVELOPER';
+        if (!caller || (caller.id !== userId && !isAdmin)) {
+          throw ForbiddenError('Not authorized to modify favorites for this user');
+        }
+
+        const parkExists = await parkService.parkExists(parkId);
+        if (!parkExists) {
+          throw NotFoundError('Park not found');
+        }
+
         await parkService.removeParkFromUserFavorites(userId, parkId);
         typeSafeLogger.logUserAction("Park removed from user favorites", { userId, parkId });
         res.status(200).json({ message: "Park removed from favorites" });
@@ -162,12 +191,13 @@ const parkController = {
         );
       }
     },
-
     createPark: async (req: Request, res: Response, next: NextFunction) => {
       try {
         typeSafeLogger.logRequest("Received request to create park", { method: req.method, path: req.path });
         
         // Validate request body
+          const userRole = (req as any).user?.role;
+          requireAdmin(userRole);
         const validatedData = createParkSchema.parse(req.body);
 
         const newPark = await parkService.createPark(validatedData);
@@ -231,6 +261,11 @@ const parkController = {
         const parkId = parseInt(req.params.parkId, 10);
         const dogId = req.body.dogId ? parseInt(req.body.dogId, 10) : undefined;
 
+        const parkExists = await parkService.parkExists(parkId);
+        if (!parkExists) {
+          throw NotFoundError('Park not found');
+        }
+
         const checkIn = await parkService.checkIn(userId, parkId, dogId);
         res.status(201).json(checkIn);
       } catch (error) {
@@ -247,6 +282,11 @@ const parkController = {
       try {
         const userId = (req as any).user?.id;
         const parkId = parseInt(req.params.parkId, 10);
+
+        const parkExists = await parkService.parkExists(parkId);
+        if (!parkExists) {
+          throw NotFoundError('Park not found');
+        }
 
         const checkOut = await parkService.checkOut(userId, parkId);
         res.status(200).json(checkOut);

@@ -17,6 +17,7 @@ const mockRemoveParkFromUserFavorites = jest.fn<any>();
 const mockCheckIn = jest.fn<any>();
 const mockCheckOut = jest.fn<any>();
 const mockGetActiveCheckInsForPark = jest.fn<any>();
+const mockParkExists = jest.fn<any>();
 
 jest.mock('../services/parkService', () => ({
   __esModule: true,
@@ -34,6 +35,7 @@ jest.mock('../services/parkService', () => ({
     checkIn: mockCheckIn,
     checkOut: mockCheckOut,
     getActiveCheckInsForPark: mockGetActiveCheckInsForPark,
+    parkExists: mockParkExists,
   },
 }));
 
@@ -285,7 +287,7 @@ describe('Park Controller', () => {
   });
 
   describe('createPark', () => {
-    test('should create park with valid data', async () => {
+    test('should create park with admin role', async () => {
       mockReq.body = {
         name: 'New Park',
         latitude: 40.7580,
@@ -293,6 +295,7 @@ describe('Park Controller', () => {
         description: 'A new park',
         amenities: ['water'],
       };
+      (mockReq as any).user = { id: 1, role: 'ADMIN' };
       const newPark = { 
         id: 3, 
         name: 'New Park',
@@ -314,8 +317,51 @@ describe('Park Controller', () => {
       expect(mockJson).toHaveBeenCalledWith(newPark);
     });
 
+    test('should reject create without admin role', async () => {
+      mockReq.body = {
+        name: 'New Park',
+        latitude: 40.7580,
+        longitude: -73.9855,
+      };
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+
+      await parkController.createPark(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockNext).toHaveBeenCalled();
+      const error = mockNext.mock.calls[0][0] as Error;
+      expect(error.message).toContain('Not authorized');
+      expect(mockCreatePark).not.toHaveBeenCalled();
+    });
+
+    test('should allow DEVELOPER role to create', async () => {
+      mockReq.body = {
+        name: 'New Park',
+        latitude: 40.7580,
+        longitude: -73.9855,
+      };
+      (mockReq as any).user = { id: 1, role: 'DEVELOPER' };
+      const newPark = { 
+        id: 3, 
+        name: 'New Park',
+        latitude: 40.7580,
+        longitude: -73.9855,
+        separateSmallDogArea: false,
+        amenities: [],
+        profilePictureUrl: null,
+        createdAt: new Date(), 
+        updatedAt: new Date() 
+      };
+      mockCreatePark.mockResolvedValue(newPark);
+
+      await parkController.createPark(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockCreatePark).toHaveBeenCalled();
+      expect(mockStatus).toHaveBeenCalledWith(201);
+    });
+
     test('should handle validation error', async () => {
       mockReq.body = { name: 'Test' }; // Missing required fields
+      (mockReq as any).user = { id: 1, role: 'ADMIN' };
       mockCreatePark.mockRejectedValue(new Error('Validation failed'));
 
       await parkController.createPark(mockReq as Request, mockRes as Response, mockNext as any);
@@ -418,19 +464,61 @@ describe('Park Controller', () => {
   });
 
   describe('addParkToUserFavorites', () => {
-    test('should add park to favorites', async () => {
+    test('should add park to favorites for self', async () => {
       mockReq.params = { userId: '1', parkId: '1' };
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+      mockParkExists.mockResolvedValue(true);
       mockAddParkToUserFavorites.mockResolvedValue(undefined);
 
       await parkController.addParkToUserFavorites(mockReq as Request, mockRes as Response, mockNext as any);
 
+      expect(mockParkExists).toHaveBeenCalledWith(1);
       expect(mockAddParkToUserFavorites).toHaveBeenCalledWith(1, 1);
       expect(mockStatus).toHaveBeenCalledWith(200);
       expect(mockJson).toHaveBeenCalledWith({ message: 'Park added to favorites' });
     });
 
+    test('should allow admin to add favorites for other user', async () => {
+      mockReq.params = { userId: '2', parkId: '1' };
+      (mockReq as any).user = { id: 1, role: 'ADMIN' };
+      mockParkExists.mockResolvedValue(true);
+      mockAddParkToUserFavorites.mockResolvedValue(undefined);
+
+      await parkController.addParkToUserFavorites(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockAddParkToUserFavorites).toHaveBeenCalledWith(2, 1);
+      expect(mockStatus).toHaveBeenCalledWith(200);
+    });
+
+    test('should reject adding favorites for other user without admin', async () => {
+      mockReq.params = { userId: '2', parkId: '1' };
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+
+      await parkController.addParkToUserFavorites(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockNext).toHaveBeenCalled();
+      const error = mockNext.mock.calls[0][0] as Error;
+      expect(error.message).toContain('Not authorized');
+      expect(mockAddParkToUserFavorites).not.toHaveBeenCalled();
+    });
+
+    test('should return 404 when park does not exist', async () => {
+      mockReq.params = { userId: '1', parkId: '999' };
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+      mockParkExists.mockResolvedValue(false);
+
+      await parkController.addParkToUserFavorites(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockNext).toHaveBeenCalled();
+      const error = mockNext.mock.calls[0][0] as Error;
+      expect(error.message).toContain('Park not found');
+      expect(mockAddParkToUserFavorites).not.toHaveBeenCalled();
+    });
+
     test('should handle error when adding to favorites', async () => {
       mockReq.params = { userId: '1', parkId: '1' };
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+      mockParkExists.mockResolvedValue(true);
       mockAddParkToUserFavorites.mockRejectedValue(new Error('Database error'));
 
       await parkController.addParkToUserFavorites(mockReq as Request, mockRes as Response, mockNext as any);
@@ -440,19 +528,61 @@ describe('Park Controller', () => {
   });
 
   describe('removeParkFromUserFavorites', () => {
-    test('should remove park from favorites', async () => {
+    test('should remove park from favorites for self', async () => {
       mockReq.params = { userId: '1', parkId: '1' };
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+      mockParkExists.mockResolvedValue(true);
       mockRemoveParkFromUserFavorites.mockResolvedValue(undefined);
 
       await parkController.removeParkFromUserFavorites(mockReq as Request, mockRes as Response, mockNext as any);
 
+      expect(mockParkExists).toHaveBeenCalledWith(1);
       expect(mockRemoveParkFromUserFavorites).toHaveBeenCalledWith(1, 1);
       expect(mockStatus).toHaveBeenCalledWith(200);
       expect(mockJson).toHaveBeenCalledWith({ message: 'Park removed from favorites' });
     });
 
+    test('should allow admin to remove favorites for other user', async () => {
+      mockReq.params = { userId: '2', parkId: '1' };
+      (mockReq as any).user = { id: 1, role: 'ADMIN' };
+      mockParkExists.mockResolvedValue(true);
+      mockRemoveParkFromUserFavorites.mockResolvedValue(undefined);
+
+      await parkController.removeParkFromUserFavorites(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockRemoveParkFromUserFavorites).toHaveBeenCalledWith(2, 1);
+      expect(mockStatus).toHaveBeenCalledWith(200);
+    });
+
+    test('should reject removing favorites for other user without admin', async () => {
+      mockReq.params = { userId: '2', parkId: '1' };
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+
+      await parkController.removeParkFromUserFavorites(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockNext).toHaveBeenCalled();
+      const error = mockNext.mock.calls[0][0] as Error;
+      expect(error.message).toContain('Not authorized');
+      expect(mockRemoveParkFromUserFavorites).not.toHaveBeenCalled();
+    });
+
+    test('should return 404 when park does not exist', async () => {
+      mockReq.params = { userId: '1', parkId: '999' };
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+      mockParkExists.mockResolvedValue(false);
+
+      await parkController.removeParkFromUserFavorites(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockNext).toHaveBeenCalled();
+      const error = mockNext.mock.calls[0][0] as Error;
+      expect(error.message).toContain('Park not found');
+      expect(mockRemoveParkFromUserFavorites).not.toHaveBeenCalled();
+    });
+
     test('should handle error when removing from favorites', async () => {
       mockReq.params = { userId: '1', parkId: '1' };
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+      mockParkExists.mockResolvedValue(true);
       mockRemoveParkFromUserFavorites.mockRejectedValue(new Error('Database error'));
 
       await parkController.removeParkFromUserFavorites(mockReq as Request, mockRes as Response, mockNext as any);
@@ -462,24 +592,40 @@ describe('Park Controller', () => {
   });
 
   describe('checkInAtPark', () => {
-    test('should call service and return 200 with check-in info', async () => {
+    test('should call service and return 201 with check-in info', async () => {
       mockReq.params = { parkId: '1' };
       mockReq.body = { dogId: 123 };
       (mockReq as any).user = { id: 1 };
+      mockParkExists.mockResolvedValue(true);
   
       const checkInData = { id: 1, userId: 1, parkId: 1, checkedInAt: new Date() };
       mockCheckIn.mockResolvedValue(checkInData);
   
       await parkController.checkInAtPark(mockReq as Request, mockRes as Response, mockNext as any);
   
+      expect(mockParkExists).toHaveBeenCalledWith(1);
       expect(mockCheckIn).toHaveBeenCalledWith(1, 1, 123);
       expect(mockStatus).toHaveBeenCalledWith(201);
       expect(mockJson).toHaveBeenCalledWith(checkInData);
+    });
+
+    test('should return 404 when park does not exist', async () => {
+      mockReq.params = { parkId: '999' };
+      (mockReq as any).user = { id: 1 };
+      mockParkExists.mockResolvedValue(false);
+
+      await parkController.checkInAtPark(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockNext).toHaveBeenCalled();
+      const error = mockNext.mock.calls[0][0] as Error;
+      expect(error.message).toContain('Park not found');
+      expect(mockCheckIn).not.toHaveBeenCalled();
     });
   
     test('should call next if already checked in', async () => {
       mockReq.params = { parkId: '1' };
       (mockReq as any).user = { id: 1 };
+      mockParkExists.mockResolvedValue(true);
       mockCheckIn.mockRejectedValue(new Error('Already checked in'));
   
       await parkController.checkInAtPark(mockReq as Request, mockRes as Response, mockNext as any);
@@ -492,20 +638,36 @@ describe('Park Controller', () => {
     test('should call service and return 200 with check-out info', async () => {
       mockReq.params = { parkId: '1' };
       (mockReq as any).user = { id: 1 };
+      mockParkExists.mockResolvedValue(true);
   
       const checkOutData = { id: 1, userId: 1, parkId: 1, checkedOutAt: new Date() };
       mockCheckOut.mockResolvedValue(checkOutData);
   
       await parkController.checkOutFromPark(mockReq as Request, mockRes as Response, mockNext as any);
   
+      expect(mockParkExists).toHaveBeenCalledWith(1);
       expect(mockCheckOut).toHaveBeenCalledWith(1, 1);
       expect(mockStatus).toHaveBeenCalledWith(200);
       expect(mockJson).toHaveBeenCalledWith(checkOutData);
+    });
+
+    test('should return 404 when park does not exist', async () => {
+      mockReq.params = { parkId: '999' };
+      (mockReq as any).user = { id: 1 };
+      mockParkExists.mockResolvedValue(false);
+
+      await parkController.checkOutFromPark(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockNext).toHaveBeenCalled();
+      const error = mockNext.mock.calls[0][0] as Error;
+      expect(error.message).toContain('Park not found');
+      expect(mockCheckOut).not.toHaveBeenCalled();
     });
   
     test('should call next if no active check-in exists', async () => {
       mockReq.params = { parkId: '1' };
       (mockReq as any).user = { id: 1 };
+      mockParkExists.mockResolvedValue(true);
       mockCheckOut.mockRejectedValue(new Error('No active check-in'));
   
       await parkController.checkOutFromPark(mockReq as Request, mockRes as Response, mockNext as any);

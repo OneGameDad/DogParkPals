@@ -158,6 +158,30 @@ const userService = {
     }
   },
 
+  async resetUserPassword(userId: number, newPassword: string) {
+    typeSafeLogger.logUserAction('Admin resetting user password', { userId });
+    try {
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        throw NotFoundError('User not found');
+      }
+
+      const hashedPassword = await hashPassword(newPassword);
+      await prisma.user.update({
+        where: { id: userId },
+        data: { password_hash: hashedPassword },
+      });
+      typeSafeLogger.logUserAction('Admin password reset successful', { userId });
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to reset user password',
+        code: 'RESET_PASSWORD_FAILED',
+      });
+      typeSafeLogger.logError('Failed to reset user password', appError, { userId });
+      throw appError;
+    }
+  },
+
 };
 
 export default userService;

@@ -4,6 +4,14 @@ import express from 'express';
 import request from 'supertest';
 import { MessageStatus } from '@prisma/client';
 
+// Mock the auth middleware before importing the router
+jest.mock('../middlewares/authMiddleware', () => ({
+  requireAuth: (req: Request, res: Response, next: NextFunction) => {
+    (req as any).userId = 1;
+    next();
+  },
+}));
+
 const sendMessageMock = jest.fn<(req: Request, res: Response, next: NextFunction) => unknown>();
 const getConversationMock = jest.fn<(req: Request, res: Response, next: NextFunction) => unknown>();
 const getAllMessagesMock = jest.fn<(req: Request, res: Response, next: NextFunction) => unknown>();
@@ -43,13 +51,6 @@ const defaultHandlers = () => {
 const buildApp = () => {
   const app = express();
   app.use(express.json());
-
-  // Mock authenticated user
-  app.use((req, _res, next) => {
-    (req as any).user = { id: 1 };
-    next();
-  });
-
   app.use(messageRouter);
   return app;
 };
@@ -107,16 +108,16 @@ describe('messageRouter', () => {
     expect(deleteMessageMock.mock.calls[0][0].params.messageId).toBe('5');
   });
 
-  test('GET /messages/unread routes to getUnreadMessages', async () => {
-    const response = await request(buildApp()).get('/messages/unread');
+  test('GET /unread routes to getUnreadMessages', async () => {
+    const response = await request(buildApp()).get('/unread');
 
     expect(response.status).toBe(200);
     expect(response.body.handler).toBe('getUnreadMessages');
     expect(getUnreadMessagesMock).toHaveBeenCalledTimes(1);
   });
 
-  test('GET /messages/unread/count routes to getUnreadCount', async () => {
-    const response = await request(buildApp()).get('/messages/unread/count');
+  test('GET /unread/count routes to getUnreadCount', async () => {
+    const response = await request(buildApp()).get('/unread/count');
 
     expect(response.status).toBe(200);
     expect(response.body.handler).toBe('getUnreadCount');

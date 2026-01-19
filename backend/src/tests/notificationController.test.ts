@@ -57,11 +57,11 @@ describe('Notification Router', () => {
     jest.clearAllMocks();
   });
 
-  describe('GET /notifications', () => {
+  describe('GET /', () => {
     test('returns notifications with default pagination', async () => {
       mockGetNotifications.mockResolvedValue(mockNotifications);
 
-      const res = await request(app).get('/notifications');
+      const res = await request(app).get('');
 
       expect(mockGetNotifications).toHaveBeenCalledWith(1, { page: 1, limit: 20, unreadOnly: false });
       expect(res.status).toBe(200);
@@ -71,7 +71,7 @@ describe('Notification Router', () => {
     test('supports page, limit, and unreadOnly query params', async () => {
       mockGetNotifications.mockResolvedValue([mockNotifications[0]]);
 
-      const res = await request(app).get('/notifications?page=2&limit=1&unreadOnly=true');
+      const res = await request(app).get('?page=2&limit=1&unreadOnly=true');
 
       expect(mockGetNotifications).toHaveBeenCalledWith(1, { page: 2, limit: 1, unreadOnly: true });
       expect(res.status).toBe(200);
@@ -81,7 +81,7 @@ describe('Notification Router', () => {
     test('handles no notifications', async () => {
       mockGetNotifications.mockResolvedValue([]);
 
-      const res = await request(app).get('/notifications');
+      const res = await request(app).get('');
 
       expect(res.status).toBe(200);
       expect(res.body.notifications).toEqual([]);
@@ -90,18 +90,18 @@ describe('Notification Router', () => {
     test('returns error if service throws', async () => {
       mockGetNotifications.mockRejectedValue(new Error('DB failure'));
 
-      const res = await request(app).get('/notifications');
+      const res = await request(app).get('');
 
       expect(res.status).toBe(500);
       expect(res.body.message).toBeDefined();
     });
   });
 
-  describe('PATCH /notifications/:id/read', () => {
+  describe('PATCH //:id/read', () => {
     test('marks a notification as read', async () => {
       mockMarkAsRead.mockResolvedValue({ ...mockNotifications[0], readAt: new Date() });
 
-      const res = await request(app).patch('/notifications/1/read');
+      const res = await request(app).patch('/1/read');
 
       expect(mockMarkAsRead).toHaveBeenCalledWith(1, 1);
       expect(res.status).toBe(200);
@@ -111,7 +111,7 @@ describe('Notification Router', () => {
     test('handles notification not found', async () => {
       mockMarkAsRead.mockResolvedValue(null);
 
-      const res = await request(app).patch('/notifications/999/read');
+      const res = await request(app).patch('/999/read');
 
       expect(res.status).toBe(404);
       expect(res.body).toHaveProperty('message', 'Notification not found');
@@ -120,18 +120,18 @@ describe('Notification Router', () => {
     test('returns error if service throws', async () => {
       mockMarkAsRead.mockRejectedValue(new Error('DB failure'));
 
-      const res = await request(app).patch('/notifications/1/read');
+      const res = await request(app).patch('/1/read');
 
       expect(res.status).toBe(500);
       expect(res.body.message).toBeDefined();
     });
   });
 
-  describe('PATCH /notifications/read-all', () => {
+  describe('PATCH //read-all', () => {
     test('marks all notifications as read', async () => {
       mockMarkAllAsRead.mockResolvedValue(2);
 
-      const res = await request(app).patch('/notifications/read-all');
+      const res = await request(app).patch('/read-all');
 
       expect(mockMarkAllAsRead).toHaveBeenCalledWith(1);
       expect(res.status).toBe(200);
@@ -141,7 +141,7 @@ describe('Notification Router', () => {
     test('returns error if service throws', async () => {
       mockMarkAllAsRead.mockRejectedValue(new Error('DB failure'));
 
-      const res = await request(app).patch('/notifications/read-all');
+      const res = await request(app).patch('/read-all');
 
       expect(res.status).toBe(500);
       expect(res.body.message).toBeDefined();

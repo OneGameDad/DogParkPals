@@ -1,6 +1,6 @@
 import express from "express";
 import typeSafeLogger from "../utils/typeSafeLogger";
-import { toAppError, ConflictError, NotFoundError, ForbiddenError } from "../utils/errors";
+import { toAppError, ConflictError, NotFoundError, ForbiddenError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import dogService from "../services/dogService";
 import friendService from "../services/friendService";
@@ -61,6 +61,9 @@ const dogController = {
       typeSafeLogger.logUserAction("Dog added", { dogId: newDog.id, name: newDog.name });
       res.status(201).json(newDog);
     } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
       return next(
         toAppError(error, { message: "Failed to add dog", code: "INTERNAL_ERROR", statusCode: 500 })
       );
@@ -79,6 +82,9 @@ const dogController = {
       typeSafeLogger.logUserAction("Dog retrieved", { dogId: dog.id });
       res.status(200).json(dog);
     } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
       return next(
         toAppError(error, { message: "Failed to retrieve dog", code: "INTERNAL_ERROR", statusCode: 500 })
       );
@@ -94,6 +100,9 @@ const dogController = {
       typeSafeLogger.logUserAction("Dogs retrieved for owner", { ownerId, dogCount: dogs.length });
       res.status(200).json(dogs);
     } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
       return next(
         toAppError(error, { message: "Failed to retrieve dogs by owner", code: "INTERNAL_ERROR", statusCode: 500 })
       );
@@ -108,6 +117,9 @@ const dogController = {
       typeSafeLogger.logUserAction("All dogs retrieved", { dogCount: dogs.length });
       res.status(200).json(dogs);
     } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
       return next(
         toAppError(error, { message: "Failed to retrieve all dogs", code: "INTERNAL_ERROR", statusCode: 500 })
       );
@@ -123,6 +135,9 @@ const dogController = {
       typeSafeLogger.logUserAction("Dogs retrieved for park", { parkId, dogCount: dogs.length });
       res.status(200).json(dogs);
     } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
       return next(
         toAppError(error, { message: "Failed to retrieve dogs by park", code: "INTERNAL_ERROR", statusCode: 500 })
       );
@@ -139,6 +154,9 @@ const dogController = {
         const updatedDog = await dogService.updateDog(dogId, req.body);
         res.status(200).json(updatedDog);
         } catch (error) {
+            if (isAppError(error)) {
+              return next(error);
+            }
             return next(toAppError(error, { message: "Failed to update dog", code: "INTERNAL_ERROR", statusCode: 500 }));
         }
     },
@@ -153,6 +171,9 @@ const dogController = {
         await dogService.deleteDog(dogId);
         res.status(204).send();
         } catch (error) {
+            if (isAppError(error)) {
+              return next(error);
+            }
             return next(toAppError(error, { message: "Failed to delete dog", code: "INTERNAL_ERROR", statusCode: 500 }));
         }
     },
@@ -176,8 +197,9 @@ const dogController = {
     
     await dogService.addOwnerToDog(dogId, newOwnerId);
     res.status(204).send();
-    } catch (error) {
-        return next(toAppError(error, { message: "Failed to add owner to dog", code: "INTERNAL_ERROR", statusCode: 500 }));
+    } catch (error) {      if (isAppError(error)) {
+        return next(error);
+      }        return next(toAppError(error, { message: "Failed to add owner to dog", code: "INTERNAL_ERROR", statusCode: 500 }));
     }
   },
 
@@ -192,6 +214,9 @@ const dogController = {
         await dogService.removeOwnerFromDog(dogId, ownerIdToRemove);
         res.status(204).send();
         } catch (error) {
+            if (isAppError(error)) {
+              return next(error);
+            }
             return next(toAppError(error, { message: "Failed to remove owner from dog", code: "INTERNAL_ERROR", statusCode: 500 }));
         }
     }

@@ -4,13 +4,13 @@ import { requireAuth } from "../middlewares/authMiddleware";
 
 const router = express.Router();
 
-router.post("/users", (req, res, next) => userController.createUser(req, res, next));
-router.get("/users/email/:email", requireAuth, (req, res, next) => userController.getUserByEmail(req, res, next));
-router.get("/users/id/:id", requireAuth, (req, res, next) => userController.getUserById(req, res, next));
-router.get("/users/username/:username", requireAuth, (req, res, next) => userController.getUserByUsername(req, res, next));
-router.get("/users", requireAuth, (req, res, next) => userController.getAllUsers(req, res, next));
-router.delete("/users/:id", requireAuth, (req, res, next) => userController.deleteUser(req, res, next));
-router.post("/users/change-password", requireAuth, (req, res, next) => userController.changePassword(req, res, next));
-router.post("/users/reset-password", requireAuth, (req, res, next) => userController.resetUserPassword(req, res, next));
+router.post("/", (req, res, next) => userController.createUser(req, res, next));
+router.get("/email/:email", requireAuth, (req, res, next) => userController.getUserByEmail(req, res, next));
+router.get("/id/:id", requireAuth, (req, res, next) => userController.getUserById(req, res, next));
+router.get("/username/:username", requireAuth, (req, res, next) => userController.getUserByUsername(req, res, next));
+router.get("/", requireAuth, (req, res, next) => userController.getAllUsers(req, res, next));
+router.delete("/:id", requireAuth, (req, res, next) => userController.deleteUser(req, res, next));
+router.post("/change-password", requireAuth, (req, res, next) => userController.changePassword(req, res, next));
+router.post("/reset-password", requireAuth, (req, res, next) => userController.resetUserPassword(req, res, next));
 
 export default router;

@@ -1,8 +1,16 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
-import type { Request, Response, Express } from 'express';
+import type { Request, Response, NextFunction, Express } from 'express';
 import express from 'express';
 import request from 'supertest';
 import type { Event } from '@prisma/client';
+
+// Mock the auth middleware before importing the router
+jest.mock('../middlewares/authMiddleware', () => ({
+  requireAuth: (req: Request, res: Response, next: NextFunction) => {
+    (req as any).userId = 1;
+    next();
+  },
+}));
 
 // Create mock controller functions
 const mockCreateEvent = jest.fn() as any;
@@ -60,14 +68,14 @@ describe('Event Router', () => {
     updatedAt: new Date('2025-12-01T00:00:00Z'),
   };
 
-  describe('POST /events', () => {
+  describe('POST /', () => {
     test('calls createEvent controller', async () => {
       mockCreateEvent.mockImplementation((req: Request, res: Response) => {
         res.status(201).json(sampleEvent);
       });
 
       const response = await request(app)
-        .post('/events')
+        .post('/')
         .send({
           title: 'Dog Park Playdate',
           description: 'A fun gathering',
@@ -90,7 +98,7 @@ describe('Event Router', () => {
         res.status(400).json({ error: 'Validation failed', code: 'VALIDATION_ERROR' });
       });
 
-      const response = await request(app).post('/events').send({});
+      const response = await request(app).post('/').send({});
 
       expect(response.status).toBe(400);
       expect(response.body.code).toBe('VALIDATION_ERROR');
@@ -103,7 +111,7 @@ describe('Event Router', () => {
         res.status(200).json([sampleEvent]);
       });
 
-      const response = await request(app).get('/events');
+      const response = await request(app).get('/');
 
       expect(mockGetAllEvents).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -116,20 +124,20 @@ describe('Event Router', () => {
         res.status(200).json([]);
       });
 
-      const response = await request(app).get('/events');
+      const response = await request(app).get('/');
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual([]);
     });
   });
 
-  describe('GET /events/:eventId', () => {
+  describe('GET /:eventId', () => {
     test('calls getEventById controller with eventId param', async () => {
       mockGetEventById.mockImplementation((req: Request, res: Response) => {
         res.status(200).json(sampleEvent);
       });
 
-      const response = await request(app).get('/events/1');
+      const response = await request(app).get('/1');
 
       expect(mockGetEventById).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -141,21 +149,21 @@ describe('Event Router', () => {
         res.status(404).json({ error: 'Event not found', code: 'NOT_FOUND' });
       });
 
-      const response = await request(app).get('/events/999');
+      const response = await request(app).get('/999');
 
       expect(response.status).toBe(404);
       expect(response.body.code).toBe('NOT_FOUND');
     });
   });
 
-  describe('PUT /events/:eventId', () => {
+  describe('PUT //:eventId', () => {
     test('calls updateEvent controller with eventId param', async () => {
       mockUpdateEvent.mockImplementation((req: Request, res: Response) => {
         res.status(200).json({ ...sampleEvent, title: 'Updated Title' });
       });
 
       const response = await request(app)
-        .put('/events/1')
+        .put('/1')
         .send({ title: 'Updated Title' });
 
       expect(mockUpdateEvent).toHaveBeenCalled();
@@ -168,20 +176,20 @@ describe('Event Router', () => {
         res.status(403).json({ error: 'Not authorized', code: 'FORBIDDEN' });
       });
 
-      const response = await request(app).put('/events/1').send({ title: 'Updated' });
+      const response = await request(app).put('/1').send({ title: 'Updated' });
 
       expect(response.status).toBe(403);
       expect(response.body.code).toBe('FORBIDDEN');
     });
   });
 
-  describe('DELETE /events/:eventId', () => {
+  describe('DELETE //:eventId', () => {
     test('calls deleteEvent controller with eventId param', async () => {
       mockDeleteEvent.mockImplementation((req: Request, res: Response) => {
         res.status(204).send();
       });
 
-      const response = await request(app).delete('/events/1');
+      const response = await request(app).delete('/1');
 
       expect(mockDeleteEvent).toHaveBeenCalled();
       expect(response.status).toBe(204);
@@ -192,20 +200,20 @@ describe('Event Router', () => {
         res.status(403).json({ error: 'Not authorized', code: 'FORBIDDEN' });
       });
 
-      const response = await request(app).delete('/events/1');
+      const response = await request(app).delete('/1');
 
       expect(response.status).toBe(403);
       expect(response.body.code).toBe('FORBIDDEN');
     });
   });
 
-  describe('GET /events/organizer/:organizerId', () => {
+  describe('GET /organizer/:organizerId', () => {
     test('calls getEventsByOrganizer controller with organizerId param', async () => {
       mockGetEventsByOrganizer.mockImplementation((req: Request, res: Response) => {
         res.status(200).json([sampleEvent]);
       });
 
-      const response = await request(app).get('/events/organizer/123');
+      const response = await request(app).get('/organizer/123');
 
       expect(mockGetEventsByOrganizer).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -218,7 +226,7 @@ describe('Event Router', () => {
         res.status(200).json([]);
       });
 
-      const response = await request(app).get('/events/organizer/999');
+      const response = await request(app).get('/organizer/999');
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual([]);
@@ -229,20 +237,20 @@ describe('Event Router', () => {
         res.status(400).json({ error: 'Validation failed', code: 'VALIDATION_ERROR' });
       });
 
-      const response = await request(app).get('/events/organizer/abc');
+      const response = await request(app).get('/organizer/abc');
 
       expect(response.status).toBe(400);
       expect(response.body.code).toBe('VALIDATION_ERROR');
     });
   });
 
-  describe('GET /events/organization/:organizationId', () => {
+  describe('GET /organization/:organizationId', () => {
     test('calls getEventsByOrganization controller with organizationId param', async () => {
       mockGetEventsByOrganization.mockImplementation((req: Request, res: Response) => {
         res.status(200).json([sampleEvent]);
       });
 
-      const response = await request(app).get('/events/organization/5');
+      const response = await request(app).get('/organization/5');
 
       expect(mockGetEventsByOrganization).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -254,7 +262,7 @@ describe('Event Router', () => {
         res.status(200).json([]);
       });
 
-      const response = await request(app).get('/events/organization/999');
+      const response = await request(app).get('/organization/999');
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual([]);
@@ -265,20 +273,20 @@ describe('Event Router', () => {
         res.status(400).json({ error: 'Validation failed', code: 'VALIDATION_ERROR' });
       });
 
-      const response = await request(app).get('/events/organization/abc');
+      const response = await request(app).get('/organization/abc');
 
       expect(response.status).toBe(400);
       expect(response.body.code).toBe('VALIDATION_ERROR');
     });
   });
 
-  describe('GET /events/park/:parkId', () => {
+  describe('GET /park/:parkId', () => {
     test('calls getEventsByPark controller with parkId param', async () => {
       mockGetEventsByPark.mockImplementation((req: Request, res: Response) => {
         res.status(200).json([sampleEvent]);
       });
 
-      const response = await request(app).get('/events/park/1');
+      const response = await request(app).get('/park/1');
 
       expect(mockGetEventsByPark).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -290,7 +298,7 @@ describe('Event Router', () => {
         res.status(200).json([]);
       });
 
-      const response = await request(app).get('/events/park/999');
+      const response = await request(app).get('/park/999');
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual([]);
@@ -301,20 +309,20 @@ describe('Event Router', () => {
         res.status(400).json({ error: 'Validation failed', code: 'VALIDATION_ERROR' });
       });
 
-      const response = await request(app).get('/events/park/abc');
+      const response = await request(app).get('/park/abc');
 
       expect(response.status).toBe(400);
       expect(response.body.code).toBe('VALIDATION_ERROR');
     });
   });
 
-  describe('GET /events/upcoming', () => {
+  describe('GET /upcoming', () => {
     test('calls getUpcomingEvents controller', async () => {
       mockGetUpcomingEvents.mockImplementation((req: Request, res: Response) => {
         res.status(200).json([sampleEvent]);
       });
 
-      const response = await request(app).get('/events/upcoming');
+      const response = await request(app).get('/upcoming');
 
       expect(mockGetUpcomingEvents).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -326,20 +334,20 @@ describe('Event Router', () => {
         res.status(200).json([]);
       });
 
-      const response = await request(app).get('/events/upcoming');
+      const response = await request(app).get('/upcoming');
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual([]);
     });
   });
 
-  describe('GET /events/:eventId/is-event', () => {
+  describe('GET /:eventId/is-event', () => {
     test('calls isEvent controller with eventId param', async () => {
       mockIsEvent.mockImplementation((req: Request, res: Response) => {
         res.status(200).json({ exists: true });
       });
 
-      const response = await request(app).get('/events/1/is-event');
+      const response = await request(app).get('/1/is-event');
 
       expect(mockIsEvent).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -351,7 +359,7 @@ describe('Event Router', () => {
         res.status(200).json({ exists: false });
       });
 
-      const response = await request(app).get('/events/999/is-event');
+      const response = await request(app).get('/999/is-event');
 
       expect(response.status).toBe(200);
       expect(response.body.exists).toBe(false);
@@ -362,7 +370,7 @@ describe('Event Router', () => {
         res.status(400).json({ error: 'Validation failed', code: 'VALIDATION_ERROR' });
       });
 
-      const response = await request(app).get('/events/abc/is-event');
+      const response = await request(app).get('/abc/is-event');
 
       expect(response.status).toBe(400);
       expect(response.body.code).toBe('VALIDATION_ERROR');
@@ -378,7 +386,7 @@ describe('Event Router', () => {
         res.status(200).json({ route: 'getEventById' });
       });
 
-      const response = await request(app).get('/events/upcoming');
+      const response = await request(app).get('/upcoming');
 
       expect(mockGetUpcomingEvents).toHaveBeenCalled();
       expect(mockGetEventById).not.toHaveBeenCalled();
@@ -393,7 +401,7 @@ describe('Event Router', () => {
         res.status(200).json({ route: 'getEventById' });
       });
 
-      const response = await request(app).get('/events/park/1');
+      const response = await request(app).get('/park/1');
 
       expect(mockGetEventsByPark).toHaveBeenCalled();
       expect(mockGetEventById).not.toHaveBeenCalled();
@@ -408,7 +416,7 @@ describe('Event Router', () => {
         res.status(200).json({ route: 'getEventById' });
       });
 
-      const response = await request(app).get('/events/1/is-event');
+      const response = await request(app).get('/1/is-event');
 
       expect(mockIsEvent).toHaveBeenCalled();
       expect(mockGetEventById).not.toHaveBeenCalled();
@@ -418,13 +426,13 @@ describe('Event Router', () => {
 
   describe('HTTP method validation', () => {
     test('POST /events/:eventId is not allowed (PUT required)', async () => {
-      const response = await request(app).post('/events/1').send({ title: 'Updated' });
+      const response = await request(app).post('/1').send({ title: 'Updated' });
 
       expect(response.status).toBe(404);
     });
 
     test('GET /events (create) is not allowed (POST required)', async () => {
-      const response = await request(app).get('/events').send({
+      const response = await request(app).get('/').send({
         title: 'New Event',
       });
 
@@ -432,7 +440,7 @@ describe('Event Router', () => {
     });
 
     test('PATCH /events/:eventId is not allowed (PUT required)', async () => {
-      const response = await request(app).patch('/events/1').send({ title: 'Updated' });
+      const response = await request(app).patch('/1').send({ title: 'Updated' });
 
       expect(response.status).toBe(404);
     });
@@ -444,7 +452,7 @@ describe('Event Router', () => {
         res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_ERROR' });
       });
 
-      const response = await request(app).get('/events');
+      const response = await request(app).get('/');
 
       expect(response.status).toBe(500);
       expect(response.body.code).toBe('INTERNAL_ERROR');
@@ -456,7 +464,7 @@ describe('Event Router', () => {
       });
 
       const response = await request(app)
-        .post('/events')
+        .post('/')
         .set('Content-Type', 'application/json')
         .send('invalid json');
 

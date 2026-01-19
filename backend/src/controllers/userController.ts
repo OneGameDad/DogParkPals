@@ -2,7 +2,7 @@ import userService from "../services/userServices";
 import express from "express";
 import { sanitizeUser } from "../utils/userSanitizer";
 import typeSafeLogger from "../utils/typeSafeLogger";
-import { toAppError, ConflictError, NotFoundError, ForbiddenError } from "../utils/errors";
+import { toAppError, ConflictError, NotFoundError, ForbiddenError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import {
     changePasswordSchema,
@@ -30,6 +30,9 @@ const userController = {
             typeSafeLogger.logUserAction("User created", { userId: newUser.id, email });
             res.status(201).json(sanitizeUser(newUser));
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to create user", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -48,6 +51,9 @@ const userController = {
             typeSafeLogger.logUserAction("User retrieved", { userId: user.id, email });
             res.status(200).json(sanitizeUser(user));
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to retrieve user", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -65,6 +71,9 @@ const userController = {
             }
             res.status(200).json(sanitizeUser(user));
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to retrieve user", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -82,6 +91,9 @@ const userController = {
             }
             res.status(200).json(sanitizeUser(user));
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to retrieve user", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -96,6 +108,9 @@ const userController = {
             const users = await userService.listUsers(page, pageSize);
             res.status(200).json(users.map(sanitizeUser));
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to list users", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -114,6 +129,9 @@ const userController = {
             await userService.deleteUser(Number(id));
             res.status(204).send();
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to delete user", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -130,6 +148,9 @@ const userController = {
             await userService.changePassword(req.userId, oldPassword, newPassword);
             res.status(200).json({ message: "Password changed successfully" });
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to change password", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -150,6 +171,9 @@ const userController = {
             await userService.resetUserPassword(userId, newPassword);
             res.status(200).json({ message: "Password reset successfully" });
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to reset password", code: "INTERNAL_ERROR", statusCode: 500 })
             );

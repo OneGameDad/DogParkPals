@@ -30,7 +30,10 @@ jest.mock('../controllers/userController', () => ({
 // Mock auth middleware to noop during router tests
 jest.mock('../middlewares/authMiddleware', () => ({
   __esModule: true,
-  requireAuth: (_req: Request, _res: Response, next: NextFunction) => next(),
+  requireAuth: (req: Request, res: Response, next: NextFunction) => {
+    (req as any).userId = 1;
+    next();
+  },
 }));
 
 // Import router after mocks are set up
@@ -49,14 +52,14 @@ describe('User Router', () => {
     jest.clearAllMocks();
   });
 
-  describe('POST /users', () => {
+  describe('POST /', () => {
     test('calls createUser controller method with request and response', async () => {
       mockCreateUser.mockImplementation((req: Request, res: Response) => {
         res.status(201).json({ id: 1, username: 'newuser' });
       });
 
       const response = await request(app)
-        .post('/users')
+        .post('/')
         .send({
           username: 'newuser',
           email: 'new@example.com',
@@ -72,7 +75,9 @@ describe('User Router', () => {
         res.status(400).json({ error: 'Missing required fields', code: 'VALIDATION_ERROR' });
       });
 
-      const response = await request(app).post('/users').send({
+      const response = await request(app)
+        .post('/')
+        .send({
         email: 'test@example.com',
         // Missing username and password
       });
@@ -89,7 +94,7 @@ describe('User Router', () => {
       });
 
       const response = await request(app)
-        .post('/users')
+        .post('/')
         .send({
           username: 'testuser',
           email: 'existing@example.com',
@@ -122,7 +127,7 @@ describe('User Router', () => {
       });
 
       const response = await request(app)
-        .post('/users')
+        .post('/')
         .send({
           username: 'newuser',
           email: 'new@example.com',
@@ -141,7 +146,7 @@ describe('User Router', () => {
       });
 
       const response = await request(app)
-        .post('/users')
+        .post('/')
         .send({
           username: 'testuser',
           email: 'test@example.com',
@@ -155,13 +160,13 @@ describe('User Router', () => {
     });
   });
 
-  describe('GET /users/email/:email', () => {
+  describe('GET /email/:email', () => {
     test('calls getUserByEmail controller method with request and response', async () => {
       mockGetUserByEmail.mockImplementation((req: Request, res: Response) => {
         res.status(200).json({ id: 1, email: 'test@example.com' });
       });
 
-      const response = await request(app).get('/users/email/test@example.com');
+      const response = await request(app).get('/email/test@example.com');
 
       expect(mockGetUserByEmail).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -172,7 +177,7 @@ describe('User Router', () => {
         res.status(404).json({ error: 'User not found', code: 'NOT_FOUND' });
       });
 
-      const response = await request(app).get('/users/email/notfound@example.com');
+      const response = await request(app).get('/email/notfound@example.com');
 
       expect(mockGetUserByEmail).toHaveBeenCalled();
       expect(response.status).toBe(404);
@@ -199,7 +204,7 @@ describe('User Router', () => {
         res.status(200).json(mockUser);
       });
 
-      const response = await request(app).get('/users/email/test@example.com');
+      const response = await request(app).get('/email/test@example.com');
 
       expect(mockGetUserByEmail).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -212,7 +217,7 @@ describe('User Router', () => {
         res.status(500).json({ error: 'Failed to retrieve user', code: 'INTERNAL_ERROR' });
       });
 
-      const response = await request(app).get('/users/test@example.com');
+      const response = await request(app).get('/email/test@example.com');
 
       expect(mockGetUserByEmail).toHaveBeenCalled();
       expect(response.status).toBe(500);
@@ -227,19 +232,19 @@ describe('User Router', () => {
         res.status(200).json({ email: req.params.email });
       });
 
-      await request(app).get('/users/email/test@example.com');
+      await request(app).get('/email/test@example.com');
 
       expect(mockGetUserByEmail).toHaveBeenCalled();
     });
   });
 
-  describe('GET /users/id/:id', () => {
+  describe('GET /id/:id', () => {
     test('calls getUserById controller', async () => {
       mockGetUserById.mockImplementation((req: Request, res: Response) => {
         res.status(200).json({ id: req.params.id });
       });
 
-      const response = await request(app).get('/users/id/5');
+      const response = await request(app).get('/id/5');
 
       expect(mockGetUserById).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -247,13 +252,13 @@ describe('User Router', () => {
     });
   });
 
-  describe('GET /users/username/:username', () => {
+  describe('GET /username/:username', () => {
     test('calls getUserByUsername controller', async () => {
       mockGetUserByUsername.mockImplementation((req: Request, res: Response) => {
         res.status(200).json({ username: req.params.username });
       });
 
-      const response = await request(app).get('/users/username/testuser');
+      const response = await request(app).get('/username/testuser');
 
       expect(mockGetUserByUsername).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -261,40 +266,40 @@ describe('User Router', () => {
     });
   });
 
-  describe('GET /users', () => {
+  describe('GET /', () => {
     test('calls getAllUsers controller', async () => {
       mockGetAllUsers.mockImplementation((_req: Request, res: Response) => {
         res.status(200).json([]);
       });
 
-      const response = await request(app).get('/users');
+      const response = await request(app).get('/');
 
       expect(mockGetAllUsers).toHaveBeenCalled();
       expect(response.status).toBe(200);
     });
   });
 
-  describe('DELETE /users/:id', () => {
+  describe('DELETE /:id', () => {
     test('calls deleteUser controller', async () => {
       mockDeleteUser.mockImplementation((req: Request, res: Response) => {
         res.status(204).send();
       });
 
-      const response = await request(app).delete('/users/9');
+      const response = await request(app).delete('/9');
 
       expect(mockDeleteUser).toHaveBeenCalled();
       expect(response.status).toBe(204);
     });
   });
 
-  describe('POST /users/change-password', () => {
+  describe('POST /change-password', () => {
     test('calls changePassword controller', async () => {
       mockChangePassword.mockImplementation((_req: Request, res: Response) => {
         res.status(200).json({ message: 'ok' });
       });
 
       const response = await request(app)
-        .post('/users/change-password')
+        .post('/change-password')
         .send({ oldPassword: 'oldpass123', newPassword: 'newpass123' });
 
       expect(mockChangePassword).toHaveBeenCalled();
@@ -309,7 +314,7 @@ describe('User Router', () => {
       });
 
       const response = await request(app)
-        .post('/users')
+        .post('/')
         .send({ username: 'test', email: 'test@example.com', password: 'password123' });
 
       expect(response.status).not.toBe(404);
@@ -320,7 +325,7 @@ describe('User Router', () => {
         res.status(200).json({ success: true });
       });
 
-      const response = await request(app).get('/users/test@example.com');
+      const response = await request(app).get('/email/test@example.com');
 
       expect(response.status).not.toBe(404);
     });

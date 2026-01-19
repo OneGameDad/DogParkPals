@@ -1,7 +1,15 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
-import type { Request, Response, Express } from 'express';
+import type { Request, Response, NextFunction, Express } from 'express';
 import express from 'express';
 import request from 'supertest';
+
+// Mock the auth middleware before importing the router
+jest.mock('../middlewares/authMiddleware', () => ({
+  requireAuth: (req: Request, res: Response, next: NextFunction) => {
+    (req as any).userId = 1;
+    next();
+  },
+}));
 
 // Create mock functions
 const mockAddDog = jest.fn() as any;
@@ -60,14 +68,14 @@ describe('Dog Router', () => {
     jest.clearAllMocks();
   });
 
-  describe('POST /dogs', () => {
+  describe('POST /', () => {
     test('calls addDog controller method', async () => {
       mockAddDog.mockImplementation((req: Request, res: Response) => {
         res.status(201).json(mockDog);
       });
 
       const response = await request(app)
-        .post('/dogs')
+        .post('/')
         .send({
           name: 'Rex',
           breed: 'LABRADOR_RETRIEVER',
@@ -83,13 +91,13 @@ describe('Dog Router', () => {
     });
   });
 
-  describe('GET /dogs', () => {
+  describe('GET /', () => {
     test('calls getAllDogs controller method', async () => {
       mockGetAllDogs.mockImplementation((req: Request, res: Response) => {
         res.status(200).json([mockDog]);
       });
 
-      const response = await request(app).get('/dogs');
+      const response = await request(app).get('/');
 
       expect(mockGetAllDogs).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -97,13 +105,13 @@ describe('Dog Router', () => {
     });
   });
 
-  describe('GET /dogs/:id', () => {
+  describe('GET /:id', () => {
     test('calls getDogById controller method with correct ID', async () => {
       mockGetDogById.mockImplementation((req: Request, res: Response) => {
         res.status(200).json(mockDog);
       });
 
-      const response = await request(app).get('/dogs/1');
+      const response = await request(app).get('/1');
 
       expect(mockGetDogById).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -115,20 +123,20 @@ describe('Dog Router', () => {
         res.status(404).json({ error: 'Dog not found' });
       });
 
-      const response = await request(app).get('/dogs/999');
+      const response = await request(app).get('/999');
 
       expect(mockGetDogById).toHaveBeenCalled();
       expect(response.status).toBe(404);
     });
   });
 
-  describe('GET /dogs/owner/:ownerId', () => {
+  describe('GET /owner/:ownerId', () => {
     test('calls getDogByOwner controller method with correct owner ID', async () => {
       mockGetDogByOwner.mockImplementation((req: Request, res: Response) => {
         res.status(200).json([mockDog]);
       });
 
-      const response = await request(app).get('/dogs/owner/1');
+      const response = await request(app).get('/owner/1');
 
       expect(mockGetDogByOwner).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -136,13 +144,13 @@ describe('Dog Router', () => {
     });
   });
 
-  describe('GET /dogs/park/:parkId', () => {
+  describe('GET /park/:parkId', () => {
     test('calls getAllDogsByPark controller method with correct park ID', async () => {
       mockGetAllDogsByPark.mockImplementation((req: Request, res: Response) => {
         res.status(200).json([mockDog]);
       });
 
-      const response = await request(app).get('/dogs/park/10');
+      const response = await request(app).get('/park/10');
 
       expect(mockGetAllDogsByPark).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -150,14 +158,14 @@ describe('Dog Router', () => {
     });
   });
 
-  describe('PUT /dogs/:id', () => {
+  describe('PUT /:id', () => {
     test('calls updateDog controller method with correct ID', async () => {
       mockUpdateDog.mockImplementation((req: Request, res: Response) => {
         res.status(200).json({ ...mockDog, name: 'Rex Jr' });
       });
 
       const response = await request(app)
-        .put('/dogs/1')
+        .put('/1')
         .send({ name: 'Rex Jr' });
 
       expect(mockUpdateDog).toHaveBeenCalled();
@@ -166,27 +174,27 @@ describe('Dog Router', () => {
     });
   });
 
-  describe('DELETE /dogs/:id', () => {
+  describe('DELETE /:id', () => {
     test('calls deleteDog controller method with correct ID', async () => {
       mockDeleteDog.mockImplementation((req: Request, res: Response) => {
         res.status(204).send();
       });
 
-      const response = await request(app).delete('/dogs/1');
+      const response = await request(app).delete('/1');
 
       expect(mockDeleteDog).toHaveBeenCalled();
       expect(response.status).toBe(204);
     });
   });
 
-  describe('POST /dogs/:id/owners', () => {
+  describe('POST /:id/owners', () => {
     test('calls addOwnerToDog controller method with correct dog ID', async () => {
       mockAddOwnerToDog.mockImplementation((req: Request, res: Response) => {
         res.status(204).send();
       });
 
       const response = await request(app)
-        .post('/dogs/1/owners')
+        .post('/1/owners')
         .send({ userId: 2 });
 
       expect(mockAddOwnerToDog).toHaveBeenCalled();
@@ -194,14 +202,14 @@ describe('Dog Router', () => {
     });
   });
 
-  describe('DELETE /dogs/:id/owners', () => {
+  describe('DELETE /:id/owners', () => {
     test('calls removeOwnerFromDog controller method with correct dog ID', async () => {
       mockRemoveOwnerFromDog.mockImplementation((req: Request, res: Response) => {
         res.status(204).send();
       });
 
       const response = await request(app)
-        .delete('/dogs/1/owners')
+        .delete('/1/owners')
         .send({ userId: 2 });
 
       expect(mockRemoveOwnerFromDog).toHaveBeenCalled();
@@ -215,19 +223,19 @@ describe('Dog Router', () => {
         res.status(200).json([]);
       });
 
-      // This should hit /dogs/owner/:ownerId, not /dogs/:id
-      const response = await request(app).get('/dogs/owner/1');
+      // This should hit /owner/:ownerId, not /:id
+      const response = await request(app).get('/owner/1');
 
       expect(mockGetDogByOwner).toHaveBeenCalled();
       expect(mockGetDogById).not.toHaveBeenCalled();
     });
 
-    test('/dogs/park/:parkId is not shadowed by /dogs/:id', async () => {
+    test('/park/:parkId is not shadowed by /:id', async () => {
       mockGetAllDogsByPark.mockImplementation((req: Request, res: Response) => {
         res.status(200).json([]);
       });
 
-      const response = await request(app).get('/dogs/park/10');
+      const response = await request(app).get('/park/10');
 
       expect(mockGetAllDogsByPark).toHaveBeenCalled();
       expect(mockGetDogById).not.toHaveBeenCalled();

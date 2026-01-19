@@ -15,7 +15,7 @@
         "types": ["node", "jest"],
         "isolatedModules": true,
         "declaration": false,
-        "removeComments": true,
+        "removeComments": true
     },
   "include": ["src/**/*", "tests"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"],

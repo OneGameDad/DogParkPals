@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { verifyPassword } from '../utils/password';
 import userService from '../services/userServices';
-import { AuthError, NotFoundError, toAppError } from '../utils/errors';
+import { AuthError, NotFoundError, toAppError, isAppError } from '../utils/errors';
 import { parseValidation } from '../utils/validator';
 import { loginSchema } from '../utils/validationSchemas';
 import typeSafeLogger from '../utils/typeSafeLogger';
@@ -35,6 +35,9 @@ const authController = {
 
       res.status(200).json({ token, user: sanitizeUser(user) });
     } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
       return next(toAppError(error, { message: 'Failed to login', code: 'LOGIN_FAILED', statusCode: 500 }));
     }
   },

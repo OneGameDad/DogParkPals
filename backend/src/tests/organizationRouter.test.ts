@@ -1,6 +1,15 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
+import type { Request, Response, NextFunction } from 'express';
 import request from 'supertest';
 import express from 'express';
+
+// Mock the auth middleware before importing the router
+jest.mock('../middlewares/authMiddleware', () => ({
+  requireAuth: (req: Request, res: Response, next: NextFunction) => {
+    (req as any).userId = 1;
+    next();
+  },
+}));
 
 // Mock organizationController
 const mockCreateOrganization = jest.fn();
@@ -73,7 +82,7 @@ describe('Organization Router', () => {
       });
 
       await request(app)
-        .post('/organizations')
+        .post('/')
         .send({ name: 'Dog Lovers Club', description: 'A club', websiteUrl: 'https://example.com' })
         .expect(201);
 
@@ -88,7 +97,7 @@ describe('Organization Router', () => {
       });
 
       await request(app)
-        .post('/organizations')
+        .post('/')
         .send({ name: 'Dog Lovers Club', description: 'A club' });
 
       expect(mockCreateOrganization).toHaveBeenCalled();
@@ -102,7 +111,7 @@ describe('Organization Router', () => {
       });
 
       await request(app)
-        .get('/organizations/name/Dog%20Lovers%20Club')
+        .get('/name/Dog%20Lovers%20Club')
         .expect(200);
 
       expect(mockGetOrganizationByName).toHaveBeenCalled();
@@ -114,7 +123,7 @@ describe('Organization Router', () => {
         res.status(200).json(mockOrgData);
       });
 
-      await request(app).get('/organizations/name/Dog%20Lovers%20Club');
+      await request(app).get('/name/Dog%20Lovers%20Club');
 
       expect(mockGetOrganizationByName).toHaveBeenCalled();
     });
@@ -132,7 +141,7 @@ describe('Organization Router', () => {
       });
 
       await request(app)
-        .get('/organizations/1/details')
+        .get('/1/details')
         .expect(200);
 
       expect(mockGetOrganizationWithDetails).toHaveBeenCalled();
@@ -149,7 +158,7 @@ describe('Organization Router', () => {
         });
       });
 
-      await request(app).get('/organizations/1/details');
+      await request(app).get('/1/details');
 
       expect(mockGetOrganizationWithDetails).toHaveBeenCalled();
     });
@@ -167,7 +176,7 @@ describe('Organization Router', () => {
       });
 
       const response = await request(app)
-        .get('/organizations/1/details')
+        .get('/1/details')
         .expect(200);
 
       expect(mockGetOrganizationWithDetails).toHaveBeenCalled();
@@ -188,7 +197,7 @@ describe('Organization Router', () => {
         });
       });
 
-      await request(app).get('/organizations/1/details?sortBy=email');
+      await request(app).get('/1/details?sortBy=email');
 
       expect(mockGetOrganizationWithDetails).toHaveBeenCalled();
     });
@@ -206,7 +215,7 @@ describe('Organization Router', () => {
         });
       });
 
-      await request(app).get('/organizations/1/details?sortBy=role&order=desc');
+      await request(app).get('/1/details?sortBy=role&order=desc');
 
       expect(mockGetOrganizationWithDetails).toHaveBeenCalled();
     });
@@ -219,7 +228,7 @@ describe('Organization Router', () => {
       });
 
       await request(app)
-        .get('/organizations/1')
+        .get('/1')
         .expect(200);
 
       expect(mockGetOrganizationById).toHaveBeenCalled();
@@ -231,7 +240,7 @@ describe('Organization Router', () => {
         res.status(200).json(mockOrgData);
       });
 
-      await request(app).get('/organizations/1');
+      await request(app).get('/1');
 
       expect(mockGetOrganizationById).toHaveBeenCalled();
     });
@@ -244,7 +253,7 @@ describe('Organization Router', () => {
       });
 
       await request(app)
-        .get('/organizations')
+        .get('/')
         .expect(200);
 
       expect(mockGetOrganizations).toHaveBeenCalled();
@@ -258,7 +267,7 @@ describe('Organization Router', () => {
       });
 
       await request(app)
-        .put('/organizations/1')
+        .put('/1')
         .send({ name: 'Updated Name' })
         .expect(200);
 
@@ -273,7 +282,7 @@ describe('Organization Router', () => {
       });
 
       await request(app)
-        .put('/organizations/1')
+        .put('/1')
         .send({ name: 'Updated Name' });
 
       expect(mockUpdateOrganization).toHaveBeenCalled();
@@ -287,7 +296,7 @@ describe('Organization Router', () => {
       });
 
       await request(app)
-        .delete('/organizations/1')
+        .delete('/1')
         .expect(204);
 
       expect(mockDeleteOrganization).toHaveBeenCalled();
@@ -299,7 +308,7 @@ describe('Organization Router', () => {
         res.status(204).send();
       });
 
-      await request(app).delete('/organizations/1');
+      await request(app).delete('/1');
 
       expect(mockDeleteOrganization).toHaveBeenCalled();
     });
@@ -312,7 +321,7 @@ describe('Organization Router', () => {
       });
 
       await request(app)
-        .post('/organizations/1/members')
+        .post('/1/members')
         .send({ userId: 2, role: 'MEMBER' })
         .expect(201);
 
@@ -328,7 +337,7 @@ describe('Organization Router', () => {
       });
 
       await request(app)
-        .post('/organizations/1/members')
+        .post('/1/members')
         .send({ userId: 2, role: 'MEMBER' });
 
       expect(mockAddMember).toHaveBeenCalled();
@@ -342,7 +351,7 @@ describe('Organization Router', () => {
       });
 
       await request(app)
-        .delete('/organizations/1/members/2')
+        .delete('/1/members/2')
         .expect(200);
 
       expect(mockRemoveMember).toHaveBeenCalled();
@@ -355,7 +364,7 @@ describe('Organization Router', () => {
         res.status(200).json({ message: 'Member removed' });
       });
 
-      await request(app).delete('/organizations/1/members/2');
+      await request(app).delete('/1/members/2');
 
       expect(mockRemoveMember).toHaveBeenCalled();
     });
@@ -368,7 +377,7 @@ describe('Organization Router', () => {
       });
 
       await request(app)
-        .put('/organizations/1/members/2')
+        .put('/1/members/2')
         .send({ role: 'MODERATOR' })
         .expect(200);
 
@@ -384,7 +393,7 @@ describe('Organization Router', () => {
       });
 
       await request(app)
-        .put('/organizations/1/members/2')
+        .put('/1/members/2')
         .send({ role: 'MODERATOR' });
 
       expect(mockUpdateMemberRole).toHaveBeenCalled();
@@ -398,7 +407,7 @@ describe('Organization Router', () => {
       });
 
       await request(app)
-        .get('/organizations/1/members/2')
+        .get('/1/members/2')
         .expect(200);
 
       expect(mockGetMember).toHaveBeenCalled();
@@ -411,7 +420,7 @@ describe('Organization Router', () => {
         res.status(200).json(mockMemberData);
       });
 
-      await request(app).get('/organizations/1/members/2');
+      await request(app).get('/1/members/2');
 
       expect(mockGetMember).toHaveBeenCalled();
     });
@@ -424,7 +433,7 @@ describe('Organization Router', () => {
       });
 
       await request(app)
-        .get('/organizations/1/members')
+        .get('/1/members')
         .expect(200);
 
       expect(mockGetMembers).toHaveBeenCalled();
@@ -436,7 +445,7 @@ describe('Organization Router', () => {
         res.status(200).json([mockMemberData]);
       });
 
-      await request(app).get('/organizations/1/members');
+      await request(app).get('/1/members');
 
       expect(mockGetMembers).toHaveBeenCalled();
     });
@@ -448,7 +457,7 @@ describe('Organization Router', () => {
         res.status(200).json([mockMemberData]);
       });
 
-      await request(app).get('/organizations/1/members?sortBy=username');
+      await request(app).get('/1/members?sortBy=username');
 
       expect(mockGetMembers).toHaveBeenCalled();
     });
@@ -460,7 +469,7 @@ describe('Organization Router', () => {
         res.status(200).json([mockMemberData]);
       });
 
-      await request(app).get('/organizations/1/members?order=desc');
+      await request(app).get('/1/members?order=desc');
 
       expect(mockGetMembers).toHaveBeenCalled();
     });
@@ -473,7 +482,7 @@ describe('Organization Router', () => {
         res.status(200).json([mockMemberData]);
       });
 
-      await request(app).get('/organizations/1/members?sortBy=joinedAt&order=desc');
+      await request(app).get('/1/members?sortBy=joinedAt&order=desc');
 
       expect(mockGetMembers).toHaveBeenCalled();
     });
@@ -486,7 +495,7 @@ describe('Organization Router', () => {
       });
 
       await request(app)
-        .get('/organizations/1/members/2/is-member')
+        .get('/1/members/2/is-member')
         .expect(200);
 
       expect(mockIsMember).toHaveBeenCalled();
@@ -499,7 +508,7 @@ describe('Organization Router', () => {
         res.status(200).json({ isMember: true });
       });
 
-      await request(app).get('/organizations/1/members/2/is-member');
+      await request(app).get('/1/members/2/is-member');
 
       expect(mockIsMember).toHaveBeenCalled();
     });
@@ -510,7 +519,7 @@ describe('Organization Router', () => {
       });
 
       const response = await request(app)
-        .get('/organizations/1/members/999/is-member')
+        .get('/1/members/999/is-member')
         .expect(200);
 
       expect(mockIsMember).toHaveBeenCalled();

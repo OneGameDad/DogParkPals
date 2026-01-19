@@ -8,12 +8,11 @@ import {
     changePasswordSchema,
     createUserSchema,
     deleteUserSchema,
-    forgotPasswordSchema,
     getUserByEmailSchema,
     getUserByIdSchema,
     getUserByUsernameSchema,
     listUsersSchema,
-    resetPasswordSchema,
+    resetUserPasswordSchema,
 } from "../utils/validationSchemas";
 
 const userController = {
@@ -137,22 +136,18 @@ const userController = {
         }
     },
 
-    forgotPassword: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    resetUserPassword: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
-            const { email } = parseValidation(forgotPasswordSchema, req.body);
-            const token = await userService.requestPasswordReset(email);
-            res.status(200).json({ message: "Password reset token generated", resetToken: token });
-        } catch (error) {
-            return next(
-                toAppError(error, { message: "Failed to generate reset token", code: "INTERNAL_ERROR", statusCode: 500 })
-            );
-        }
-    },
+            typeSafeLogger.logRequest("Received request to reset user password", { method: req.method, path: req.path });
+            
+            // Check if user is admin
+            const userRole = (req as any).user?.role;
+            if (userRole !== 'ADMIN' && userRole !== 'DEVELOPER') {
+                throw ForbiddenError("Only admins can reset passwords");
+            }
 
-    resetPassword: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-        try {
-            const { token, newPassword } = parseValidation(resetPasswordSchema, req.body);
-            await userService.resetPassword(token, newPassword);
+            const { userId, newPassword } = parseValidation(resetUserPasswordSchema, req.body);
+            await userService.resetUserPassword(userId, newPassword);
             res.status(200).json({ message: "Password reset successfully" });
         } catch (error) {
             return next(

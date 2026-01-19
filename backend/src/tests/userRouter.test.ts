@@ -12,8 +12,6 @@ const mockGetUserByUsername = jest.fn() as any;
 const mockGetAllUsers = jest.fn() as any;
 const mockDeleteUser = jest.fn() as any;
 const mockChangePassword = jest.fn() as any;
-const mockForgotPassword = jest.fn() as any;
-const mockResetPassword = jest.fn() as any;
 
 // Mock the controller
 jest.mock('../controllers/userController', () => ({
@@ -26,8 +24,6 @@ jest.mock('../controllers/userController', () => ({
     getAllUsers: mockGetAllUsers,
     deleteUser: mockDeleteUser,
     changePassword: mockChangePassword,
-    forgotPassword: mockForgotPassword,
-    resetPassword: mockResetPassword,
   },
 }));
 
@@ -119,8 +115,6 @@ describe('User Router', () => {
         ExpPoints: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
-        resetToken: null,
-        resetTokenExpiry: null,
       } as unknown as User;
 
       mockCreateUser.mockImplementation((req: Request, res: Response) => {
@@ -199,8 +193,6 @@ describe('User Router', () => {
         ExpPoints: 50,
         createdAt: new Date(),
         updatedAt: new Date(),
-        resetToken: null,
-        resetTokenExpiry: null,
       } as unknown as User;
 
       mockGetUserByEmail.mockImplementation((req: Request, res: Response) => {
@@ -306,36 +298,6 @@ describe('User Router', () => {
         .send({ oldPassword: 'oldpass123', newPassword: 'newpass123' });
 
       expect(mockChangePassword).toHaveBeenCalled();
-      expect(response.status).toBe(200);
-    });
-  });
-
-  describe('POST /users/forgot-password', () => {
-    test('calls forgotPassword controller', async () => {
-      mockForgotPassword.mockImplementation((_req: Request, res: Response) => {
-        res.status(200).json({ message: 'sent' });
-      });
-
-      const response = await request(app)
-        .post('/users/forgot-password')
-        .send({ email: 'reset@example.com' });
-
-      expect(mockForgotPassword).toHaveBeenCalled();
-      expect(response.status).toBe(200);
-    });
-  });
-
-  describe('POST /users/reset-password', () => {
-    test('calls resetPassword controller', async () => {
-      mockResetPassword.mockImplementation((_req: Request, res: Response) => {
-        res.status(200).json({ message: 'reset' });
-      });
-
-      const response = await request(app)
-        .post('/users/reset-password')
-        .send({ token: 't', newPassword: 'newpass123' });
-
-      expect(mockResetPassword).toHaveBeenCalled();
       expect(response.status).toBe(200);
     });
   });

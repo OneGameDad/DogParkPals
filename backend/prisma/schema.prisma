@@ -21,8 +21,6 @@ model User {
   first_name      String?
   last_name       String?
   profilePictureUrl String?
-  resetToken String?
-  resetTokenExpiry DateTime?
   latitude  Float?
   longitude Float?
   dogOwnerships DogOwner[]

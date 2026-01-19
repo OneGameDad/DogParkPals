@@ -58,18 +58,12 @@ export const changePasswordSchema = z.object({
 
 export type ChangePasswordRequest = z.infer<typeof changePasswordSchema>;
 
-export const forgotPasswordSchema = z.object({
-  email: z.string().min(1, 'Email is required').email('Invalid email format'),
+export const resetUserPasswordSchema = z.object({
+  userId: z.coerce.number().int().positive('User ID must be a positive integer'),
+  newPassword: z.string().min(8, 'Password must be at least 8 characters long'),
 });
 
-export type ForgotPasswordRequest = z.infer<typeof forgotPasswordSchema>;
-
-export const resetPasswordSchema = z.object({
-  token: z.string().min(1, 'Reset token is required'),
-  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
-});
-
-export type ResetPasswordRequest = z.infer<typeof resetPasswordSchema>;
+export type ResetUserPasswordRequest = z.infer<typeof resetUserPasswordSchema>;
 
 export const createParkSchema = z.object({
   name: z.string().min(1, 'Park name is required'),

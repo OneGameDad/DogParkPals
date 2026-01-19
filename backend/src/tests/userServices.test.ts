@@ -29,8 +29,6 @@ describe('User Services', () => {
       ExpPoints: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
-      resetToken: null,
-      resetTokenExpiry: null,
     } as unknown as User;
 
     const mockCreate = jest.fn<() => Promise<typeof mockUserData>>().mockResolvedValue(mockUserData);
@@ -85,8 +83,6 @@ describe('User Services', () => {
       ExpPoints: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
-      resetToken: null,
-      resetTokenExpiry: null,
     } as unknown as User;
 
     const mockFindUnique = jest.fn<() => Promise<typeof mockUserData | null>>().mockResolvedValue(mockUserData);
@@ -218,87 +214,4 @@ describe('User Services', () => {
     jest.dontMock('../utils/password');
   });
 
-  test('requestPasswordReset stores hashed token and returns plain token', async () => {
-    const mockFindUnique = jest.fn<any>().mockResolvedValue({ id: 5, email: testEmail });
-    const mockUpdate = jest.fn<any>().mockResolvedValue(undefined);
-
-    jest.doMock('@prisma/client', () => ({
-      PrismaClient: jest.fn(() => ({
-        user: {
-          findUnique: mockFindUnique,
-          update: mockUpdate,
-        },
-      })),
-    }));
-
-    jest.doMock('crypto', () => ({
-      randomBytes: () => Buffer.from('plain-token'),
-      createHash: () => ({
-        update: () => ({ digest: () => 'hashed-token' }),
-      }),
-    }));
-
-    const userService = await import('../services/userServices');
-    const token = await userService.default.requestPasswordReset(testEmail);
-
-    expect(token).toBe('plain-token');
-    expect(mockUpdate).toHaveBeenCalledWith({
-      where: { id: 5 },
-      data: expect.objectContaining({
-        resetToken: 'hashed-token',
-        resetTokenExpiry: expect.any(Date),
-      }),
-    });
-
-    jest.dontMock('@prisma/client');
-    jest.dontMock('crypto');
-  });
-
-  test('resetPassword updates password when token valid', async () => {
-    const mockFindFirst = jest.fn<any>().mockResolvedValue({ id: 6 });
-    const mockUpdate = jest.fn<any>().mockResolvedValue(undefined);
-
-    jest.doMock('@prisma/client', () => ({
-      PrismaClient: jest.fn(() => ({
-        user: {
-          findFirst: mockFindFirst,
-          update: mockUpdate,
-        },
-      })),
-    }));
-
-    jest.doMock('crypto', () => ({
-      randomBytes: () => Buffer.from('plain-token'),
-      createHash: () => ({
-        update: () => ({ digest: () => 'hashed-token' }),
-      }),
-    }));
-
-    jest.doMock('../utils/password', () => ({
-      hashPassword: jest.fn<any>().mockResolvedValue('newhash'),
-      verifyPassword: jest.fn<any>(),
-    }));
-
-    const userService = await import('../services/userServices');
-    await userService.default.resetPassword('plain-token', 'newpass123');
-
-    expect(mockFindFirst).toHaveBeenCalledWith({
-      where: {
-        resetToken: 'hashed-token',
-        resetTokenExpiry: { gt: expect.any(Date) },
-      },
-    });
-    expect(mockUpdate).toHaveBeenCalledWith({
-      where: { id: 6 },
-      data: {
-        password_hash: 'newhash',
-        resetToken: null,
-        resetTokenExpiry: null,
-      },
-    });
-
-    jest.dontMock('@prisma/client');
-    jest.dontMock('crypto');
-    jest.dontMock('../utils/password');
-  });
 });

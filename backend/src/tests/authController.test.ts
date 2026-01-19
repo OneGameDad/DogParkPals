@@ -5,6 +5,8 @@ import { AppError } from '../utils/errors';
 const mockGetUserByEmail = jest.fn<any>();
 const mockVerifyPassword = jest.fn<any>();
 const mockJwtSign = jest.fn<any>();
+const mockJwtVerify = jest.fn<any>();
+const mockBlacklistToken = jest.fn<any>();
 
 jest.mock('../services/userServices', () => ({
   __esModule: true,
@@ -19,6 +21,11 @@ jest.mock('../utils/password', () => ({
 
 jest.mock('jsonwebtoken', () => ({
   sign: (...args: any[]) => mockJwtSign(...args),
+  verify: (...args: any[]) => mockJwtVerify(...args),
+}));
+
+jest.mock('../utils/tokenBlacklist', () => ({
+  blacklistToken: (...args: any[]) => mockBlacklistToken(...args),
 }));
 
 import authController from '../controllers/authController';
@@ -53,6 +60,7 @@ describe('Auth Controller', () => {
       const payload = mockJson.mock.calls[0][0] as any;
       expect(payload.token).toBe('jwt-token');
       expect(payload.user).not.toHaveProperty('password_hash');
+      expect(mockJwtSign).toHaveBeenCalledWith({ userId: 1, email: 'user@example.com', role: undefined }, expect.any(String), { expiresIn: '7d' });
     });
 
     test('forwards not found when user missing', async () => {
@@ -81,7 +89,13 @@ describe('Auth Controller', () => {
 
   describe('logout', () => {
     test('returns 204', async () => {
+      mockReq.headers = { authorization: 'Bearer token-123' } as any;
+      mockJwtVerify.mockReturnValue({ userId: 1, email: 'a', exp: Math.floor(Date.now() / 1000) + 1000 });
+
       await authController.logout(mockReq as Request, mockRes as Response);
+
+      expect(mockJwtVerify).toHaveBeenCalled();
+      expect(mockBlacklistToken).toHaveBeenCalledWith('token-123', expect.any(Number));
       expect(mockStatus).toHaveBeenCalledWith(204);
     });
   });

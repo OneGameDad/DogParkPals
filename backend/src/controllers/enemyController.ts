@@ -106,7 +106,15 @@ const enemyController = {
 
     isEnemy: async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const userId = Number(req.params.userId);
+        const userId = (req as any).user?.id;
+        if (!userId) {
+            typeSafeLogger.error("User not authenticated");
+            return next(toAppError(new Error("User not authenticated"), { 
+                message: "User not authenticated", 
+                code: "AUTH_ERROR",
+                statusCode: 401
+            }));
+        }
         const enemyUserId = Number(req.params.enemyUserId);
         // Validate both parameters
         parseValidation(removeEnemySchema, { userId, enemyUserId });
@@ -116,7 +124,7 @@ const enemyController = {
         typeSafeLogger.info("Enemy status checked", { userId, enemyUserId, isEnemy });
         return res.status(200).json({ isEnemy });
     } catch (error) {
-        typeSafeLogger.error("Failed to check enemy status", { userId: req.params.userId, enemyUserId: req.params.enemyUserId, error });
+        typeSafeLogger.error("Failed to check enemy status", { userId: (req as any).user?.id, enemyUserId: req.params.enemyUserId, error });
         if (isAppError(error)) {
             return next(error);
         }

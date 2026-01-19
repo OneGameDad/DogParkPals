@@ -388,31 +388,31 @@ export const updateEventSchema = z.object({
 export type UpdateEventRequest = z.infer<typeof updateEventSchema>;
 
 export const getEventByIdSchema = z.object({
-  eventId: z.number().int().positive('Event ID must be a positive integer'),
+  eventId: z.coerce.number().int().positive('Event ID must be a positive integer'),
 });
 
 export type GetEventByIdRequest = z.infer<typeof getEventByIdSchema>;
 
 export const deleteEventSchema = z.object({
-  eventId: z.number().int().positive('Event ID must be a positive integer'),
+  eventId: z.coerce.number().int().positive('Event ID must be a positive integer'),
 });
 
 export type DeleteEventRequest = z.infer<typeof deleteEventSchema>;
 
 export const getEventsByOrganizerSchema = z.object({
-  organizerId: z.number().int().positive('Organizer ID must be a positive integer'),
+  organizerId: z.coerce.number().int().positive('Organizer ID must be a positive integer'),
 });
 
 export type GetEventsByOrganizerRequest = z.infer<typeof getEventsByOrganizerSchema>;
 
 export const getEventsByOrganizationSchema = z.object({
-  organizationId: z.number().int().positive('Organization ID must be a positive integer'),
+  organizationId: z.coerce.number().int().positive('Organization ID must be a positive integer'),
 });
 
 export type GetEventsByOrganizationRequest = z.infer<typeof getEventsByOrganizationSchema>;
 
 export const getEventsByParkSchema = z.object({
-  parkId: z.number().int().positive('Park ID must be a positive integer'),
+  parkId: z.coerce.number().int().positive('Park ID must be a positive integer'),
 });
 
 export type GetEventsByParkRequest = z.infer<typeof getEventsByParkSchema>;

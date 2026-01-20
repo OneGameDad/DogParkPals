@@ -197,9 +197,11 @@ const dogController = {
     
     await dogService.addOwnerToDog(dogId, newOwnerId);
     res.status(204).send();
-    } catch (error) {      if (isAppError(error)) {
+    } catch (error) {      
+      if (isAppError(error)) {
         return next(error);
-      }        return next(toAppError(error, { message: "Failed to add owner to dog", code: "INTERNAL_ERROR", statusCode: 500 }));
+      }        
+      return next(toAppError(error, { message: "Failed to add owner to dog", code: "INTERNAL_ERROR", statusCode: 500 }));
     }
   },
 

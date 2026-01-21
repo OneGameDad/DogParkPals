@@ -52,12 +52,7 @@ Frontend stores token and redirects to dashboard
    - Go to [Google Cloud Console](https://console.cloud.google.com/)
    - Create a new project or select an existing one
 
-2. **Enable Google+ API**
-   - Navigate to "APIs & Services" → "Library"
-   - Search for "Google+ API"
-   - Click "Enable"
-
-3. **Create OAuth 2.0 Credentials**
+2. **Create OAuth 2.0 Credentials**
    - Go to "APIs & Services" → "Credentials"
    - Click "Create Credentials" → "OAuth client ID"
    - Select "Web application" as the application type
@@ -70,7 +65,7 @@ Frontend stores token and redirects to dashboard
      - `https://yourdomain.com/auth/google/callback` (production)
    - Click "Create"
 
-4. **Copy Credentials**
+3. **Copy Credentials**
    - Copy the Client ID and Client Secret
 
 ### 2. Backend Configuration
@@ -127,7 +122,7 @@ Frontend stores token and redirects to dashboard
 
 ## API Reference
 
-### POST /auth/google
+### GET /auth/google
 Initiates Google OAuth flow.
 
 **Response:**
@@ -400,4 +395,4 @@ JWT_SECRET=<your-jwt-secret>
 
 - [Passport.js Documentation](http://www.passportjs.org/)
 - [Google OAuth 2.0 Documentation](https://developers.google.com/identity/protocols/oauth2)
-- [JWT Best Practices](https://tools.ietf.org/html/rfc8949)
+- [JWT Best Practices](https://datatracker.ietf.org/doc/html/rfc8725)

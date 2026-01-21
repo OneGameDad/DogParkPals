@@ -99,4 +99,56 @@ describe('Auth Controller', () => {
       expect(mockStatus).toHaveBeenCalledWith(204);
     });
   });
+
+  describe('googleCallback', () => {
+    test('redirects to frontend with token on success', async () => {
+      const mockRedirect = jest.fn();
+      mockReq.user = { id: 1, email: 'user@gmail.com', role: 'CLIENT' };
+      mockRes.redirect = mockRedirect;
+      mockJwtSign.mockReturnValue('google-jwt-token');
+      process.env.FRONTEND_URL = 'http://localhost:5173';
+
+      await authController.googleCallback(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockJwtSign).toHaveBeenCalledWith(
+        { userId: 1, email: 'user@gmail.com', role: 'CLIENT' },
+        expect.any(String),
+        { expiresIn: '7d' }
+      );
+      expect(mockRedirect).toHaveBeenCalledWith('http://localhost:5173/auth/google/callback?token=google-jwt-token');
+    });
+
+    test('uses default frontend url when env not set', async () => {
+      const mockRedirect = jest.fn();
+      mockReq.user = { id: 2, email: 'another@gmail.com', role: 'CLIENT' };
+      mockRes.redirect = mockRedirect;
+      mockJwtSign.mockReturnValue('another-token');
+      delete process.env.FRONTEND_URL;
+
+      await authController.googleCallback(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockRedirect).toHaveBeenCalledWith('http://localhost:5173/auth/google/callback?token=another-token');
+    });
+
+    test('forwards error when user is missing', async () => {
+      mockReq.user = null;
+
+      await authController.googleCallback(mockReq as Request, mockRes as Response, mockNext);
+
+      const forwarded = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwarded).toBeInstanceOf(AppError);
+      expect(forwarded.statusCode).toBe(401);
+    });
+
+    test('forwards error when JWT_SECRET not configured', async () => {
+      mockReq.user = { id: 1, email: 'user@gmail.com', role: 'CLIENT' };
+      delete process.env.JWT_SECRET;
+
+      await authController.googleCallback(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalled();
+      const forwarded = mockNext.mock.calls[0][0];
+      expect(forwarded).toBeDefined();
+    });
+  });
 });

@@ -64,6 +64,40 @@ const authController = {
 
     res.status(204).send();
   },
+
+  googleCallback: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // User is attached to req by passport
+      const user = req.user as any;
+      
+      if (!user) {
+        throw AuthError('Google authentication failed');
+      }
+
+      const secret = process.env.JWT_SECRET;
+      if (!secret) {
+        throw new Error('JWT_SECRET not configured');
+      }
+
+      // Generate JWT token
+      const token = jwt.sign(
+        { userId: user.id, email: user.email, role: user.role },
+        secret,
+        { expiresIn: '7d' }
+      );
+
+      typeSafeLogger.logUserAction('User logged in via Google', { userId: user.id, email: user.email });
+
+      // Redirect to frontend with token
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      res.redirect(`${frontendUrl}/auth/google/callback?token=${token}`);
+    } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
+      return next(toAppError(error, { message: 'Google authentication failed', code: 'GOOGLE_AUTH_FAILED', statusCode: 500 }));
+    }
+  },
 };
 
 export default authController;

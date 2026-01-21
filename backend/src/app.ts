@@ -18,6 +18,7 @@
 
 import express from "express";
 import cors from "cors";
+import passport from "./services/googleAuthService";
 import userRouter from "./routes/userRouter";
 import authRouter from "./routes/authRouter";
 import dogRouter from "./routes/dogRouter";
@@ -44,6 +45,9 @@ app.use(cors({
 
 app.use(requestIdMiddleware);
 app.use(express.json());
+
+// Initialize Passport
+app.use(passport.initialize());
 
 app.use("/auth", authRouter);
 app.use("/users", userRouter);

@@ -1,6 +1,13 @@
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect, beforeAll } from '@jest/globals';
 import request from 'supertest';
-import app from '../app';
+let app: any;
+
+beforeAll(async () => {
+  process.env.GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'test-client-id';
+  process.env.GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'test-client-secret';
+  process.env.GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3000/auth/google/callback';
+  app = (await import('../app')).default;
+});
 
 describe('Google OAuth Routes - Unit Tests', () => {
   test('GET /auth/google initiates OAuth flow and redirects', async () => {
@@ -9,6 +16,7 @@ describe('Google OAuth Routes - Unit Tests', () => {
     // Google OAuth should redirect to Google's authorization server
     expect([302, 303]).toContain(res.status);
     expect(res.headers.location).toBeDefined();
+    expect(res.headers.location).toMatch(/^https:\/\/accounts\.google\.com/);
   });
 
   test('GET /auth/google redirect URL includes scope parameter', async () => {

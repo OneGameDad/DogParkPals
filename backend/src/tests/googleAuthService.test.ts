@@ -1,14 +1,12 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 
-const mockGetUserByEmail = jest.fn<any>();
-const mockCreateUser = jest.fn<any>();
+const mockUpsertUserByEmailOAuth = jest.fn<any>();
 const mockGetUserById = jest.fn<any>();
 
 jest.mock('../services/userServices', () => ({
   __esModule: true,
   default: {
-    getUserByEmail: mockGetUserByEmail,
-    createUser: mockCreateUser,
+    upsertUserByEmailOAuth: mockUpsertUserByEmailOAuth,
     getUserById: mockGetUserById,
   },
 }));
@@ -23,7 +21,6 @@ jest.mock('../utils/typeSafeLogger', () => ({
   },
 }));
 
-import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import passport from '../services/googleAuthService';
 
 describe('Google Auth Service', () => {
@@ -35,7 +32,7 @@ describe('Google Auth Service', () => {
   });
 
   test('should have google strategy registered', () => {
-    const strategies = passport._strategies as any;
+    const strategies = (passport as any)._strategies as any;
     expect(strategies.google).toBeDefined();
     expect(strategies.google.name).toBe('google');
   });
@@ -48,8 +45,7 @@ describe('Google Auth Service', () => {
       photos: [{ value: 'https://example.com/photo.jpg' }],
     };
 
-    mockGetUserByEmail.mockResolvedValue(null);
-    mockCreateUser.mockResolvedValue({
+    mockUpsertUserByEmailOAuth.mockResolvedValue({
       id: 1,
       email: 'newuser@gmail.com',
       username: 'newuser_abc123',
@@ -58,14 +54,14 @@ describe('Google Auth Service', () => {
       profile_picture: 'https://example.com/photo.jpg',
     });
 
-    const strategy = passport._strategies.google as any;
+    const strategy = (passport as any)._strategies.google as any;
     const verifyCallback = strategy._verify;
 
     verifyCallback('access-token', 'refresh-token', mockProfile, (err: any, user: any) => {
       expect(err).toBeNull();
       expect(user).toBeDefined();
       expect(user.email).toBe('newuser@gmail.com');
-      expect(mockCreateUser).toHaveBeenCalled();
+      expect(mockUpsertUserByEmailOAuth).toHaveBeenCalled();
       done();
     });
   });
@@ -86,15 +82,15 @@ describe('Google Auth Service', () => {
       last_name: 'Smith',
     };
 
-    mockGetUserByEmail.mockResolvedValue(existingUser);
+    mockUpsertUserByEmailOAuth.mockResolvedValue(existingUser);
 
-    const strategy = passport._strategies.google as any;
+    const strategy = (passport as any)._strategies.google as any;
     const verifyCallback = strategy._verify;
 
     verifyCallback('access-token', 'refresh-token', mockProfile, (err: any, user: any) => {
       expect(err).toBeNull();
       expect(user).toEqual(existingUser);
-      expect(mockCreateUser).not.toHaveBeenCalled();
+      expect(mockUpsertUserByEmailOAuth).toHaveBeenCalled();
       done();
     });
   });
@@ -106,12 +102,14 @@ describe('Google Auth Service', () => {
       name: { givenName: 'John', familyName: 'Doe' },
     };
 
-    const strategy = passport._strategies.google as any;
+    const strategy = (passport as any)._strategies.google as any;
     const verifyCallback = strategy._verify;
 
     verifyCallback('access-token', 'refresh-token', mockProfile, (err: any, user: any) => {
       expect(err).toBeDefined();
-      expect(err.message).toBe('No email provided by Google');
+      expect(err.message).toBe(
+        'Email not available from Google account. Please ensure your Google account has an email address and the email permission is granted.'
+      );
       expect(user).toBeUndefined();
       done();
     });

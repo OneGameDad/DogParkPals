@@ -36,6 +36,42 @@ const userService = {
     }
   },
 
+  // Upsert by email for OAuth flows to avoid race conditions on concurrent logins
+  async upsertUserByEmailOAuth(
+    username: string,
+    email: string,
+    password: string,
+    first_name?: string,
+    last_name?: string,
+    profilePictureUrl?: string
+  ) {
+    typeSafeLogger.logUserAction('Upserting user via Google OAuth', { email });
+    try {
+      const hashedPassword = await hashPassword(password);
+      const user = await prisma.user.upsert({
+        where: { email },
+        update: {},
+        create: {
+          username,
+          first_name,
+          last_name,
+          email,
+          password_hash: hashedPassword,
+          profilePictureUrl,
+        },
+      });
+      typeSafeLogger.logUserAction('User upserted via Google OAuth', { userId: user.id, email });
+      return user;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to upsert user via Google OAuth',
+        code: 'UPSERT_USER_OAUTH_FAILED',
+      });
+      typeSafeLogger.logError('Failed to upsert user via Google OAuth', appError, { email });
+      throw appError;
+    }
+  },
+
   async getUserByEmail(email: string) {
     typeSafeLogger.info('Fetching user by email', { email });
     try {

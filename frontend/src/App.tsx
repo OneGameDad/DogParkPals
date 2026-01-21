@@ -9,6 +9,7 @@ import Profile from './pages/Profile';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import DogProfile from './pages/DogProfile';
+import GoogleCallback from './pages/GoogleCallback';
 
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/dog/:id" element={<DogProfile />} />
+          <Route path="/auth/google/callback" element={<GoogleCallback />} />
         </Routes>
       </div>
 

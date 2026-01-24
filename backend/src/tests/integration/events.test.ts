@@ -191,6 +191,94 @@ describe("events CRUD and authorization", () => {
   });
 });
 
+describe("event attendance flows", () => {
+  test("public event attendance succeeds and lists attendee", async () => {
+    const attendRes = await request(app)
+      .post(`/api/events/${ids.events.event1}/attend`)
+      .set("Authorization", `Bearer ${userBToken()}`);
+
+    expect(attendRes.status).toBe(200);
+
+    const attendeesRes = await request(app)
+      .get(`/api/events/${ids.events.event1}/attendees`)
+      .set("Authorization", `Bearer ${memberToken()}`);
+
+    expect(attendeesRes.status).toBe(200);
+    const attendeeIds = attendeesRes.body.map((u: any) => u.id);
+    expect(attendeeIds).toContain(ids.users.userB);
+  });
+
+  test("private event attendance forbidden for non-authorized user", async () => {
+    const res = await request(app)
+      .post(`/api/events/${ids.events.event2}/attend`)
+      .set("Authorization", `Bearer ${memberToken()}`);
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("FORBIDDEN");
+  });
+
+  test("cancel attendance removes attendee", async () => {
+    await request(app)
+      .post(`/api/events/${ids.events.event1}/attend`)
+      .set("Authorization", `Bearer ${userBToken()}`);
+
+    const cancelRes = await request(app)
+      .delete(`/api/events/${ids.events.event1}/attend`)
+      .set("Authorization", `Bearer ${userBToken()}`);
+
+    expect(cancelRes.status).toBe(200);
+
+    const attendeesRes = await request(app)
+      .get(`/api/events/${ids.events.event1}/attendees`)
+      .set("Authorization", `Bearer ${memberToken()}`);
+
+    const attendeeIds = attendeesRes.body.map((u: any) => u.id);
+    expect(attendeeIds).not.toContain(ids.users.userB);
+  });
+
+  test("organizer can remove a specific attendee", async () => {
+    await request(app)
+      .post(`/api/events/${ids.events.event1}/attend`)
+      .set("Authorization", `Bearer ${userBToken()}`);
+
+    const removeRes = await request(app)
+      .delete(`/api/events/${ids.events.event1}/attendees/user`)
+      .set("Authorization", `Bearer ${orgOwnerToken()}`)
+      .send({ userId: ids.users.userB });
+
+    expect(removeRes.status).toBe(200);
+
+    const attendeesRes = await request(app)
+      .get(`/api/events/${ids.events.event1}/attendees`)
+      .set("Authorization", `Bearer ${memberToken()}`);
+
+    const attendeeIds = attendeesRes.body.map((u: any) => u.id);
+    expect(attendeeIds).not.toContain(ids.users.userB);
+  });
+
+  test("admin can remove all attendees", async () => {
+    await request(app)
+      .post(`/api/events/${ids.events.event1}/attend`)
+      .set("Authorization", `Bearer ${userBToken()}`);
+
+    await request(app)
+      .post(`/api/events/${ids.events.event1}/attend`)
+      .set("Authorization", `Bearer ${orgOwnerToken()}`);
+
+    const removeAllRes = await request(app)
+      .delete(`/api/events/${ids.events.event1}/attendees`)
+      .set("Authorization", `Bearer ${adminToken()}`);
+
+    expect(removeAllRes.status).toBe(200);
+
+    const attendeesRes = await request(app)
+      .get(`/api/events/${ids.events.event1}/attendees`)
+      .set("Authorization", `Bearer ${developerToken()}`);
+
+    expect(attendeesRes.body).toEqual([]);
+  });
+});
+
   describe("concurrent event operations", () => {
     test("concurrent event creation with unique titles succeed", async () => {
       const futureWindow = () => {

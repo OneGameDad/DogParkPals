@@ -436,3 +436,29 @@ export const getEventsByParkSchema = z.object({
 });
 
 export type GetEventsByParkRequest = z.infer<typeof getEventsByParkSchema>;
+
+// Achievement Validation Schemas
+export const createAchievementSchema = z.object({
+  name: z.string().min(1, 'Achievement name is required').min(2, 'Achievement name must be at least 2 characters').max(255, 'Achievement name cannot exceed 255 characters'),
+  type: z.enum(['BADGE', 'TROPHY', 'CERTIFICATE']).optional(),
+  description: z.string().max(1000, 'Description cannot exceed 1000 characters').optional(),
+  badgeUrl: z.string().url('Invalid badge URL').optional(),
+});
+
+export type CreateAchievementRequest = z.infer<typeof createAchievementSchema>;
+
+export const updateAchievementSchema = z.object({
+  name: z.string().min(2, 'Achievement name must be at least 2 characters').max(255, 'Achievement name cannot exceed 255 characters').optional(),
+  type: z.enum(['BADGE', 'TROPHY', 'CERTIFICATE']).optional(),
+  description: z.string().max(1000, 'Description cannot exceed 1000 characters').optional(),
+  badgeUrl: z.string().url('Invalid badge URL').optional(),
+});
+
+export type UpdateAchievementRequest = z.infer<typeof updateAchievementSchema>;
+
+export const awardAchievementSchema = z.object({
+  userId: z.coerce.number().int().positive('User ID must be a positive integer'),
+  achievementId: z.coerce.number().int().positive('Achievement ID must be a positive integer'),
+});
+
+export type AwardAchievementRequest = z.infer<typeof awardAchievementSchema>;

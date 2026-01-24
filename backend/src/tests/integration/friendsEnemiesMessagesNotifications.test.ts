@@ -463,3 +463,138 @@ describe("Notification Flows", () => {
     expect(res.body.code).toBe("AUTH_ERROR");
   });
 });
+
+  describe("concurrent social operations", () => {
+    test("multiple messages sent concurrently to same recipient", async () => {
+      const [msg1, msg2, msg3] = await Promise.all([
+        request(app)
+          .post(`/api/messages/${ids.users.userB}`)
+          .set("Authorization", `Bearer ${userAToken()}`)
+          .send({ senderId: ids.users.userA, receiverId: ids.users.userB, content: "Message 1" }),
+        request(app)
+          .post(`/api/messages/${ids.users.userB}`)
+          .set("Authorization", `Bearer ${userAToken()}`)
+          .send({ senderId: ids.users.userA, receiverId: ids.users.userB, content: "Message 2" }),
+        request(app)
+          .post(`/api/messages/${ids.users.userB}`)
+          .set("Authorization", `Bearer ${userAToken()}`)
+          .send({ senderId: ids.users.userA, receiverId: ids.users.userB, content: "Message 3" })
+      ]);
+
+      // All three messages should succeed
+      expect(msg1.status).toBe(201);
+      expect(msg2.status).toBe(201);
+      expect(msg3.status).toBe(201);
+
+      expect(msg1.body.content).toBe("Message 1");
+      expect(msg2.body.content).toBe("Message 2");
+      expect(msg3.body.content).toBe("Message 3");
+
+      // Verify all messages have unique IDs
+      const ids_set = new Set([msg1.body.id, msg2.body.id, msg3.body.id]);
+      expect(ids_set.size).toBe(3);
+    });
+
+    test("multiple users send messages concurrently to different recipients", async () => {
+      const [msgA, msgB, msgC] = await Promise.all([
+        request(app)
+          .post(`/api/messages/${ids.users.userB}`)
+          .set("Authorization", `Bearer ${userAToken()}`)
+          .send({ senderId: ids.users.userA, receiverId: ids.users.userB, content: "From A to B" }),
+        request(app)
+          .post(`/api/messages/${ids.users.userC}`)
+          .set("Authorization", `Bearer ${userBToken()}`)
+          .send({ senderId: ids.users.userB, receiverId: ids.users.userC, content: "From B to C" }),
+        request(app)
+          .post(`/api/messages/${ids.users.userA}`)
+          .set("Authorization", `Bearer ${userCToken()}`)
+          .send({ senderId: ids.users.userC, receiverId: ids.users.userA, content: "From C to A" })
+      ]);
+
+      expect(msgA.status).toBe(201);
+      expect(msgB.status).toBe(201);
+      expect(msgC.status).toBe(201);
+
+      expect(msgA.body.senderId).toBe(ids.users.userA);
+      expect(msgB.body.senderId).toBe(ids.users.userB);
+      expect(msgC.body.senderId).toBe(ids.users.userC);
+    });
+
+    test("concurrent friend requests between same users - both directions succeed", async () => {
+      // Create new users to avoid conflicts with existing relationships
+      const user1Email = `friendtest1-${Date.now()}@example.com`;
+      const user2Email = `friendtest2-${Date.now()}@example.com`;
+
+      const user1 = await request(app)
+        .post("/users")
+        .send({ username: `frienduser1${Date.now()}`, email: user1Email, password: "password123" });
+
+      const user2 = await request(app)
+        .post("/users")
+        .send({ username: `frienduser2${Date.now()}`, email: user2Email, password: "password123" });
+
+      const user1Token = makeToken({ id: user1.body.id, role: "CLIENT" });
+      const user2Token = makeToken({ id: user2.body.id, role: "CLIENT" });
+
+      // Fire two concurrent friend requests from both directions
+      const [req1, req2] = await Promise.allSettled([
+        request(app)
+          .post("/api/friends")
+          .set("Authorization", `Bearer ${user1Token}`)
+          .send({ requesterId: user1.body.id, addresseeId: user2.body.id }),
+        request(app)
+          .post("/api/friends")
+          .set("Authorization", `Bearer ${user2Token}`)
+          .send({ requesterId: user2.body.id, addresseeId: user1.body.id })
+      ]).then(results => results.map(r => r.status === 'fulfilled' ? r.value : null));
+
+      // Both should succeed as they're from different requesters
+      expect(req1.status).toBe(201);
+      expect(req2.status).toBe(201);
+    });
+
+    test("concurrent message status updates on same message", async () => {
+      // Send a message first
+      const msgRes = await request(app)
+        .post(`/api/messages/${ids.users.userB}`)
+        .set("Authorization", `Bearer ${userAToken()}`)
+        .send({ senderId: ids.users.userA, receiverId: ids.users.userB, content: "Status test" });
+
+      const messageId = msgRes.body.id;
+
+      // Try to update status concurrently
+      const [update1, update2] = await Promise.allSettled([
+        request(app)
+          .patch(`/api/messages/${messageId}/status`)
+          .set("Authorization", `Bearer ${userBToken()}`)
+          .send({ status: "READ" }),
+        request(app)
+          .patch(`/api/messages/${messageId}/status`)
+          .set("Authorization", `Bearer ${userBToken()}`)
+          .send({ status: "READ" })
+      ]).then(results => results.map(r => r.status === 'fulfilled' ? r.value : null));
+
+      // Both should succeed and show READ status
+      expect(update1.status).toBe(200);
+      expect(update2.status).toBe(200);
+      expect(update1.body.status).toBe("READ");
+      expect(update2.body.status).toBe("READ");
+    });
+
+    test("concurrent notifications marked as read", async () => {
+      // Mark multiple notifications as read concurrently
+      const [notif1, notif2] = await Promise.allSettled([
+        request(app)
+          .patch(`/api/notifications/${ids.notifications.n1}/read`)
+          .set("Authorization", `Bearer ${userAToken()}`),
+        request(app)
+          .patch(`/api/notifications/${ids.notifications.n2}/read`)
+          .set("Authorization", `Bearer ${userAToken()}`)
+      ]).then(results => results.map(r => r.status === 'fulfilled' ? r.value : null));
+
+      expect(notif1.status).toBe(200);
+      expect(notif2.status).toBe(200);
+      expect(notif1.body.read).toBe(true);
+      expect(notif2.body.read).toBe(true);
+    });
+  });

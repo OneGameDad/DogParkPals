@@ -14,6 +14,10 @@ import {
   getEventsByOrganizationSchema,
   getEventsByParkSchema,
 } from '../utils/validationSchemas';
+import { join } from "path";
+import { joinValues } from "zod/v4/core/util.cjs";
+import { remove } from "winston";
+import { get } from "http";
 
 // Authorization: organizer OR system admin/developer OR org member with OWNER/MODERATOR
 async function checkEventAuthorization(
@@ -133,6 +137,7 @@ const eventController = {
         req.user.organizationMember
       );
 
+      await eventService.removeAllAttendees(eventId);
       await eventService.deleteEvent(eventId);
 
       typeSafeLogger.logUserAction("Event deleted", { eventId });
@@ -273,7 +278,175 @@ const eventController = {
         toAppError(error, { message: "Failed to check event existence", code: "INTERNAL_ERROR", statusCode: 500 })
       );
     }
-  }
+  },
+
+  attendEvent: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      typeSafeLogger.logRequest("Received request to attend event", { method: req.method, path: req.path });
+      const { eventId } = parseValidation(getEventByIdSchema, req.params);
+      const userId = req.user.id;
+
+      //check if event is public/private and if user is allowed to join
+      const event = await eventService.getEventById(eventId);
+      if (!event) {
+        throw NotFoundError("Event not found");
+      }
+      if (event.private === "PUBLIC") {
+        // public event, anyone can join
+        await eventService.attendEvent(eventId, userId);
+
+        typeSafeLogger.logUserAction("User attended event", { eventId, userId });
+        res.status(200).json({ message: "Attended event successfully" });
+        return;
+      }
+
+      await checkEventAuthorization(
+        eventId,
+        userId,
+        req.user.role,
+        req.user.organizationId,
+        req.user.organizationMember
+      );
+
+      await eventService.attendEvent(eventId, userId);
+
+      typeSafeLogger.logUserAction("User attended event", { eventId, userId });
+      res.status(200).json({ message: "Attended event successfully" });
+    } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
+      return next(
+        toAppError(error, { message: "Failed to attend event", code: "INTERNAL_ERROR", statusCode: 500 })
+      );
+    }
+  },
+
+  cancelAttendance: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      typeSafeLogger.logRequest("Received request to cancel attendance", { method: req.method, path: req.path });
+      const { eventId } = parseValidation(getEventByIdSchema, req.params);
+      const userId = req.user.id;
+      //check user is attending the event
+      const event = await eventService.getEventById(eventId);
+      if (!event) {
+        throw NotFoundError("Event not found");
+      }
+      const attendees = await eventService.getEventAttendees(eventId);
+      const isAttending = attendees.some((attendee) => attendee.id === userId);
+      if (!isAttending) {
+        throw ConflictError("User is not attending the event");
+      }
+      await eventService.cancelAttendance(eventId, userId);
+
+      typeSafeLogger.logUserAction("User canceled attendance", { eventId, userId });
+      res.status(200).json({ message: "Canceled attendance successfully" });
+    } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
+      return next(
+        toAppError(error, { message: "Failed to cancel attendance", code: "INTERNAL_ERROR", statusCode: 500 })
+      );
+    }
+  },
+
+  getEventAttendees: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      typeSafeLogger.logRequest("Received request to fetch event attendees", { method: req.method, path: req.path });
+      const { eventId } = parseValidation(getEventByIdSchema, req.params);
+
+      if (!await eventService.isEvent(eventId)) {
+        throw NotFoundError("Event not found");
+      }
+
+      const event = await eventService.getEventById(eventId);
+      if (event!.private === "PUBLIC") {
+        // public event, anyone can view attendees
+        const attendees = await eventService.getEventAttendees(eventId);
+
+        typeSafeLogger.logUserAction("Event attendees retrieved", { eventId, attendeeCount: attendees.length });
+        res.status(200).json(attendees);
+        return;
+      }
+
+      await checkEventAuthorization(
+        eventId,
+        req.user.id,
+        req.user.role,
+        req.user.organizationId,
+        req.user.organizationMember
+      );
+
+      const attendees = await eventService.getEventAttendees(eventId);
+
+      typeSafeLogger.logUserAction("Event attendees retrieved", { eventId, attendeeCount: attendees.length });
+      res.status(200).json(attendees);
+    } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
+      return next(
+        toAppError(error, { message: "Failed to retrieve event attendees", code: "INTERNAL_ERROR", statusCode: 500 })
+      );
+    }
+  },
+
+  removeAttendee: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      typeSafeLogger.logRequest("Received request to remove attendee from event", { method: req.method, path: req.path });
+      const { eventId } = parseValidation(getEventByIdSchema, req.params);
+      const { userId } = req.body;
+
+      await checkEventAuthorization(
+        eventId,
+        req.user.id,
+        req.user.role,
+        req.user.organizationId,
+        req.user.organizationMember
+      );
+
+      await eventService.removeAttendee(eventId, userId);
+
+      typeSafeLogger.logUserAction("Attendee removed from event", { eventId, userId });
+      res.status(200).json({ message: "Attendee removed successfully" });
+    } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
+      return next(
+        toAppError(error, { message: "Failed to remove attendee", code: "INTERNAL_ERROR", statusCode: 500 })
+      );
+    }
+  },
+
+  removeAllAttendees: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      typeSafeLogger.logRequest("Received request to remove all attendees from event", { method: req.method, path: req.path });
+      const { eventId } = parseValidation(getEventByIdSchema, req.params);
+
+      await checkEventAuthorization(
+        eventId,
+        req.user.id,
+        req.user.role,
+        req.user.organizationId,
+        req.user.organizationMember
+      );
+
+      await eventService.removeAllAttendees(eventId);
+
+      typeSafeLogger.logUserAction("All attendees removed from event", { eventId });
+      res.status(200).json({ message: "All attendees removed successfully" });
+    } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
+      return next(
+        toAppError(error, { message: "Failed to remove all attendees", code: "INTERNAL_ERROR", statusCode: 500 })
+      );
+    }
+  },
+
 };
 
 export default eventController;

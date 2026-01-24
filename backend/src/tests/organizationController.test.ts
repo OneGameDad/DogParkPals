@@ -18,6 +18,9 @@ const mockIsMember = jest.fn<any>();
 
 const mockGetOrganizationWithDetails = jest.fn<any>();
 
+// Mock xpService
+const mockAwardExperience = jest.fn<any>();
+
 jest.mock('../services/organizationService', () => ({
   __esModule: true,
   default: {
@@ -34,6 +37,17 @@ jest.mock('../services/organizationService', () => ({
     getMembers: mockGetMembers,
     isMember: mockIsMember,
     getOrganizationWithDetails: mockGetOrganizationWithDetails,
+  },
+}));
+
+jest.mock('../services/xpService', () => ({
+  __esModule: true,
+  awardExperience: mockAwardExperience,
+  XP_REWARDS: {
+    JOIN_ORGANIZATION: 40,
+    ADD_FRIEND: 25,
+    PARK_VISIT: 10,
+    NEW_PARK_BONUS: 30,
   },
 }));
 
@@ -632,6 +646,44 @@ describe('Organization Controller', () => {
 
       await organizationController.getOrganizationWithDetails(mockReq as Request, mockRes as Response, mockNext);
 
+      expect(mockNext).toHaveBeenCalled();
+    });
+  });
+
+  describe('addMember with XP awards', () => {
+    test('should award XP when member is added to organization', async () => {
+      mockReq.params = { id: '1' };
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+      mockReq.body = { userId: 2, role: 'MEMBER' };
+      mockParseValidation.mockReturnValue({ organizationId: 1, userId: 2, role: 'MEMBER' });
+
+      mockGetOrganizationById.mockResolvedValue(mockOrgData);
+      mockGetMember.mockResolvedValue({ role: 'OWNER' });
+      mockAddMember.mockResolvedValue({});
+      mockAwardExperience.mockResolvedValue({ totalExp: 40, level: null });
+
+      await organizationController.addMember(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockAddMember).toHaveBeenCalledWith(1, 2, 'MEMBER');
+      expect(mockAwardExperience).toHaveBeenCalledWith(2, 40, 'join_organization');
+      expect(mockStatus).toHaveBeenCalledWith(201);
+    });
+
+    test('should handle XP award error in addMember gracefully', async () => {
+      mockReq.params = { id: '1' };
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+      mockReq.body = { userId: 2, role: 'MEMBER' };
+      mockParseValidation.mockReturnValue({ organizationId: 1, userId: 2, role: 'MEMBER' });
+
+      mockGetOrganizationById.mockResolvedValue(mockOrgData);
+      mockGetMember.mockResolvedValue({ role: 'OWNER' });
+      mockAddMember.mockResolvedValue({});
+      mockAwardExperience.mockRejectedValue(new Error('XP service error'));
+
+      await organizationController.addMember(mockReq as Request, mockRes as Response, mockNext);
+
+      // Should still add member even if XP fails
+      expect(mockAddMember).toHaveBeenCalled();
       expect(mockNext).toHaveBeenCalled();
     });
   });

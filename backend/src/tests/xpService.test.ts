@@ -1,0 +1,222 @@
+import { expect, describe, test, beforeEach, jest } from '@jest/globals';
+import type { Levels, User } from '@prisma/client';
+
+describe('XP Service', () => {
+  const mockUserId = 1;
+  const mockLevelId = 1;
+  const mockAmount = 50;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.resetModules();
+  });
+
+  describe('awardExperience', () => {
+    test('should award experience to user and update level', async () => {
+      const mockLevel: Levels = {
+        id: mockLevelId,
+        name: 'Beginner',
+        description: 'Starting out',
+        minPoints: 0,
+        maxPoints: 100,
+        badgeUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const mockUpdatedUser = {
+        id: mockUserId,
+        email: 'test@example.com',
+        username: 'testuser',
+        password_hash: 'hash',
+        first_name: 'Test',
+        last_name: 'User',
+        profilePictureUrl: 'http://example.com/pic.jpg',
+        latitude: 40.7,
+        longitude: -73.9,
+        role: 'CLIENT',
+        ExpPoints: mockAmount,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as unknown as User;
+
+      const mockFindFirst = jest.fn().mockResolvedValue(mockLevel);
+      const mockUpdate = jest.fn().mockResolvedValue(mockUpdatedUser);
+      const mockDeleteMany = jest.fn().mockResolvedValue({});
+      const mockUpsert = jest.fn().mockResolvedValue({});
+
+      jest.doMock('@prisma/client', () => ({
+        PrismaClient: jest.fn(() => ({
+          user: {
+            update: mockUpdate,
+          },
+          levels: {
+            findFirst: mockFindFirst,
+          },
+          userLevel: {
+            deleteMany: mockDeleteMany,
+            upsert: mockUpsert,
+          },
+          $transaction: jest.fn((callback) => callback({
+            user: { update: mockUpdate },
+            levels: { findFirst: mockFindFirst },
+            userLevel: { deleteMany: mockDeleteMany, upsert: mockUpsert },
+          })),
+        })),
+      }));
+
+      const xpService = await import('../services/xpService');
+
+      const result = await xpService.awardExperience(mockUserId, mockAmount, 'test_action');
+
+      expect(result.totalExp).toBe(mockAmount);
+      expect(result.level).toEqual(mockLevel);
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: mockUserId },
+          data: { ExpPoints: { increment: mockAmount } },
+        })
+      );
+
+      jest.dontMock('@prisma/client');
+    });
+
+    test('should return zero experience when amount is zero or negative', async () => {
+      const mockTransaction = jest.fn().mockImplementation((callback) =>
+        callback({
+          user: { update: jest.fn() },
+          levels: { findFirst: jest.fn() },
+          userLevel: { deleteMany: jest.fn(), upsert: jest.fn() },
+        })
+      );
+
+      jest.doMock('@prisma/client', () => ({
+        PrismaClient: jest.fn(() => ({
+          $transaction: mockTransaction,
+        })),
+      }));
+
+      const xpService = await import('../services/xpService');
+
+      const result = await xpService.awardExperience(mockUserId, -10, 'test_action');
+
+      expect(result.totalExp).toBe(0);
+      expect(result.level).toBeNull();
+
+      jest.dontMock('@prisma/client');
+    });
+
+    test('should throw error on database failure', async () => {
+      const mockTransaction = jest.fn().mockRejectedValue(new Error('Database error'));
+
+      jest.doMock('@prisma/client', () => ({
+        PrismaClient: jest.fn(() => ({
+          $transaction: mockTransaction,
+        })),
+      }));
+
+      const xpService = await import('../services/xpService');
+
+      await expect(
+        xpService.awardExperience(mockUserId, mockAmount, 'test_action')
+      ).rejects.toThrow();
+
+      jest.dontMock('@prisma/client');
+    });
+  });
+
+  describe('hasVisitedParkBefore', () => {
+    test('should return true when user has visited park before', async () => {
+      const mockParkId = 5;
+
+      const mockCount = jest.fn().mockResolvedValue(1);
+
+      jest.doMock('@prisma/client', () => ({
+        PrismaClient: jest.fn(() => ({
+          checkIn: {
+            count: mockCount,
+          },
+        })),
+      }));
+
+      const xpService = await import('../services/xpService');
+
+      const result = await xpService.hasVisitedParkBefore(mockUserId, mockParkId);
+
+      expect(result).toBe(true);
+      expect(mockCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            userId: mockUserId,
+            parkId: mockParkId,
+          }),
+        })
+      );
+
+      jest.dontMock('@prisma/client');
+    });
+
+    test('should return false when user has not visited park', async () => {
+      const mockParkId = 5;
+
+      const mockCount = jest.fn().mockResolvedValue(0);
+
+      jest.doMock('@prisma/client', () => ({
+        PrismaClient: jest.fn(() => ({
+          checkIn: {
+            count: mockCount,
+          },
+        })),
+      }));
+
+      const xpService = await import('../services/xpService');
+
+      const result = await xpService.hasVisitedParkBefore(mockUserId, mockParkId);
+
+      expect(result).toBe(false);
+      expect(mockCount).toHaveBeenCalled();
+
+      jest.dontMock('@prisma/client');
+    });
+
+    test('should exclude specific check-in ID when provided', async () => {
+      const mockParkId = 5;
+      const mockCheckInId = 10;
+
+      const mockCount = jest.fn().mockResolvedValue(0);
+
+      jest.doMock('@prisma/client', () => ({
+        PrismaClient: jest.fn(() => ({
+          checkIn: {
+            count: mockCount,
+          },
+        })),
+      }));
+
+      const xpService = await import('../services/xpService');
+
+      await xpService.hasVisitedParkBefore(mockUserId, mockParkId, mockCheckInId);
+
+      expect(mockCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            id: { not: mockCheckInId },
+          }),
+        })
+      );
+
+      jest.dontMock('@prisma/client');
+    });
+  });
+
+  describe('XP_REWARDS constants', () => {
+    test('should have correct reward values', async () => {
+      const xpService = await import('../services/xpService');
+
+      expect(xpService.XP_REWARDS.JOIN_ORGANIZATION).toBe(40);
+      expect(xpService.XP_REWARDS.ADD_FRIEND).toBe(25);
+      expect(xpService.XP_REWARDS.PARK_VISIT).toBe(10);
+      expect(xpService.XP_REWARDS.NEW_PARK_BONUS).toBe(30);
+    });
+  });
+});

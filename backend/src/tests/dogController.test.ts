@@ -136,7 +136,7 @@ describe('Dog Controller', () => {
       expect(mockJson).toHaveBeenCalledWith(mockDog);
     });
 
-    test('still responds 201 if auto-assign owner fails', async () => {
+    test('deletes dog and forwards error if auto-assign owner fails', async () => {
       mockReq.body = {
         name: 'Rex',
         breed: 'LABRADOR_RETRIEVER',
@@ -148,12 +148,14 @@ describe('Dog Controller', () => {
       mockReq.userId = 7;
       mockAddDog.mockResolvedValue(mockDog);
       mockAddOwnerToDog.mockRejectedValue(new Error('owner insert failed'));
+      mockDeleteDog.mockResolvedValue(undefined);
 
       await dogController.addDog(mockReq as Request, mockRes as Response, mockNext as NextFunction);
 
       expect(mockAddOwnerToDog).toHaveBeenCalledWith(mockDog.id, 7);
-      expect(mockStatus).toHaveBeenCalledWith(201);
-      expect(mockJson).toHaveBeenCalledWith(mockDog);
+      expect(mockDeleteDog).toHaveBeenCalledWith(mockDog.id);
+      expect(mockNext).toHaveBeenCalledTimes(1);
+      expect(mockStatus).not.toHaveBeenCalled();
     });
 
     test('forwards validation error when required fields are missing', async () => {

@@ -64,8 +64,10 @@ const dogController = {
         try {
           await dogService.addOwnerToDog(newDog.id, req.userId);
         } catch (ownershipErr) {
-          // Log but do not block dog creation; ownership can be retried separately
+          // Log, remove the dog, and throw the error
           typeSafeLogger.logError("Failed to auto-assign dog owner", ownershipErr, { dogId: newDog.id, userId: req.userId });
+          await dogService.deleteDog(newDog.id);
+          throw ownershipErr;
         }
       }
 

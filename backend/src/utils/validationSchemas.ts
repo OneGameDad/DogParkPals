@@ -456,6 +456,10 @@ export const updateAchievementSchema = z.object({
 
 export type UpdateAchievementRequest = z.infer<typeof updateAchievementSchema>;
 
+export const getAchievementByNameSchema = z.object({
+  name: z.string().min(1, 'Achievement name is required'),
+});
+
 export const awardAchievementSchema = z.object({
   userId: z.coerce.number().int().positive('User ID must be a positive integer'),
   achievementId: z.coerce.number().int().positive('Achievement ID must be a positive integer'),

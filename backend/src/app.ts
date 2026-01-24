@@ -29,6 +29,7 @@ import friendRouter from "./routes/friendRouter";
 import messageRouter from "./routes/messageRouter";
 import notificationRouter from "./routes/notificationRouter";
 import enemyRouter from "./routes/enemyRouter";
+import achievementRouter from "./routes/achievementRouter";
 import typeSafeLogger from "./utils/typeSafeLogger";
 import { requestIdMiddleware } from "./middlewares/requestId";
 import { errorHandler } from "./middlewares/errorHandler";
@@ -66,6 +67,7 @@ app.use("/api/friends", friendRouter);
 app.use("/api/messages", messageRouter);
 app.use("/api/notifications", notificationRouter);
 app.use("/api/enemies", enemyRouter);
+app.use("/api/achievements", achievementRouter);
 
 app.use(errorHandler);
 

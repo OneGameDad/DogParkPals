@@ -200,7 +200,6 @@ export async function seedAll() {
 // Cleanup helper per test suite
 export async function resetData() {
   await prisma.$transaction([
-    prisma.eventAttendance.deleteMany(),
     prisma.notification.deleteMany(),
     prisma.messages.deleteMany(),
     prisma.enemies.deleteMany(),

@@ -14,10 +14,6 @@ import {
   getEventsByOrganizationSchema,
   getEventsByParkSchema,
 } from '../utils/validationSchemas';
-import { join } from "path";
-import { joinValues } from "zod/v4/core/util.cjs";
-import { remove } from "winston";
-import { get } from "http";
 
 // Authorization: organizer OR system admin/developer OR org member with OWNER/MODERATOR
 async function checkEventAuthorization(
@@ -397,7 +393,17 @@ const eventController = {
       typeSafeLogger.logRequest("Received request to remove attendee from event", { method: req.method, path: req.path });
       const { eventId } = parseValidation(getEventByIdSchema, req.params);
       const { userId } = req.body;
-
+      // check event exists and target user is attending
+      const event = await eventService.getEventById(eventId);
+      if (!event) {
+        throw NotFoundError("Event not found");
+      }
+      const attendees = await eventService.getEventAttendees(eventId);
+      const isAttending = attendees.some((attendee) => attendee.id === userId);
+      if (!isAttending) {
+        throw ConflictError("User is not attending the event");
+      }
+    // authorization check - organizer/admin/org mod/owner
       await checkEventAuthorization(
         eventId,
         req.user.id,

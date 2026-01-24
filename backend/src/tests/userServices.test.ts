@@ -214,4 +214,87 @@ describe('User Services', () => {
     jest.dontMock('../utils/password');
   });
 
+  test('updateUserProfile updates profile fields', async () => {
+    const mockUpdate = jest.fn<any>().mockResolvedValue({
+      id: 1,
+      username: testUsername,
+      email: testEmail,
+      first_name: 'UpdatedFirstName',
+      last_name: 'UpdatedLastName',
+      profilePictureUrl: 'http://example.com/updated.jpg',
+      latitude: 40.7,
+      longitude: -73.9,
+      role: 'CLIENT',
+      ExpPoints: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    jest.doMock('@prisma/client', () => ({
+      PrismaClient: jest.fn(() => ({
+        user: {
+          update: mockUpdate,
+        },
+      })),
+    }));
+
+    const userService = await import('../services/userServices');
+    const updatedUser = await userService.default.updateUserProfile(1, {
+      first_name: 'UpdatedFirstName',
+      last_name: 'UpdatedLastName',
+      profilePictureUrl: 'http://example.com/updated.jpg',
+      latitude: 40.7,
+      longitude: -73.9,
+    });
+
+    expect(updatedUser.first_name).toBe('UpdatedFirstName');
+    expect(updatedUser.last_name).toBe('UpdatedLastName');
+    expect(updatedUser.profilePictureUrl).toBe('http://example.com/updated.jpg');
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: {
+        first_name: 'UpdatedFirstName',
+        last_name: 'UpdatedLastName',
+        profilePictureUrl: 'http://example.com/updated.jpg',
+        latitude: 40.7,
+        longitude: -73.9,
+      },
+    });
+
+    jest.dontMock('@prisma/client');
+  });
+
+  test('updateUserProfile handles partial updates', async () => {
+    const mockUpdate = jest.fn<any>().mockResolvedValue({
+      id: 1,
+      first_name: 'OnlyFirstName',
+      last_name: null,
+      profilePictureUrl: null,
+      latitude: null,
+      longitude: null,
+    });
+
+    jest.doMock('@prisma/client', () => ({
+      PrismaClient: jest.fn(() => ({
+        user: {
+          update: mockUpdate,
+        },
+      })),
+    }));
+
+    const userService = await import('../services/userServices');
+    await userService.default.updateUserProfile(1, {
+      first_name: 'OnlyFirstName',
+    });
+
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: {
+        first_name: 'OnlyFirstName',
+      },
+    });
+
+    jest.dontMock('@prisma/client');
+  });
+
 });

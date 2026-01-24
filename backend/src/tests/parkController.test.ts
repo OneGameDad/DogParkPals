@@ -701,5 +701,39 @@ describe('Park Controller', () => {
       expect(mockNext).toHaveBeenCalled();
     });
   });
+
+  describe('checkInAtPark with XP awards', () => {
+    test('should award XP for park visit on check-in', async () => {
+      mockReq.params = { parkId: '1' };
+      (mockReq as any).user = { id: 1 };
+      mockReq.body = { dogId: undefined };
+
+      const checkInData = {
+        id: 1,
+        userId: 1,
+        dogId: undefined,
+        parkId: 1,
+        checkedInAt: new Date(),
+        checkedOutAt: null,
+      };
+
+      mockParkExists.mockResolvedValue(true);
+      mockCheckIn.mockResolvedValue(checkInData);
+
+      // Mock xpService import
+      jest.doMock('../services/xpService', () => ({
+        awardExperience: jest.fn().mockResolvedValue({ totalExp: 10, level: null }),
+        XP_REWARDS: { PARK_VISIT: 10 },
+      }));
+
+      await parkController.checkInAtPark(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockCheckIn).toHaveBeenCalledWith(1, 1, undefined);
+      expect(mockStatus).toHaveBeenCalledWith(201);
+      expect(mockJson).toHaveBeenCalledWith(checkInData);
+
+      jest.dontMock('../services/xpService');
+    });
+  });
   
 });

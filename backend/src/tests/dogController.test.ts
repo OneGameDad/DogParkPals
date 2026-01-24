@@ -111,7 +111,51 @@ describe('Dog Controller', () => {
       expect(mockAddDog).toHaveBeenCalled();
       expect(mockStatus).toHaveBeenCalledWith(201);
       expect(mockJson).toHaveBeenCalledWith(mockDog);
+      expect(mockAddOwnerToDog).not.toHaveBeenCalled();
       expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    test('creates dog and auto-assigns owner when userId present', async () => {
+      mockReq.body = {
+        name: 'Rex',
+        breed: 'LABRADOR_RETRIEVER',
+        gender: 'MALE',
+        dateOfBirth: '2020-01-15T00:00:00Z',
+        playstyle: 'SOCIAL',
+        size: 'LARGE',
+      };
+      mockReq.userId = 42;
+      mockAddDog.mockResolvedValue(mockDog);
+      mockAddOwnerToDog.mockResolvedValue(undefined);
+
+      await dogController.addDog(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockAddDog).toHaveBeenCalled();
+      expect(mockAddOwnerToDog).toHaveBeenCalledWith(mockDog.id, 42);
+      expect(mockStatus).toHaveBeenCalledWith(201);
+      expect(mockJson).toHaveBeenCalledWith(mockDog);
+    });
+
+    test('deletes dog and forwards error if auto-assign owner fails', async () => {
+      mockReq.body = {
+        name: 'Rex',
+        breed: 'LABRADOR_RETRIEVER',
+        gender: 'MALE',
+        dateOfBirth: '2020-01-15T00:00:00Z',
+        playstyle: 'SOCIAL',
+        size: 'LARGE',
+      };
+      mockReq.userId = 7;
+      mockAddDog.mockResolvedValue(mockDog);
+      mockAddOwnerToDog.mockRejectedValue(new Error('owner insert failed'));
+      mockDeleteDog.mockResolvedValue(undefined);
+
+      await dogController.addDog(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockAddOwnerToDog).toHaveBeenCalledWith(mockDog.id, 7);
+      expect(mockDeleteDog).toHaveBeenCalledWith(mockDog.id);
+      expect(mockNext).toHaveBeenCalledTimes(1);
+      expect(mockStatus).not.toHaveBeenCalled();
     });
 
     test('forwards validation error when required fields are missing', async () => {

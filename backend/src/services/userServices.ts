@@ -218,6 +218,43 @@ const userService = {
     }
   },
 
+  async updateUserProfile(
+    userId: number,
+    updates: {
+      first_name?: string | null;
+      last_name?: string | null;
+      profilePictureUrl?: string | null;
+      latitude?: number | null;
+      longitude?: number | null;
+    }
+  ) {
+    typeSafeLogger.logUserAction('Updating user profile', { userId });
+
+    const data: Record<string, unknown> = {};
+    if (updates.first_name !== undefined) data.first_name = updates.first_name;
+    if (updates.last_name !== undefined) data.last_name = updates.last_name;
+    if (updates.profilePictureUrl !== undefined) data.profilePictureUrl = updates.profilePictureUrl;
+    if (updates.latitude !== undefined) data.latitude = updates.latitude;
+    if (updates.longitude !== undefined) data.longitude = updates.longitude;
+
+    try {
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data,
+      });
+
+      typeSafeLogger.logUserAction('User profile updated', { userId, fields: Object.keys(data) });
+      return updatedUser;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to update user profile',
+        code: 'UPDATE_PROFILE_FAILED',
+      });
+      typeSafeLogger.logError('Failed to update user profile', appError, { userId });
+      throw appError;
+    }
+  },
+
 };
 
 export default userService;

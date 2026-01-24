@@ -10,6 +10,7 @@ router.get("/id/:id", requireAuth, (req, res, next) => userController.getUserByI
 router.get("/username/:username", requireAuth, (req, res, next) => userController.getUserByUsername(req, res, next));
 router.get("/", requireAuth, (req, res, next) => userController.getAllUsers(req, res, next));
 router.delete("/:id", requireAuth, (req, res, next) => userController.deleteUser(req, res, next));
+router.patch("/profile", requireAuth, (req, res, next) => userController.updateProfile(req, res, next));
 router.post("/change-password", requireAuth, (req, res, next) => userController.changePassword(req, res, next));
 router.post("/reset-password", requireAuth, (req, res, next) => userController.resetUserPassword(req, res, next));
 

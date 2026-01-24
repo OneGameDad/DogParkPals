@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
-import type { Event } from '@prisma/client';
+import type { Event, EventAttendance, User } from '@prisma/client';
 
 // Mock Prisma
 const mockEventCreate = jest.fn() as unknown as jest.Mock<Promise<Event>>;
@@ -7,6 +7,9 @@ const mockEventUpdate = jest.fn() as unknown as jest.Mock<Promise<Event>>;
 const mockEventFindUnique = jest.fn() as unknown as jest.Mock<Promise<Event | null>>;
 const mockEventDelete = jest.fn() as unknown as jest.Mock<Promise<Event>>;
 const mockEventFindMany = jest.fn() as unknown as jest.Mock<Promise<Event[]>>;
+const mockEventAttendanceCreate = jest.fn() as unknown as jest.Mock<Promise<EventAttendance>>;
+const mockEventAttendanceDeleteMany = jest.fn() as unknown as jest.Mock<Promise<{ count: number }>>;
+const mockEventAttendanceFindMany = jest.fn() as unknown as jest.Mock<Promise<(EventAttendance & { user: User })[]>>;
 
 jest.mock('@prisma/client', () => {
   const mockPrismaClientKnownRequestError = class {
@@ -24,6 +27,11 @@ jest.mock('@prisma/client', () => {
         findUnique: mockEventFindUnique,
         delete: mockEventDelete,
         findMany: mockEventFindMany,
+      },
+      eventAttendance: {
+        create: mockEventAttendanceCreate,
+        deleteMany: mockEventAttendanceDeleteMany,
+        findMany: mockEventAttendanceFindMany,
       },
     })),
     Prisma: {
@@ -597,6 +605,104 @@ describe('Event Service', () => {
       await expect(
         eventService.isEvent(1)
       ).rejects.toThrow();
+    });
+  });
+
+  describe('attendEvent', () => {
+    test('should create attendance', async () => {
+      const attendance: EventAttendance = { userId: 1, eventId: 2, createdAt: new Date() };
+      mockEventAttendanceCreate.mockResolvedValue(attendance);
+
+      const result = await eventService.attendEvent(2, 1);
+
+      expect(mockEventAttendanceCreate).toHaveBeenCalledWith({
+        data: { eventId: 2, userId: 1 },
+      });
+      expect(result).toEqual(attendance);
+    });
+
+    test('should handle database errors', async () => {
+      mockEventAttendanceCreate.mockRejectedValue(new Error('db error'));
+
+      await expect(eventService.attendEvent(2, 1)).rejects.toThrow();
+    });
+  });
+
+  describe('cancelAttendance', () => {
+    test('should delete attendance', async () => {
+      mockEventAttendanceDeleteMany.mockResolvedValue({ count: 1 });
+
+      await eventService.cancelAttendance(2, 1);
+
+      expect(mockEventAttendanceDeleteMany).toHaveBeenCalledWith({
+        where: { eventId: 2, userId: 1 },
+      });
+    });
+
+    test('should handle database errors', async () => {
+      mockEventAttendanceDeleteMany.mockRejectedValue(new Error('db error'));
+
+      await expect(eventService.cancelAttendance(2, 1)).rejects.toThrow();
+    });
+  });
+
+  describe('getEventAttendees', () => {
+    test('should return attendees', async () => {
+      const users: (EventAttendance & { user: User })[] = [
+        { userId: 1, eventId: 2, createdAt: new Date(), user: { id: 1, email: 'a', password_hash: 'p', username: 'u', role: 'CLIENT', createdAt: new Date(), updatedAt: new Date(), first_name: null, last_name: null, profilePictureUrl: null, latitude: null, longitude: null, ExpPoints: 0 } },
+        { userId: 2, eventId: 2, createdAt: new Date(), user: { id: 2, email: 'b', password_hash: 'p', username: 'v', role: 'CLIENT', createdAt: new Date(), updatedAt: new Date(), first_name: null, last_name: null, profilePictureUrl: null, latitude: null, longitude: null, ExpPoints: 0 } },
+      ];
+      mockEventAttendanceFindMany.mockResolvedValue(users);
+
+      const result = await eventService.getEventAttendees(2);
+
+      expect(mockEventAttendanceFindMany).toHaveBeenCalledWith({
+        where: { eventId: 2 },
+        include: { user: true },
+      });
+      expect(result.map(u => u.id)).toEqual([1, 2]);
+    });
+
+    test('should handle database errors', async () => {
+      mockEventAttendanceFindMany.mockRejectedValue(new Error('db error'));
+
+      await expect(eventService.getEventAttendees(2)).rejects.toThrow();
+    });
+  });
+
+  describe('removeAttendee', () => {
+    test('should remove a specific attendee', async () => {
+      mockEventAttendanceDeleteMany.mockResolvedValue({ count: 1 });
+
+      await eventService.removeAttendee(3, 5);
+
+      expect(mockEventAttendanceDeleteMany).toHaveBeenCalledWith({
+        where: { eventId: 3, userId: 5 },
+      });
+    });
+
+    test('should handle database errors', async () => {
+      mockEventAttendanceDeleteMany.mockRejectedValue(new Error('db error'));
+
+      await expect(eventService.removeAttendee(3, 5)).rejects.toThrow();
+    });
+  });
+
+  describe('removeAllAttendees', () => {
+    test('should remove all attendees for event', async () => {
+      mockEventAttendanceDeleteMany.mockResolvedValue({ count: 2 });
+
+      await eventService.removeAllAttendees(7);
+
+      expect(mockEventAttendanceDeleteMany).toHaveBeenCalledWith({
+        where: { eventId: 7 },
+      });
+    });
+
+    test('should handle database errors', async () => {
+      mockEventAttendanceDeleteMany.mockRejectedValue(new Error('db error'));
+
+      await expect(eventService.removeAllAttendees(7)).rejects.toThrow();
     });
   });
 });

@@ -235,6 +235,105 @@ const eventService = {
       throw appError;
     }
   },
+
+  async attendEvent(eventId: number, userId: number) {
+    typeSafeLogger.logUserAction('Attending event', { eventId, userId });
+    try {
+      const attendance = await prisma.eventAttendance.create({
+        data: {
+          eventId,
+          userId,
+        },
+      });
+      typeSafeLogger.logUserAction('Attending event successful', { eventId, userId });
+      return attendance;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to attend event',
+        code: 'ATTEND_EVENT_FAILED',
+      });
+      typeSafeLogger.logError('Failed to attend event', appError, { eventId, userId });
+      throw appError;
+    }
+  },
+
+  async cancelAttendance(eventId: number, userId: number) {
+    typeSafeLogger.logUserAction('Cancelling attendance to event', { eventId, userId });
+    try {
+      await prisma.eventAttendance.deleteMany({
+        where: {
+          eventId,
+          userId,
+        },
+      });
+      typeSafeLogger.logUserAction('Attendance to event cancelled', { eventId, userId });
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to cancel attendance to event',
+        code: 'CANCEL_ATTENDANCE_EVENT_FAILED',
+      });
+      typeSafeLogger.logError('Failed to cancel attendance to event', appError, { eventId, userId });
+      throw appError;
+    }
+  },
+
+  async getEventAttendees(eventId: number) {
+    typeSafeLogger.info('Fetching event attendees', { eventId });
+    try {
+      const attendees = await prisma.eventAttendance.findMany({
+        where: { eventId },
+        include: { user: true },
+      });
+      typeSafeLogger.logUserAction('Event attendees fetched', { eventId, attendeeCount: attendees.length });
+      return attendees.map(att => att.user);
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to fetch event attendees',
+        code: 'FETCH_EVENT_ATTENDEES_FAILED',
+      });
+      typeSafeLogger.logError('Failed to fetch event attendees', appError, { eventId });
+      throw appError;
+    }
+  },
+  
+  async removeAttendee(eventId: number, userId: number) {
+    typeSafeLogger.logUserAction('Removing attendee from event', { eventId, userId });
+    try {
+      await prisma.eventAttendance.deleteMany({
+        where: {
+          eventId,
+          userId,
+        },
+      });
+      typeSafeLogger.logUserAction('Attendee removed from event', { eventId, userId });
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to remove attendee from event',
+        code: 'REMOVE_EVENT_ATTENDEE_FAILED',
+      });
+      typeSafeLogger.logError('Failed to remove attendee from event', appError, { eventId, userId });
+      throw appError;
+    }
+  },
+
+  async removeAllAttendees(eventId: number) {
+    typeSafeLogger.logUserAction('Removing all attendees from event', { eventId });
+    try {
+      await prisma.eventAttendance.deleteMany({
+        where: {
+          eventId,
+        },
+      });
+      typeSafeLogger.logUserAction('All attendees removed from event', { eventId });
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to remove all attendees from event',
+        code: 'REMOVE_ALL_EVENT_ATTENDEES_FAILED',
+      });
+      typeSafeLogger.logError('Failed to remove all attendees from event', appError, { eventId });
+      throw appError;
+    }
+  },
 };
 
 export default eventService;

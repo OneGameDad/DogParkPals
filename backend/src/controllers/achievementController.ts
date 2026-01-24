@@ -1,20 +1,11 @@
 import achievementService from "../services/achievementService";
-import { NotFoundError, ForbiddenError, isAppError } from "../utils/errors";
+import { isAppError } from "../utils/errors";
 import { Request, Response, NextFunction } from "express";
 import typeSafeLogger from "../utils/typeSafeLogger";
 import { toAppError } from "../utils/errors";
-import { createAchievementSchema, updateAchievementSchema, awardAchievementSchema } from "../utils/validationSchemas";
+import { createAchievementSchema, updateAchievementSchema, awardAchievementSchema, getAchievementByNameSchema } from "../utils/validationSchemas";
+import { parseValidation } from "../utils/validator";
 import { AchievementType } from "@prisma/client";
-
-/**
- * Check if user is authorized for admin actions (admin or developer)
- */
-function requireAdmin(userRole: string | undefined) {
-  const isAdmin = userRole === 'ADMIN' || userRole === 'DEVELOPER';
-  if (!isAdmin) {
-    throw ForbiddenError('Not authorized to perform this action');
-  }
-}
 
 const achievementController = {
   // Get all achievements (public)
@@ -58,11 +49,7 @@ const achievementController = {
   getAchievementByName: async (req: Request, res: Response, next: NextFunction) => {
     try {
       typeSafeLogger.logRequest("Received request to fetch achievement by name", { method: req.method, path: req.path });
-      const name = req.query.name as string;
-
-      if (!name) {
-        throw NotFoundError("Achievement name is required");
-      }
+      const { name } = parseValidation(getAchievementByNameSchema, req.query);
 
       const achievement = await achievementService.getAchievementByName(name);
       typeSafeLogger.logUserAction("Achievement retrieved by name", { name });
@@ -81,11 +68,8 @@ const achievementController = {
   createAchievement: async (req: Request, res: Response, next: NextFunction) => {
     try {
       typeSafeLogger.logRequest("Received request to create achievement", { method: req.method, path: req.path });
-      
-      const userRole = (req as any).user?.role;
-      requireAdmin(userRole);
 
-      const validatedData = createAchievementSchema.parse(req.body);
+      const validatedData = parseValidation(createAchievementSchema, req.body);
       
       const newAchievement = await achievementService.createAchievement({
         name: validatedData.name,
@@ -114,10 +98,8 @@ const achievementController = {
     try {
       typeSafeLogger.logRequest("Received request to update achievement", { method: req.method, path: req.path });
       const achievementId = parseInt(req.params.id, 10);
-      const userRole = (req as any).user?.role;
-      requireAdmin(userRole);
 
-      const validatedUpdates = updateAchievementSchema.parse(req.body);
+      const validatedUpdates = parseValidation(updateAchievementSchema, req.body);
       
       const updatedAchievement = await achievementService.updateAchievement(achievementId, {
         name: validatedUpdates.name,
@@ -143,8 +125,6 @@ const achievementController = {
     try {
       typeSafeLogger.logRequest("Received request to delete achievement", { method: req.method, path: req.path });
       const achievementId = parseInt(req.params.id, 10);
-      const userRole = (req as any).user?.role;
-      requireAdmin(userRole);
 
       await achievementService.deleteAchievement(achievementId);
       typeSafeLogger.logUserAction("Achievement deleted", { achievementId });
@@ -163,11 +143,8 @@ const achievementController = {
   awardAchievementToUser: async (req: Request, res: Response, next: NextFunction) => {
     try {
       typeSafeLogger.logRequest("Received request to award achievement to user", { method: req.method, path: req.path });
-      
-      const userRole = (req as any).user?.role;
-      requireAdmin(userRole);
 
-      const validatedData = awardAchievementSchema.parse(req.body);
+      const validatedData = parseValidation(awardAchievementSchema, req.body);
       
       const userAchievement = await achievementService.awardAchievementToUser(
         validatedData.userId,
@@ -215,9 +192,6 @@ const achievementController = {
   removeAchievementFromUser: async (req: Request, res: Response, next: NextFunction) => {
     try {
       typeSafeLogger.logRequest("Received request to remove achievement from user", { method: req.method, path: req.path });
-      
-      const userRole = (req as any).user?.role;
-      requireAdmin(userRole);
 
       const userId = parseInt(req.params.userId, 10);
       const achievementId = parseInt(req.params.achievementId, 10);

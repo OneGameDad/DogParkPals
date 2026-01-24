@@ -39,13 +39,13 @@ async function checkEventAuthorization(
     return event;
   }
 
-  // Must have an organization context if not organizer/admin
-  if (!organizationId) {
+  // If event has no organization, only organizer/admin can modify
+  if (!event.organizationId) {
     throw ForbiddenError("Not authorized to modify this event");
   }
 
-  // Prefer provided organizationMember; otherwise fetch
-  const member = organizationMember ?? (await organizationService.getMember(organizationId, userId));
+  // Check if user is a member of the event's organization
+  const member = organizationMember ?? (await organizationService.getMember(event.organizationId, userId));
   const isOwnerOrModerator = !!member && (member.role === "OWNER" || member.role === "MODERATOR");
   if (!isOwnerOrModerator) {
     throw ForbiddenError("Not authorized to modify this event");

@@ -78,6 +78,8 @@ export async function seedOrganizations() {
       { organizationId: ids.orgs.org1, userId: ids.users.orgOwner, role: OrgRole.OWNER },
       { organizationId: ids.orgs.org1, userId: ids.users.orgModerator, role: OrgRole.MODERATOR },
       { organizationId: ids.orgs.org1, userId: ids.users.orgMember, role: OrgRole.MEMBER },
+      { organizationId: ids.orgs.org1, userId: ids.users.userB, role: OrgRole.MEMBER },
+      { organizationId: ids.orgs.org1, userId: ids.users.userA, role: OrgRole.MEMBER },
     ],
   });
 }
@@ -146,7 +148,6 @@ export async function seedEvents() {
         startTime: tomorrow,
         endTime: new Date(tomorrow.getTime() + 60 * 60 * 1000),
         parkId: ids.parks.park1,
-        organizationId: ids.orgs.org1,
         organizerId: ids.users.orgOwner,
       },
       {
@@ -158,7 +159,6 @@ export async function seedEvents() {
         startTime: yesterday,
         endTime: new Date(yesterday.getTime() + 60 * 60 * 1000),
         parkId: ids.parks.park2,
-        organizationId: ids.orgs.org1,
         organizerId: ids.users.orgModerator,
       },
     ],
@@ -207,7 +207,8 @@ export async function resetData() {
     prisma.checkIn.deleteMany(),
     prisma.dogOwner.deleteMany(),
     prisma.userFavoritePark.deleteMany(),
-    prisma.event.deleteMany(),
+    prisma.comment.deleteMany(),
+    prisma.event.deleteMany(), // EventAttendance will cascade delete
     prisma.organizationMember.deleteMany(),
     prisma.organization.deleteMany(),
     prisma.park.deleteMany(),

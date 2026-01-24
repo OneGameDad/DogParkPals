@@ -328,7 +328,7 @@ describe('Event Controller', () => {
       const res = makeRes();
       const next = makeNext();
 
-      mockEventService.getEventById.mockResolvedValue({ ...sampleEvent, organizerId: 123 });
+      mockEventService.getEventById.mockResolvedValue({ ...sampleEvent, organizerId: 123, organizationId: 5 });
 
       await eventController.updateEvent(req, res, next);
 
@@ -390,7 +390,7 @@ describe('Event Controller', () => {
       const res = makeRes();
       const next = makeNext();
 
-      mockEventService.getEventById.mockResolvedValue({ ...sampleEvent, organizerId: 123 });
+      mockEventService.getEventById.mockResolvedValue({ ...sampleEvent, organizerId: 123, organizationId: 5 });
 
       await eventController.deleteEvent(req, res, next);
 

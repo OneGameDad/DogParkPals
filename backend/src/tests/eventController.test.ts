@@ -14,6 +14,15 @@ const mockEventService = {
   getAllEvents: jest.fn() as jest.Mock<Promise<Event[]>>,
   getUpcomingEvents: jest.fn() as jest.Mock<Promise<Event[]>>,
   isEvent: jest.fn() as jest.Mock<Promise<boolean>>,
+  attendEvent: jest.fn() as jest.Mock<Promise<void>>,
+  cancelAttendance: jest.fn() as jest.Mock<Promise<void>>,
+  getEventAttendees: jest.fn() as jest.Mock<Promise<any[]>>,
+  removeAttendee: jest.fn() as jest.Mock<Promise<void>>,
+  removeAllAttendees: jest.fn() as jest.Mock<Promise<void>>,
+};
+
+const mockOrganizationService = {
+  getMember: jest.fn() as jest.Mock<Promise<any>>,
 };
 
 jest.mock('@prisma/client', () => {
@@ -41,6 +50,11 @@ jest.mock('@prisma/client', () => {
 jest.mock('../services/eventService', () => ({
   __esModule: true,
   default: mockEventService,
+}));
+
+jest.mock('../services/organizationService', () => ({
+  __esModule: true,
+  default: mockOrganizationService,
 }));
 
 jest.mock('../utils/typeSafeLogger', () => ({
@@ -354,10 +368,12 @@ describe('Event Controller', () => {
       const next = makeNext();
 
       mockEventService.getEventById.mockResolvedValue(sampleEvent);
+      mockEventService.removeAllAttendees.mockResolvedValue(undefined);
       mockEventService.deleteEvent.mockResolvedValue(undefined);
 
       await eventController.deleteEvent(req, res, next);
 
+      expect(mockEventService.removeAllAttendees).toHaveBeenCalledWith(1);
       expect(mockEventService.deleteEvent).toHaveBeenCalledWith(1);
       expect(res.status).toHaveBeenCalledWith(204);
       expect(res.send).toHaveBeenCalled();
@@ -393,6 +409,7 @@ describe('Event Controller', () => {
       const next = makeNext();
 
       mockEventService.getEventById.mockResolvedValue(sampleEvent);
+      mockEventService.removeAllAttendees.mockResolvedValue(undefined);
       mockEventService.deleteEvent.mockRejectedValue(new Error('DB error'));
 
       await eventController.deleteEvent(req, res, next);
@@ -604,6 +621,267 @@ describe('Event Controller', () => {
 
       expect(next).toHaveBeenCalled();
       expect(mockEventService.isEvent).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('attendEvent', () => {
+    test('allows public event without auth', async () => {
+      const req = { method: 'POST', path: '/events/1/attend', params: { eventId: 1 } as any, user: { id: 123 } } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue({ ...sampleEvent, private: 'PUBLIC' });
+      mockEventService.attendEvent.mockResolvedValue(undefined as any);
+
+      await eventController.attendEvent(req, res, next);
+
+      expect(mockEventService.attendEvent).toHaveBeenCalledWith(1, 123);
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('allows private event when organizer', async () => {
+      const req = { method: 'POST', path: '/events/1/attend', params: { eventId: 1 } as any, user: { id: 123, role: 'MEMBER', organizationId: undefined } } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue({ ...sampleEvent, private: 'PRIVATE', organizerId: 123 });
+      mockEventService.attendEvent.mockResolvedValue(undefined as any);
+
+      await eventController.attendEvent(req, res, next);
+
+      expect(mockEventService.attendEvent).toHaveBeenCalledWith(1, 123);
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('not found bubbles via next', async () => {
+      const req = { method: 'POST', path: '/events/1/attend', params: { eventId: 1 } as any, user: { id: 123 } } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue(null);
+
+      await eventController.attendEvent(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+      expect(mockEventService.attendEvent).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('cancelAttendance', () => {
+    test('cancels when attending', async () => {
+      const req = { method: 'DELETE', path: '/events/1/attend', params: { eventId: 1 } as any, user: { id: 123 } } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue(sampleEvent);
+      mockEventService.getEventAttendees.mockResolvedValue([{ id: 123 }]);
+      mockEventService.cancelAttendance.mockResolvedValue(undefined as any);
+
+      await eventController.cancelAttendance(req, res, next);
+
+      expect(mockEventService.cancelAttendance).toHaveBeenCalledWith(1, 123);
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('throws conflict when not attending', async () => {
+      const req = { method: 'DELETE', path: '/events/1/attend', params: { eventId: 1 } as any, user: { id: 123 } } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue(sampleEvent);
+      mockEventService.getEventAttendees.mockResolvedValue([{ id: 999 }]);
+
+      await eventController.cancelAttendance(req, res, next);
+
+      expect(mockEventService.cancelAttendance).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalled();
+    });
+  });
+
+  describe('getEventAttendees', () => {
+    test('returns attendees for public event', async () => {
+      const req = { method: 'GET', path: '/events/1/attendees', params: { eventId: 1 } as any, user: { id: 999 } } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.isEvent.mockResolvedValue(true);
+      mockEventService.getEventById.mockResolvedValue({ ...sampleEvent, private: 'PUBLIC' });
+      mockEventService.getEventAttendees.mockResolvedValue([{ id: 1 }, { id: 2 }]);
+
+      await eventController.getEventAttendees(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith([{ id: 1 }, { id: 2 }]);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('returns attendees for private event when organizer', async () => {
+      const req = { method: 'GET', path: '/events/1/attendees', params: { eventId: 1 } as any, user: { id: 123, role: 'MEMBER' } } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.isEvent.mockResolvedValue(true);
+      mockEventService.getEventById.mockResolvedValue({ ...sampleEvent, private: 'PRIVATE', organizerId: 123 });
+      mockEventService.getEventAttendees.mockResolvedValue([{ id: 1 }]);
+
+      await eventController.getEventAttendees(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith([{ id: 1 }]);
+      expect(next).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('removeAttendee', () => {
+    test('removes attendee when organizer', async () => {
+      const req = {
+        method: 'DELETE',
+        path: '/events/1/attendees',
+        params: { eventId: 1 } as any,
+        body: { userId: 456 },
+        user: { id: 123, role: 'MEMBER' },
+      } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue({ ...sampleEvent, organizerId: 123 });
+      mockEventService.getEventAttendees.mockResolvedValue([{ id: 456 }]);
+      mockEventService.removeAttendee.mockResolvedValue(undefined);
+
+      await eventController.removeAttendee(req, res, next);
+
+      expect(mockEventService.removeAttendee).toHaveBeenCalledWith(1, 456);
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Attendee removed successfully' });
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('removes attendee when admin', async () => {
+      const req = {
+        method: 'DELETE',
+        path: '/events/1/attendees',
+        params: { eventId: 1 } as any,
+        body: { userId: 456 },
+        user: { id: 999, role: 'ADMIN' },
+      } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue({ ...sampleEvent, organizerId: 123 });
+      mockEventService.getEventAttendees.mockResolvedValue([{ id: 456 }]);
+      mockEventService.removeAttendee.mockResolvedValue(undefined);
+
+      await eventController.removeAttendee(req, res, next);
+
+      expect(mockEventService.removeAttendee).toHaveBeenCalledWith(1, 456);
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('removes attendee when organization moderator', async () => {
+      const req = {
+        method: 'DELETE',
+        path: '/events/1/attendees',
+        params: { eventId: 1 } as any,
+        body: { userId: 456 },
+        user: { id: 999, role: 'MEMBER', organizationId: 5, organizationMember: { role: 'MODERATOR' } },
+      } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue({ ...sampleEvent, organizerId: 123, organizationId: 5 });
+      mockEventService.getEventAttendees.mockResolvedValue([{ id: 456 }]);
+      mockEventService.removeAttendee.mockResolvedValue(undefined);
+
+      await eventController.removeAttendee(req, res, next);
+
+      expect(mockEventService.removeAttendee).toHaveBeenCalledWith(1, 456);
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('removes attendee when organization owner', async () => {
+      const req = {
+        method: 'DELETE',
+        path: '/events/1/attendees',
+        params: { eventId: 1 } as any,
+        body: { userId: 456 },
+        user: { id: 999, role: 'MEMBER', organizationId: 5, organizationMember: { role: 'OWNER' } },
+      } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue({ ...sampleEvent, organizerId: 123, organizationId: 5 });
+      mockEventService.getEventAttendees.mockResolvedValue([{ id: 456 }]);
+      mockEventService.removeAttendee.mockResolvedValue(undefined);
+
+      await eventController.removeAttendee(req, res, next);
+
+      expect(mockEventService.removeAttendee).toHaveBeenCalledWith(1, 456);
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('throws conflict when user not attending', async () => {
+      const req = {
+        method: 'DELETE',
+        path: '/events/1/attendees',
+        params: { eventId: 1 } as any,
+        body: { userId: 456 },
+        user: { id: 123, role: 'MEMBER' },
+      } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue({ ...sampleEvent, organizerId: 123 });
+      mockEventService.getEventAttendees.mockResolvedValue([{ id: 789 }]);
+
+      await eventController.removeAttendee(req, res, next);
+
+      expect(mockEventService.removeAttendee).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('throws not found when event missing', async () => {
+      const req = {
+        method: 'DELETE',
+        path: '/events/1/attendees',
+        params: { eventId: 1 } as any,
+        body: { userId: 456 },
+        user: { id: 123, role: 'MEMBER' },
+      } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue(null);
+
+      await eventController.removeAttendee(req, res, next);
+
+      expect(mockEventService.removeAttendee).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('throws forbidden when not authorized', async () => {
+      const req = {
+        method: 'DELETE',
+        path: '/events/1/attendees',
+        params: { eventId: 1 } as any,
+        body: { userId: 456 },
+        user: { id: 999, role: 'MEMBER', organizationId: undefined },
+      } as unknown as Request & { user: any };
+      const res = makeRes();
+      const next = makeNext();
+
+      mockEventService.getEventById.mockResolvedValue({ ...sampleEvent, organizerId: 123 });
+      mockEventService.getEventAttendees.mockResolvedValue([{ id: 456 }]);
+
+      await eventController.removeAttendee(req, res, next);
+
+      expect(mockEventService.removeAttendee).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalled();
     });
   });
 });

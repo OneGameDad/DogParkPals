@@ -41,6 +41,7 @@ model User {
   levels    UserLevel[]
   ExpPoints   Int      @default(0)
   notifications Notification[]
+  eventAttendances EventAttendance[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -210,9 +211,24 @@ model Event {
   organization   Organization? @relation("OrganizationEvents", fields: [organizationId], references: [id])
   organizerId Int
   organizer   User     @relation("EventOrganizer", fields: [organizerId], references: [id])
+  attendees  EventAttendance[]
   comments Comment[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// Join table for users attending events
+model EventAttendance {
+  userId  Int
+  eventId Int
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([userId, eventId])
+  @@index([eventId])
 }
 
 model Comment {

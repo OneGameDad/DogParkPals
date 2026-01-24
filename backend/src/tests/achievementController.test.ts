@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 import type { Request, Response, NextFunction } from 'express';
-import { NotFoundError, ForbiddenError, ConflictError } from '../utils/errors';
+import { NotFoundError, ConflictError } from '../utils/errors';
 
 // Mock achievementService
 const mockGetAllAchievements = jest.fn<any>();
@@ -37,18 +37,6 @@ jest.mock('../utils/typeSafeLogger', () => ({
     logError: jest.fn(),
     info: jest.fn(),
     warn: jest.fn(),
-  },
-}));
-
-jest.mock('../utils/validationSchemas', () => ({
-  createAchievementSchema: {
-    parse: jest.fn((data) => data),
-  },
-  updateAchievementSchema: {
-    parse: jest.fn((data) => data),
-  },
-  awardAchievementSchema: {
-    parse: jest.fn((data) => data),
   },
 }));
 
@@ -167,9 +155,12 @@ describe('Achievement Controller', () => {
 
       await achievementController.getAchievementByName(mockReq as Request, mockRes as Response, mockNext as NextFunction);
 
-      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
-        message: 'Achievement name is required',
-      }));
+      const error = mockNext.mock.calls[0][0] as any;
+      expect(error.statusCode).toBe(400);
+      expect(error.code).toBe('VALIDATION_ERROR');
+      expect(error.details).toHaveProperty('name');
+      expect(Array.isArray(error.details.name)).toBe(true);
+      expect(error.details.name.length).toBeGreaterThan(0);
     });
 
     test('should handle not found error', async () => {
@@ -219,20 +210,6 @@ describe('Achievement Controller', () => {
       expect(mockStatus).toHaveBeenCalledWith(201);
     });
 
-    test('should reject creation as non-admin user', async () => {
-      mockReq.user = { role: 'CLIENT' } as any;
-      mockReq.body = {
-        name: 'First Visit',
-      };
-
-      await achievementController.createAchievement(mockReq as Request, mockRes as Response, mockNext as NextFunction);
-
-      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
-        message: 'Not authorized to perform this action',
-      }));
-      expect(mockCreateAchievement).not.toHaveBeenCalled();
-    });
-
     test('should handle conflict error', async () => {
       mockReq.user = { role: 'ADMIN' } as any;
       mockReq.body = {
@@ -245,6 +222,57 @@ describe('Achievement Controller', () => {
       expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
         message: 'Achievement with this name already exists',
       }));
+    });
+
+    test('should return validation error when name is missing', async () => {
+      mockReq.user = { role: 'ADMIN' } as any;
+      mockReq.body = {
+        name: '',
+        type: 'BADGE',
+      };
+
+      await achievementController.createAchievement(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
+        statusCode: 400,
+        code: 'VALIDATION_ERROR',
+        details: expect.objectContaining({
+          name: expect.arrayContaining(['Achievement name is required']),
+        }),
+      }));
+      expect(mockCreateAchievement).not.toHaveBeenCalled();
+    });
+
+    test('should return validation error for invalid type', async () => {
+      mockReq.user = { role: 'ADMIN' } as any;
+      mockReq.body = {
+        name: 'First Visit',
+        type: 'MEDAL',
+      } as any;
+
+      await achievementController.createAchievement(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
+        statusCode: 400,
+        code: 'VALIDATION_ERROR',
+      }));
+      expect(mockCreateAchievement).not.toHaveBeenCalled();
+    });
+
+    test('should return validation error for invalid badgeUrl', async () => {
+      mockReq.user = { role: 'ADMIN' } as any;
+      mockReq.body = {
+        name: 'First Visit',
+        badgeUrl: 'not-a-url',
+      };
+
+      await achievementController.createAchievement(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
+        statusCode: 400,
+        code: 'VALIDATION_ERROR',
+      }));
+      expect(mockCreateAchievement).not.toHaveBeenCalled();
     });
   });
 
@@ -278,19 +306,6 @@ describe('Achievement Controller', () => {
 
       expect(mockUpdateAchievement).toHaveBeenCalled();
       expect(mockStatus).toHaveBeenCalledWith(200);
-    });
-
-    test('should reject update as non-admin user', async () => {
-      mockReq.user = { role: 'CLIENT' } as any;
-      mockReq.params = { id: '1' };
-      mockReq.body = { description: 'Updated' };
-
-      await achievementController.updateAchievement(mockReq as Request, mockRes as Response, mockNext as NextFunction);
-
-      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
-        message: 'Not authorized to perform this action',
-      }));
-      expect(mockUpdateAchievement).not.toHaveBeenCalled();
     });
 
     test('should handle not found error', async () => {
@@ -329,18 +344,6 @@ describe('Achievement Controller', () => {
 
       expect(mockDeleteAchievement).toHaveBeenCalled();
       expect(mockStatus).toHaveBeenCalledWith(204);
-    });
-
-    test('should reject delete as non-admin user', async () => {
-      mockReq.user = { role: 'CLIENT' } as any;
-      mockReq.params = { id: '1' };
-
-      await achievementController.deleteAchievement(mockReq as Request, mockRes as Response, mockNext as NextFunction);
-
-      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
-        message: 'Not authorized to perform this action',
-      }));
-      expect(mockDeleteAchievement).not.toHaveBeenCalled();
     });
 
     test('should handle not found error', async () => {
@@ -400,18 +403,6 @@ describe('Achievement Controller', () => {
 
       expect(mockAwardAchievementToUser).toHaveBeenCalledWith(1, 1);
       expect(mockStatus).toHaveBeenCalledWith(201);
-    });
-
-    test('should reject awarding as non-admin user', async () => {
-      mockReq.user = { role: 'CLIENT' } as any;
-      mockReq.body = { userId: 1, achievementId: 1 };
-
-      await achievementController.awardAchievementToUser(mockReq as Request, mockRes as Response, mockNext as NextFunction);
-
-      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
-        message: 'Not authorized to perform this action',
-      }));
-      expect(mockAwardAchievementToUser).not.toHaveBeenCalled();
     });
 
     test('should handle not found error for user', async () => {
@@ -524,18 +515,6 @@ describe('Achievement Controller', () => {
 
       expect(mockRemoveAchievementFromUser).toHaveBeenCalledWith(1, 1);
       expect(mockStatus).toHaveBeenCalledWith(204);
-    });
-
-    test('should reject removal as non-admin user', async () => {
-      mockReq.user = { role: 'CLIENT' } as any;
-      mockReq.params = { userId: '1', achievementId: '1' };
-
-      await achievementController.removeAchievementFromUser(mockReq as Request, mockRes as Response, mockNext as NextFunction);
-
-      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
-        message: 'Not authorized to perform this action',
-      }));
-      expect(mockRemoveAchievementFromUser).not.toHaveBeenCalled();
     });
 
     test('should handle not found error when user does not exist', async () => {

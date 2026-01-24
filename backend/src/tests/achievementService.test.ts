@@ -66,7 +66,6 @@ jest.mock('../utils/typeSafeLogger', () => ({
 
 // Import AFTER all mocks are defined
 import achievementService from '../services/achievementService';
-import { NotFoundError, ConflictError } from '../utils/errors';
 
 describe('Achievement Service', () => {
   beforeEach(() => {

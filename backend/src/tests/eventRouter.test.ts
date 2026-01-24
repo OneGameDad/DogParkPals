@@ -23,6 +23,11 @@ const mockGetEventsByPark = jest.fn() as any;
 const mockGetAllEvents = jest.fn() as any;
 const mockGetUpcomingEvents = jest.fn() as any;
 const mockIsEvent = jest.fn() as any;
+const mockAttendEvent = jest.fn() as any;
+const mockCancelAttendance = jest.fn() as any;
+const mockGetEventAttendees = jest.fn() as any;
+const mockRemoveAllAttendees = jest.fn() as any;
+const mockRemoveAttendee = jest.fn() as any;
 
 // Mock the controller
 jest.mock('../controllers/eventController', () => ({
@@ -38,6 +43,11 @@ jest.mock('../controllers/eventController', () => ({
     getAllEvents: mockGetAllEvents,
     getUpcomingEvents: mockGetUpcomingEvents,
     isEvent: mockIsEvent,
+    attendEvent: mockAttendEvent,
+    cancelAttendance: mockCancelAttendance,
+    getEventAttendees: mockGetEventAttendees,
+    removeAllAttendees: mockRemoveAllAttendees,
+    removeAttendee: mockRemoveAttendee,
   },
 }));
 
@@ -374,6 +384,64 @@ describe('Event Router', () => {
 
       expect(response.status).toBe(400);
       expect(response.body.code).toBe('VALIDATION_ERROR');
+    });
+  });
+
+  describe('Attendance routes', () => {
+    test('POST /:eventId/attend calls attendEvent', async () => {
+      mockAttendEvent.mockImplementation((req: Request, res: Response) => {
+        res.status(200).json({ message: 'ok' });
+      });
+
+      const response = await request(app).post('/1/attend');
+
+      expect(mockAttendEvent).toHaveBeenCalled();
+      expect(response.status).toBe(200);
+    });
+
+    test('DELETE /:eventId/attend calls cancelAttendance', async () => {
+      mockCancelAttendance.mockImplementation((req: Request, res: Response) => {
+        res.status(200).json({ message: 'left' });
+      });
+
+      const response = await request(app).delete('/1/attend');
+
+      expect(mockCancelAttendance).toHaveBeenCalled();
+      expect(response.status).toBe(200);
+    });
+
+    test('GET /:eventId/attendees calls getEventAttendees', async () => {
+      mockGetEventAttendees.mockImplementation((req: Request, res: Response) => {
+        res.status(200).json([{ id: 1 }]);
+      });
+
+      const response = await request(app).get('/1/attendees');
+
+      expect(mockGetEventAttendees).toHaveBeenCalled();
+      expect(response.status).toBe(200);
+      expect(response.body[0].id).toBe(1);
+    });
+
+    test('DELETE /:eventId/attendees calls removeAllAttendees', async () => {
+      mockRemoveAllAttendees.mockImplementation((req: Request, res: Response) => {
+        res.status(200).json({ message: 'cleared' });
+      });
+
+      const response = await request(app).delete('/1/attendees');
+
+      expect(mockRemoveAllAttendees).toHaveBeenCalled();
+      expect(response.status).toBe(200);
+    });
+
+    test('DELETE /:eventId/attendees/user calls removeAttendee', async () => {
+      mockRemoveAttendee.mockImplementation((req: Request, res: Response) => {
+        res.status(200).json({ message: 'removed' });
+      });
+
+      const response = await request(app).delete('/1/attendees/user').send({ userId: 999 });
+
+      expect(mockRemoveAttendee).toHaveBeenCalled();
+      expect(response.status).toBe(200);
     });
   });
 

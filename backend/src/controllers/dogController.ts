@@ -58,6 +58,17 @@ const dogController = {
       const dogData = parseValidation(addDogSchema, req.body);
 
       const newDog = await dogService.addDog(dogData);
+
+      // Automatically assign the creator as an owner so subsequent updates succeed
+      if (req.userId) {
+        try {
+          await dogService.addOwnerToDog(newDog.id, req.userId);
+        } catch (ownershipErr) {
+          // Log but do not block dog creation; ownership can be retried separately
+          typeSafeLogger.logError("Failed to auto-assign dog owner", ownershipErr, { dogId: newDog.id, userId: req.userId });
+        }
+      }
+
       typeSafeLogger.logUserAction("Dog added", { dogId: newDog.id, name: newDog.name });
       res.status(201).json(newDog);
     } catch (error) {

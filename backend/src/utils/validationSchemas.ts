@@ -65,6 +65,26 @@ export const resetUserPasswordSchema = z.object({
 
 export type ResetUserPasswordRequest = z.infer<typeof resetUserPasswordSchema>;
 
+export const updateUserProfileSchema = z
+  .object({
+    first_name: z.string().min(1, 'First name is required').nullable().optional(),
+    last_name: z.string().min(1, 'Last name is required').nullable().optional(),
+    profilePictureUrl: z.string().url('Invalid profile picture URL').nullable().optional(),
+    latitude: z.number().min(-90, 'Latitude must be between -90 and 90').max(90, 'Latitude must be between -90 and 90').nullable().optional(),
+    longitude: z
+      .number()
+      .min(-180, 'Longitude must be between -180 and 180')
+      .max(180, 'Longitude must be between -180 and 180')
+      .nullable()
+      .optional(),
+  })
+  .refine(
+    (data) => Object.values(data).some((value) => value !== undefined),
+    { message: 'At least one field must be provided to update the profile' }
+  );
+
+export type UpdateUserProfileRequest = z.infer<typeof updateUserProfileSchema>;
+
 export const createParkSchema = z.object({
   name: z.string().min(1, 'Park name is required'),
   latitude: z.number().min(-90, 'Latitude must be between -90 and 90').max(90, 'Latitude must be between -90 and 90'),

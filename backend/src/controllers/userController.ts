@@ -13,6 +13,7 @@ import {
     getUserByUsernameSchema,
     listUsersSchema,
     resetUserPasswordSchema,
+    updateUserProfileSchema,
 } from "../utils/validationSchemas";
 
 const userController = {
@@ -153,6 +154,26 @@ const userController = {
             }
             return next(
                 toAppError(error, { message: "Failed to change password", code: "INTERNAL_ERROR", statusCode: 500 })
+            );
+        }
+    },
+
+    updateProfile: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            if (!req.userId) {
+                throw ForbiddenError("Authentication required");
+            }
+
+            const updates = parseValidation(updateUserProfileSchema, req.body);
+            const updatedUser = await userService.updateUserProfile(req.userId, updates);
+            typeSafeLogger.logUserAction("User profile updated", { userId: req.userId });
+            res.status(200).json(sanitizeUser(updatedUser));
+        } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
+            return next(
+                toAppError(error, { message: "Failed to update profile", code: "INTERNAL_ERROR", statusCode: 500 })
             );
         }
     },

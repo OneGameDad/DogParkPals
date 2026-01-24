@@ -190,3 +190,119 @@ describe("events CRUD and authorization", () => {
     expect(missingRes.body.exists).toBe(false);
   });
 });
+
+  describe("concurrent event operations", () => {
+    test("concurrent event creation with unique titles succeed", async () => {
+      const futureWindow = () => {
+        const start = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+        const end = new Date(start.getTime() + 60 * 60 * 1000);
+        return {
+          date: start.toISOString(),
+          startTime: start.toISOString(),
+          endTime: end.toISOString(),
+        };
+      };
+
+      const [evt1, evt2, evt3] = await Promise.all([
+        request(app)
+          .post("/api/events")
+          .set("Authorization", `Bearer ${orgOwnerToken()}`)
+          .send({
+            title: `Concurrent Event 1 ${Date.now()}`,
+            description: "Test",
+            parkId: ids.parks.park1,
+            organizerId: ids.users.orgOwner,
+            private: "PUBLIC",
+            ...futureWindow(),
+          }),
+        request(app)
+          .post("/api/events")
+          .set("Authorization", `Bearer ${orgOwnerToken()}`)
+          .send({
+            title: `Concurrent Event 2 ${Date.now()}`,
+            description: "Test",
+            parkId: ids.parks.park2,
+            organizerId: ids.users.orgOwner,
+            private: "PUBLIC",
+            ...futureWindow(),
+          }),
+        request(app)
+          .post("/api/events")
+          .set("Authorization", `Bearer ${memberToken()}`)
+          .send({
+            title: `Concurrent Event 3 ${Date.now()}`,
+            description: "Test",
+            parkId: ids.parks.park3,
+            organizerId: ids.users.orgMember,
+            private: "PUBLIC",
+            ...futureWindow(),
+          })
+      ]);
+
+      // All should succeed
+      expect(evt1.status).toBe(201);
+      expect(evt2.status).toBe(201);
+      expect(evt3.status).toBe(201);
+
+      // Verify unique event IDs
+      const eventIds = new Set([evt1.body.id, evt2.body.id, evt3.body.id]);
+      expect(eventIds.size).toBe(3);
+    });
+
+    test("concurrent event updates succeed independently", async () => {
+      // Create two events first
+      const futureWindow = () => {
+        const start = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+        const end = new Date(start.getTime() + 60 * 60 * 1000);
+        return {
+          date: start.toISOString(),
+          startTime: start.toISOString(),
+          endTime: end.toISOString(),
+        };
+      };
+
+      const evt1Res = await request(app)
+        .post("/api/events")
+        .set("Authorization", `Bearer ${orgOwnerToken()}`)
+        .send({
+          title: `Update Test Event 1 ${Date.now()}`,
+          description: "Initial description",
+          parkId: ids.parks.park1,
+          organizerId: ids.users.orgOwner,
+          private: "PUBLIC",
+          ...futureWindow(),
+        });
+
+      const evt2Res = await request(app)
+        .post("/api/events")
+        .set("Authorization", `Bearer ${memberToken()}`)
+        .send({
+          title: `Update Test Event 2 ${Date.now()}`,
+          description: "Another description",
+          parkId: ids.parks.park2,
+          organizerId: ids.users.orgMember,
+          private: "PUBLIC",
+          ...futureWindow(),
+        });
+
+      const evt1Id = evt1Res.body.id;
+      const evt2Id = evt2Res.body.id;
+
+      // Update both concurrently
+      const [update1, update2] = await Promise.all([
+        request(app)
+          .put(`/api/events/${evt1Id}`)
+          .set("Authorization", `Bearer ${orgOwnerToken()}`)
+          .send({ description: "Updated by organizer" }),
+        request(app)
+          .put(`/api/events/${evt2Id}`)
+          .set("Authorization", `Bearer ${adminToken()}`)
+          .send({ description: "Updated by admin" })
+      ]);
+
+      expect(update1.status).toBe(200);
+      expect(update2.status).toBe(200);
+      expect(update1.body.description).toBe("Updated by organizer");
+      expect(update2.body.description).toBe("Updated by admin");
+    });
+  });

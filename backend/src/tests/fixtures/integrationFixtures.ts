@@ -208,7 +208,8 @@ export async function resetData() {
     prisma.dogOwner.deleteMany(),
     prisma.userFavoritePark.deleteMany(),
     prisma.comment.deleteMany(),
-    prisma.event.deleteMany(), // EventAttendance will cascade delete
+    prisma.eventAttendance.deleteMany(), // Delete attendance before events
+    prisma.event.deleteMany(),
     prisma.organizationMember.deleteMany(),
     prisma.organization.deleteMany(),
     prisma.park.deleteMany(),

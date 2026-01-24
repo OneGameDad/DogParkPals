@@ -5,6 +5,7 @@ import typeSafeLogger from "../utils/typeSafeLogger";
 import { toAppError, NotFoundError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import { createFriendRequestSchema, getUserIdSchema, removeFriendSchema, friendshipIdSchema, getFriendsSchema } from "../utils/validationSchemas";
+import { awardExperience, XP_REWARDS } from "../services/xpService";
 
 const friendController = {
     addFriend: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -36,6 +37,16 @@ const friendController = {
 
             const newFriendship = await friendService.sendFriendRequest(requesterId, addresseeId, requesterDogId, addresseeDogId);
             typeSafeLogger.logUserAction("Friend added", { requesterId, addresseeId, requesterDogId, addresseeDogId });
+            if (newFriendship.status === 'ACCEPTED') {
+                const awards = [] as Promise<any>[];
+                if (newFriendship.requesterId) {
+                    awards.push(awardExperience(newFriendship.requesterId, XP_REWARDS.ADD_FRIEND, 'friend_added'));
+                }
+                if (newFriendship.addresseeId) {
+                    awards.push(awardExperience(newFriendship.addresseeId, XP_REWARDS.ADD_FRIEND, 'friend_added'));
+                }
+                await Promise.all(awards);
+            }
             res.status(201).json(newFriendship);
         } catch (error) {
             if (isAppError(error)) {
@@ -54,6 +65,14 @@ const friendController = {
 
             const updatedFriendship = await friendService.acceptFriendRequest(friendshipId);
             typeSafeLogger.logUserAction("Friend request accepted", { friendshipId });
+            const awards = [] as Promise<any>[];
+            if (updatedFriendship.requesterId) {
+                awards.push(awardExperience(updatedFriendship.requesterId, XP_REWARDS.ADD_FRIEND, 'friend_accepted'));
+            }
+            if (updatedFriendship.addresseeId) {
+                awards.push(awardExperience(updatedFriendship.addresseeId, XP_REWARDS.ADD_FRIEND, 'friend_accepted'));
+            }
+            await Promise.all(awards);
             res.status(200).json(updatedFriendship);
         } catch (error) {
             if (isAppError(error)) {

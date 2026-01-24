@@ -152,3 +152,123 @@ describe("dogs CRUD and ownership", () => {
     expect(res.body.code).toBe("FORBIDDEN");
   });
 });
+
+  describe("concurrent dog operations", () => {
+    test("multiple dogs created concurrently with unique names succeed", async () => {
+      const [dog1, dog2, dog3] = await Promise.all([
+        request(app)
+          .post("/api/dogs")
+          .set("Authorization", `Bearer ${userAToken()}`)
+          .send({
+            name: `ConcurrentDog1-${Date.now()}`,
+            breed: "MIXED_BREED",
+            gender: "MALE",
+            dateOfBirth: "2022-01-01T00:00:00.000Z",
+            playstyle: "SOCIAL",
+            size: "MEDIUM",
+          }),
+        request(app)
+          .post("/api/dogs")
+          .set("Authorization", `Bearer ${userBToken()}`)
+          .send({
+            name: `ConcurrentDog2-${Date.now()}`,
+            breed: "MIXED_BREED",
+            gender: "FEMALE",
+            dateOfBirth: "2021-06-15T00:00:00.000Z",
+            playstyle: "ENERGETIC",
+            size: "SMALL",
+          }),
+        request(app)
+          .post("/api/dogs")
+          .set("Authorization", `Bearer ${userCToken()}`)
+          .send({
+            name: `ConcurrentDog3-${Date.now()}`,
+            breed: "MIXED_BREED",
+            gender: "MALE",
+            dateOfBirth: "2023-03-10T00:00:00.000Z",
+            playstyle: "CALM",
+            size: "LARGE",
+          })
+      ]);
+
+      expect(dog1.status).toBe(201);
+      expect(dog2.status).toBe(201);
+      expect(dog3.status).toBe(201);
+
+      // Verify unique dog IDs
+      const dogIds = new Set([dog1.body.id, dog2.body.id, dog3.body.id]);
+      expect(dogIds.size).toBe(3);
+    });
+
+    test("concurrent dog updates succeed independently", async () => {
+      // Create two dogs first
+      const dogA = await request(app)
+        .post("/api/dogs")
+        .set("Authorization", `Bearer ${userAToken()}`)
+        .send({
+          name: `UpdateTest1-${Date.now()}`,
+          breed: "MIXED_BREED",
+          gender: "MALE",
+          dateOfBirth: "2022-01-01T00:00:00.000Z",
+          playstyle: "SOCIAL",
+          size: "MEDIUM",
+        });
+
+      const dogB = await request(app)
+        .post("/api/dogs")
+        .set("Authorization", `Bearer ${userBToken()}`)
+        .send({
+          name: `UpdateTest2-${Date.now()}`,
+          breed: "MIXED_BREED",
+          gender: "FEMALE",
+          dateOfBirth: "2021-06-15T00:00:00.000Z",
+          playstyle: "ENERGETIC",
+          size: "SMALL",
+        });
+
+      // Update both concurrently
+      const [update1, update2] = await Promise.all([
+        request(app)
+          .put(`/api/dogs/${dogA.body.id}`)
+          .set("Authorization", `Bearer ${adminToken()}`)
+          .send({ playstyle: "CALM" }),
+        request(app)
+          .put(`/api/dogs/${dogB.body.id}`)
+          .set("Authorization", `Bearer ${adminToken()}`)
+          .send({ playstyle: "AGGRESSIVE" })
+      ]);
+
+      expect(update1.status).toBe(200);
+      expect(update2.status).toBe(200);
+      expect(update1.body.playstyle).toBe("CALM");
+      expect(update2.body.playstyle).toBe("AGGRESSIVE");
+    });
+
+    test("concurrent dog fetches return consistent data", async () => {
+      // Fetch same dog concurrently from multiple users
+      const [fetch1, fetch2, fetch3] = await Promise.all([
+        request(app)
+          .get(`/api/dogs/${ids.dogs.dogA}`)
+          .set("Authorization", `Bearer ${userAToken()}`),
+        request(app)
+          .get(`/api/dogs/${ids.dogs.dogA}`)
+          .set("Authorization", `Bearer ${userBToken()}`),
+        request(app)
+          .get(`/api/dogs/${ids.dogs.dogA}`)
+          .set("Authorization", `Bearer ${userCToken()}`)
+      ]);
+
+      // All should succeed and return same dog data
+      expect(fetch1.status).toBe(200);
+      expect(fetch2.status).toBe(200);
+      expect(fetch3.status).toBe(200);
+
+      expect(fetch1.body.id).toBe(ids.dogs.dogA);
+      expect(fetch2.body.id).toBe(ids.dogs.dogA);
+      expect(fetch3.body.id).toBe(ids.dogs.dogA);
+
+      // All should have same name
+      expect(fetch1.body.name).toBe(fetch2.body.name);
+      expect(fetch2.body.name).toBe(fetch3.body.name);
+    });
+  });

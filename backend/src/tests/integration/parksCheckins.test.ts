@@ -189,4 +189,97 @@ describe("parks and check-ins", () => {
 
     expect(res.status).toBe(404);
   });
+
+  test("get active check-ins returns empty list when no users checked in", async () => {
+    const res = await request(app)
+      .get(`/api/parks/${ids.parks.park3}/check-ins`)
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBe(0);
+  });
+
+  test("multiple users check in at same park and get active check-ins", async () => {
+    // User A checks in with dog A
+    const checkInARes = await request(app)
+      .post(`/api/parks/${ids.parks.park3}/check-in`)
+      .set("Authorization", `Bearer ${userAToken()}`)
+      .send({ dogId: ids.dogs.dogA });
+
+    expect(checkInARes.status).toBe(201);
+    expect(checkInARes.body.userId).toBe(ids.users.userA);
+    expect(checkInARes.body.dogId).toBe(ids.dogs.dogA);
+
+    // User B checks in with dog B
+    const checkInBRes = await request(app)
+      .post(`/api/parks/${ids.parks.park3}/check-in`)
+      .set("Authorization", `Bearer ${userBToken()}`)
+      .send({ dogId: ids.dogs.dogB });
+
+    expect(checkInBRes.status).toBe(201);
+    expect(checkInBRes.body.userId).toBe(ids.users.userB);
+    expect(checkInBRes.body.dogId).toBe(ids.dogs.dogB);
+
+    // Get active check-ins for the park
+    const activeRes = await request(app)
+      .get(`/api/parks/${ids.parks.park3}/check-ins`)
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    expect(activeRes.status).toBe(200);
+    expect(Array.isArray(activeRes.body)).toBe(true);
+    expect(activeRes.body.length).toBe(2);
+
+    // Verify both check-ins are present with user and dog details
+    const checkInIds = activeRes.body.map((ci: any) => ci.userId);
+    expect(checkInIds).toContain(ids.users.userA);
+    expect(checkInIds).toContain(ids.users.userB);
+
+    const dogIds = activeRes.body.map((ci: any) => ci.dogId);
+    expect(dogIds).toContain(ids.dogs.dogA);
+    expect(dogIds).toContain(ids.dogs.dogB);
+
+    // Verify user and dog data is included
+    const userACheckIn = activeRes.body.find((ci: any) => ci.userId === ids.users.userA);
+    expect(userACheckIn.user).toBeDefined();
+    expect(userACheckIn.dog).toBeDefined();
+    expect(userACheckIn.user.username).toBe("usera");
+    expect(userACheckIn.dog.name).toBe("Rex");
+
+    const userBCheckIn = activeRes.body.find((ci: any) => ci.userId === ids.users.userB);
+    expect(userBCheckIn.user).toBeDefined();
+    expect(userBCheckIn.dog).toBeDefined();
+    expect(userBCheckIn.user.username).toBe("userb");
+    expect(userBCheckIn.dog.name).toBe("Luna");
+  });
+
+  test("get active check-ins excludes users who checked out", async () => {
+    // User A checks in
+    await request(app)
+      .post(`/api/parks/${ids.parks.park2}/check-in`)
+      .set("Authorization", `Bearer ${userAToken()}`)
+      .send({ dogId: ids.dogs.dogA });
+
+    // User B checks in
+    await request(app)
+      .post(`/api/parks/${ids.parks.park2}/check-in`)
+      .set("Authorization", `Bearer ${userBToken()}`)
+      .send({ dogId: ids.dogs.dogB });
+
+    // User A checks out
+    await request(app)
+      .post(`/api/parks/${ids.parks.park2}/check-out`)
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    // Get active check-ins
+    const activeRes = await request(app)
+      .get(`/api/parks/${ids.parks.park2}/check-ins`)
+      .set("Authorization", `Bearer ${userBToken()}`);
+
+    expect(activeRes.status).toBe(200);
+    expect(activeRes.body.length).toBe(1);
+    expect(activeRes.body[0].userId).toBe(ids.users.userB);
+    expect(activeRes.body[0].dogId).toBe(ids.dogs.dogB);
+    expect(activeRes.body[0].checkedOutAt).toBeNull();
+  });
 });

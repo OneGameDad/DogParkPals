@@ -28,5 +28,49 @@ export const es = {
       parkAdded: 'Park "{parkName}" was added in Spanish',
       friendAccepted: 'You and {name} are now friends in Spanish'
     }
+    ,
+    auth: {
+      login: {
+        title: "Spanish Sign in to DogParkPals",
+        emailLabel: "Spanish Email address",
+        emailPlaceholder: "Spanish Email address",
+        passwordLabel: "Spanish Password",
+        passwordPlaceholder: "Spanish Password",
+        signInButton: "Spanish Sign in",
+        signingIn: "Spanish Signing in...",
+        orContinueWith: "Spanish Or continue with",
+        signInWithGoogle: "Spanish Sign in with Google",
+        noAccount: "Spanish Don't have an account? Sign up",
+        success: "Spanish Successfully logged in!"
+      },
+      register: {
+        title: "Spanish Create your account",
+        subtitle: "Spanish Join DogParkPals today",
+        usernameLabel: "Spanish Username",
+        usernamePlaceholder: "Spanish Username",
+        emailLabel: "Spanish Email address",
+        emailPlaceholder: "Spanish Email address",
+        passwordLabel: "Spanish Password",
+        passwordPlaceholder: "Spanish Password (min. 8 characters)",
+        confirmPasswordLabel: "Spanish Confirm Password",
+        confirmPasswordPlaceholder: "Spanish Confirm password",
+        signUpButton: "Spanish Sign up",
+        creatingAccount: "Spanish Creating account...",
+        orContinueWith: "Spanish Or continue with",
+        signUpWithGoogle: "Spanish Sign up with Google",
+        haveAccount: "Spanish Already have an account? Sign in",
+        success: "Spanish Account created successfully!",
+        passwordsDontMatch: "Spanish Passwords do not match",
+        passwordTooShort: "Spanish Password must be at least 8 characters long",
+        usernameTooShort: "Spanish Username must be at least 3 characters long",
+        usernameAlreadyExists: "Spanish Username already exists"
+      },
+      logout: {
+        title: "Spanish Logging out",
+        loggingOut: "Spanish Please wait...",
+        success: "Spanish Successfully logged out!",
+        error: "Spanish Error logging out"
+      }
+    },
   }
 };

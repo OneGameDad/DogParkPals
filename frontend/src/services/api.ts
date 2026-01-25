@@ -3,27 +3,13 @@ import type { HealthCheckResponse, User } from '../types';
 
 class ApiService {
   private baseUrl: string;
-  private token: string | null = null;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
   }
 
-  setToken(token: string) {
-    this.token = token;
-    localStorage.setItem('auth_token', token);
-  }
-
-  getToken(): string | null {
-    if (!this.token) {
-      this.token = localStorage.getItem('auth_token');
-    }
-    return this.token;
-  }
-
-  clearToken() {
-    this.token = null;
-    localStorage.removeItem('auth_token');
+  getBaseUrl(): string {
+    return this.baseUrl;
   }
 
   private async request<T>(
@@ -37,27 +23,27 @@ class ApiService {
       ...(options?.headers as Record<string, string>),
     };
 
-    const token = this.getToken();
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
     const config: RequestInit = {
       ...options,
       headers,
+      credentials: 'include',
     };
 
     try {
       const response = await fetch(url, config);
       
       if (response.status === 401) {
-        this.clearToken();
+        // Avoid redirecting on 401 responses from the logout endpoint
+        if (endpoint !== '/auth/logout') {
+          window.location.href = '/login';
+        }
         throw new Error('Unauthorized - please log in again');
       }
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        const errorMessage = errorData.error || errorData.message || `HTTP error! status: ${response.status}`;
+        throw new Error(errorMessage);
       }
 
       const contentType = response.headers.get('content-type');
@@ -95,21 +81,19 @@ class ApiService {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
 
-  async login(username: string, password: string): Promise<{ token: string; user: User }> {
-    const response = await this.post<{ token: string; user: User }>('/api/auth/login', {
-      username,
+  async login(email: string, password: string): Promise<{ user: User }> {
+    return this.post<{ user: User }>('/auth/login', {
+      email,
       password,
     });
-    this.setToken(response.token);
-    return response;
   }
 
-  async register(username: string, password: string): Promise<{ token: string; user: User }> {
-    return this.post<{ token: string; user: User }>('/api/auth/register', { username, password });
+  async register(username: string, email: string, password: string): Promise<{ user: User }> {
+    return this.post<{ user: User }>('/users', { username, email, password });
   }
 
-  logout() {
-    this.clearToken();
+  async logout(): Promise<void> {
+    await this.post('/auth/logout');
   }
 
   async healthCheck(): Promise<HealthCheckResponse> {

@@ -49,9 +49,9 @@ describe('friendController', () => {
 		jest.clearAllMocks();
 
 		mockJson = jest.fn();
-		mockStatus = jest.fn().mockReturnValue({ json: mockJson });
-		mockReq = { body: {}, params: {}, query: {} };
-		mockRes = { status: mockStatus, json: mockJson } as Partial<Response> as Response;
+		mockStatus = jest.fn().mockImplementation(() => mockRes);
+		mockReq = { body: {}, params: {}, query: {}, cookies: {} };
+		mockRes = { status: mockStatus, json: mockJson, cookie: jest.fn(), clearCookie: jest.fn() } as Partial<Response> as Response;
 		mockNext = jest.fn() as unknown as jest.MockedFunction<NextFunction>;
 	});
 

@@ -1,24 +1,28 @@
 import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
 
 export default function GoogleCallback() {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = searchParams.get('token');
-    
-    if (token) {
-      // Store the token in localStorage
-      localStorage.setItem('authToken', token);
-      
-      // Redirect to dashboard
-      navigate('/dashboard');
-    } else {
-      // No token, redirect to login
-      navigate('/login');
-    }
-  }, [searchParams, navigate]);
+    (async () => {
+      try {
+        // Verify authentication by calling /auth/me
+        await api.get('/auth/me');
+        
+        // Dispatch auth event
+        window.dispatchEvent(new Event('auth:login'));
+        
+        // Redirect to dashboard
+        navigate('/dashboard');
+      } catch (error) {
+        console.error('Authentication failed:', error);
+        // Redirect to login on error
+        navigate('/login');
+      }
+    })();
+  }, [navigate]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">

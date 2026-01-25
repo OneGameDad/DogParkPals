@@ -24,12 +24,18 @@ interface JwtPayload {
 
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    let token = req.cookies.authToken;
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.replace('Bearer ', '');
+      }
+    }
+
+    if (!token) {
       throw AuthError('No authentication token provided');
     }
 
-    const token = authHeader.replace('Bearer ', '');
     const secret = process.env.JWT_SECRET;
     if (!secret) {
       throw new Error('JWT_SECRET not configured');
@@ -56,12 +62,18 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
 
 export const optionalAuth = (req: Request, _res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    let token = req.cookies.authToken;
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.replace('Bearer ', '');
+      }
+    }
+
+    if (!token) {
       return next();
     }
 
-    const token = authHeader.replace('Bearer ', '');
     const secret = process.env.JWT_SECRET;
     if (!secret) {
       return next();

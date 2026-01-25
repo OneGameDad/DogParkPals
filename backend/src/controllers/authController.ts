@@ -33,7 +33,16 @@ const authController = {
       const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, secret, { expiresIn: '7d' });
       typeSafeLogger.logUserAction('User logged in', { userId: user.id, email: user.email });
 
-      res.status(200).json({ token, user: sanitizeUser(user) });
+      // Set httpOnly cookie
+      res.cookie('authToken', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days        
+        path: '/'
+      });
+
+      res.status(200).json({ user: sanitizeUser(user) });
     } catch (error) {
       if (isAppError(error)) {
         return next(error);
@@ -43,24 +52,28 @@ const authController = {
   },
 
   logout: async (req: Request, res: Response) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(204).send();
+    const token = req.cookies.authToken;
+    
+    if (token) {
+      const secret = process.env.JWT_SECRET;
+      if (secret) {
+        try {
+          const decoded = jwt.verify(token, secret) as jwt.JwtPayload;
+          const expSeconds = typeof decoded.exp === 'number' ? decoded.exp : Math.floor(Date.now() / 1000);
+          blacklistToken(token, expSeconds);
+        } catch {
+          // If token invalid/expired, treat logout as idempotent
+        }
+      }
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      return res.status(204).send();
-    }
-
-    try {
-      const decoded = jwt.verify(token, secret) as jwt.JwtPayload;
-      const expSeconds = typeof decoded.exp === 'number' ? decoded.exp : Math.floor(Date.now() / 1000);
-      blacklistToken(token, expSeconds);
-    } catch {
-      // If token invalid/expired, treat logout as idempotent
-    }
+    // Clear the cookie
+    res.clearCookie('authToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/'
+    });
 
     res.status(204).send();
   },
@@ -88,9 +101,18 @@ const authController = {
 
       typeSafeLogger.logUserAction('User logged in via Google', { userId: user.id, email: user.email });
 
-      // Redirect to frontend with token
+      // Set httpOnly cookie
+      res.cookie('authToken', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: '/'
+      });
+
+      // Redirect to frontend without token in URL
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-      res.redirect(`${frontendUrl}/auth/google/callback?token=${token}`);
+      res.redirect(`${frontendUrl}/auth/google/callback`);
     } catch (error) {
       if (isAppError(error)) {
         return next(error);

@@ -38,7 +38,8 @@ const authController = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days        
+        path: '/'
       });
 
       res.status(200).json({ user: sanitizeUser(user) });
@@ -71,6 +72,7 @@ const authController = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
+      path: '/'
     });
 
     res.status(204).send();
@@ -105,6 +107,7 @@ const authController = {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: '/'
       });
 
       // Redirect to frontend without token in URL

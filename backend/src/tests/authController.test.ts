@@ -71,7 +71,8 @@ describe('Auth Controller', () => {
         httpOnly: true,
         secure: false, // test environment
         sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        maxAge: 7 * 24 * 60 * 60 * 1000,        
+        path: '/'
       });
       expect(mockStatus).toHaveBeenCalledWith(200);
       const payload = mockJson.mock.calls[0][0] as any;
@@ -118,6 +119,7 @@ describe('Auth Controller', () => {
         httpOnly: true,
         secure: false,
         sameSite: 'lax',
+        path: '/'
       });
       expect(mockStatus).toHaveBeenCalledWith(204);
     });
@@ -143,6 +145,7 @@ describe('Auth Controller', () => {
         secure: false,
         sameSite: 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/'
       });
       expect(mockRedirect).toHaveBeenCalledWith('http://localhost:5173/auth/google/callback');
     });

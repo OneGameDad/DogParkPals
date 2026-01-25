@@ -8,9 +8,13 @@ import Picture from '../components/Picture';
 import BodyText from '../components/BodyText';
 import InputText from '../components/InputText';
 
+type NotifHandle = {
+  addNotification: (type: string, payload: { name: string }) => void;
+};
+
 const Home = () => {
   const { t } = useTranslation();
-  const notifRef = React.useRef<any>(null);
+  const notifRef = React.useRef<NotifHandle | null>(null);
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [text, setText] = React.useState('');

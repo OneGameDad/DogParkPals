@@ -6,7 +6,7 @@ export default function GoogleCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const verifyAuth = async () => {
+    (async () => {
       try {
         // Verify authentication by calling /auth/me
         await api.get('/auth/me');
@@ -21,9 +21,7 @@ export default function GoogleCallback() {
         // Redirect to login on error
         navigate('/login');
       }
-    };
-
-    verifyAuth();
+    })();
   }, [navigate]);
 
   return (

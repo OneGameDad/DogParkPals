@@ -1,11 +1,81 @@
 import React from 'react';
+import Button from '../components/Button';
+import { useTranslation } from 'react-i18next';
+import Achievement from '../components/Achievement';
+import Header from '../components/Header';
+import Picture from '../components/Picture';
+import BodyText from '../components/BodyText';
+import InputText from '../components/InputText';
+import NotifContainer, { type NotifContainerHandle } from '../components/Notif';
 import HealthCheck from '../components/HealthCheck';
 
 const Home = () => {
+  const { t } = useTranslation();
+  const notifRef = React.useRef<NotifContainerHandle>(null);
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [text, setText] = React.useState('');
+
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">System Dashboard</h1>
-      <HealthCheck />
+    <div>
+      <NotifContainer ref={notifRef} />
+      <Header text="Home" />
+      <Header text="Welcome to ParkPals" level="h2" colour="text-pink-500" />
+      <Button 
+        text={t('buttons.cancel')}
+        onClick={() => notifRef.current?.addNotification('messageReceived', { name: 'Mark' })}
+      />
+      <Button 
+        text={t('buttons.submit')}
+        onClick={() => notifRef.current?.addNotification('friendRequest', { name: 'Greg' })}
+      />
+      <Button text={t('buttons.disabled')} disabled={true} />
+
+      <Achievement 
+        title="Best Friend"
+        description="Made your first friend"
+        image="imgs/exampledogpic.jpg"
+        imageAlt="Best Friend Badge"
+      />
+
+      <Achievement 
+        title="Explorer"
+        image="imgs/exampledogpic.jpg"
+        imageAlt="Explorer badge with a dog illustration"
+      />
+
+      <Picture location="imgs/exampledogpic.jpg" size={100} alt="Example dog photo" />
+      <Picture location="imgs/exampledogpic.jpg" size="150px" alt="Large example dog photo" />
+      <Picture location="imgs/exampledogpic.jpg" size="10rem" shape="circle" alt="Example circular dog profile picture" />
+      <Picture location="imgs/exampledogpic.jpg" size="200px" shape="square" alt="Example square dog photo" />
+
+      <BodyText text="This is body text" />
+      <BodyText text="Small text" size="sm" />
+      <BodyText text="Large body text" size="lg" colour="text-gray-700" />
+      <BodyText text="Custom styled" colour="text-blue-600" className="italic" />
+
+      <InputText
+        label="Email"
+        placeholder="Enter your email"
+        value={email}
+        onChange={setEmail}
+        type="email"
+        required={true}
+      />
+
+      <InputText
+        label="Password"
+        placeholder="Enter password"
+        value={password}
+        onChange={setPassword}
+        type="password"
+      />
+
+      <InputText
+        placeholder="Just a text input"
+        value={text}
+        onChange={setText}
+      />
     </div>
   );
 };

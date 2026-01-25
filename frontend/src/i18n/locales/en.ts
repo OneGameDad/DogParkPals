@@ -14,6 +14,19 @@ export const en = {
       privacy: "Privacy Policy",
       terms: "Terms of Service",
       rightsReserved: "All rights reserved."
+    },
+    buttons: {
+      submit: "Submit",
+      cancel: "Cancel",
+      delete: "Delete",
+      disabled: "Disabled"
+    },
+    notifications: {
+      friendRequest: '{name} wants to be friends',
+      messageReceived: 'You received a message from {name}',
+      eventCreated: '{name} created a new event',
+      parkAdded: 'Park "{parkName}" was added',
+      friendAccepted: 'You and {name} are now friends'
     }
   }
 };

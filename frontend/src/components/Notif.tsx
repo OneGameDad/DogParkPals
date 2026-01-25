@@ -36,7 +36,7 @@ const Notif = React.forwardRef<NotifHandle>((props, ref) => {
   }));
 
   return (
-    <div className="space-y-3 fixed top-4 right-4 w-96 max-w-full">
+    <div className="space-y-3 fixed top-4 right-4 w-96 max-w-full z-50">
       {notifications.map(notif => {
         const template = t(`notifications.${notif.messageType}`);
         const message = Object.entries(notif.variables || {}).reduce((text, [key, value]) => {

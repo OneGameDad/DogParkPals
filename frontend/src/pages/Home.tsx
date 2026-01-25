@@ -2,7 +2,7 @@ import React from 'react';
 import Button from '../components/Button';
 import NotifContainer from '../components/Notif';
 import { useTranslation } from 'react-i18next';
-import Achievement from '../components/Achievment';
+import Achievement from '../components/Achievement';
 import Header from '../components/Header';
 import Picture from '../components/Picture';
 import BodyText from '../components/BodyText';

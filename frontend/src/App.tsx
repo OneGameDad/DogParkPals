@@ -1,6 +1,9 @@
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import Logout from './pages/Logout';
+import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import Privacy from './pages/Privacy';
@@ -10,26 +13,55 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import DogProfile from './pages/DogProfile';
 import GoogleCallback from './pages/GoogleCallback';
+import ProtectedRoute from './components/ProtectedRoute';
+
 
 
 function App() {
   return (
     <BrowserRouter>
+    <Toaster position="top-right" />
     <div className="flex flex-col min-h-screen bg-cover bg-center bg-fixed" 
      style={{backgroundImage: "url('/imgs/background.png')"}}>
       <Navbar />
       {/* The Router Switch */}
       <div className="flex-grow p-8">
         <Routes>
+          {/* Public routes - accessible to everyone */}
           <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/settings" element={<Settings />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/dog/:id" element={<DogProfile />} />
+          
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/auth/google/callback" element={<GoogleCallback />} />
+          
+          {/* Protected routes - require authentication */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } />
+          <Route path="/dog/:id" element={
+            <ProtectedRoute>
+              <DogProfile />
+            </ProtectedRoute>
+          } />
+          <Route path="/logout" element={
+            <ProtectedRoute>
+              <Logout />
+            </ProtectedRoute>
+          } />
         </Routes>
       </div>
 

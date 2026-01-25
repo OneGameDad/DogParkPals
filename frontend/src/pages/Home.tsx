@@ -7,10 +7,11 @@ import Picture from '../components/Picture';
 import BodyText from '../components/BodyText';
 import InputText from '../components/InputText';
 import NotifContainer, { type NotifContainerHandle } from '../components/Notif';
-import HealthCheck from '../components/HealthCheck';
+import { useAuth } from '../hooks/useAuth';
 
 const Home = () => {
   const { t } = useTranslation();
+  const { isAuthenticated, user, loading } = useAuth();
   const notifRef = React.useRef<NotifContainerHandle>(null);
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -21,6 +22,15 @@ const Home = () => {
       <NotifContainer ref={notifRef} />
       <Header text="Home" />
       <Header text="Welcome to ParkPals" level="h2" colour="text-pink-500" />
+      
+      {loading ? (
+        <BodyText text="Checking authentication..." />
+      ) : isAuthenticated ? (
+        <BodyText text={`Logged in as: ${user?.username || user?.email}`} colour="text-green-600" />
+      ) : (
+        <BodyText text="Not logged in" colour="text-gray-600" />
+      )}
+      
       <Button 
         text={t('buttons.cancel')}
         onClick={() => notifRef.current?.addNotification('messageReceived', { name: 'Mark' })}

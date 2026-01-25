@@ -29,34 +29,47 @@ class ApiService {
       credentials: 'include',
     };
 
-    try {
-      const response = await fetch(url, config);
-      
-      if (response.status === 401) {
-        // Avoid redirecting on 401 responses from the logout endpoint
-        if (endpoint !== '/auth/logout') {
-          window.location.href = '/login';
-        }
-        throw new Error('Unauthorized - please log in again');
-      }
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.error || errorData.message || `HTTP error! status: ${response.status}`;
-        throw new Error(errorMessage);
-      }
+    const response = await fetch(url, config);
 
-      const contentType = response.headers.get('content-type');
-      if (contentType?.includes('application/json')) {
-        return await response.json();
+    if (response.status === 401) {
+      // Don't redirect on login or session check endpoints
+      if (!endpoint.includes('/auth/login') && !endpoint.includes('/auth/me')) {
+        window.location.href = '/login';
       }
-      return await response.text() as T;
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('An unexpected error occurred');
+      throw new Error('Unauthorized - please log in again');
     }
+
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status} error`;
+      let errorData: any = {};
+      
+      try {
+        errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch (parseError) {
+        try {
+          const errorText = await response.text();
+          if (errorText) {
+            errorMessage = errorText;
+          }
+        } catch {
+          // No body to parse
+        }
+      }
+      
+      throw new Error(errorMessage);
+    }
+
+    if (response.status === 204 || response.headers.get('content-length') === '0') {
+      return undefined as T;
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return response.json();
+    }
+    
+    return response.text() as T;
   }
 
   async get<T>(endpoint: string): Promise<T> {
@@ -79,6 +92,13 @@ class ApiService {
 
   async delete<T>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, { method: 'DELETE' });
+  }
+
+  async patch<T>(endpoint: string, data?: unknown): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: 'PATCH',
+      body: data ? JSON.stringify(data) : undefined,
+    });
   }
 
   async login(email: string, password: string): Promise<{ user: User }> {

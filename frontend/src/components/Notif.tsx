@@ -51,6 +51,7 @@ const Notif = React.forwardRef<NotifHandle>((props, ref) => {
             <button
               onClick={() => removeNotification(notif.id)}
               className="text-lg font-bold hover:opacity-70 cursor-pointer"
+              aria-label="Dismiss notification"
             >
               ×
             </button>

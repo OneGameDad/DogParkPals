@@ -18,6 +18,7 @@
 
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import passport from "./services/googleAuthService";
 import userRouter from "./routes/userRouter";
 import authRouter from "./routes/authRouter";
@@ -39,12 +40,13 @@ const app = express();
 app.use(cors({
   // Hardcoded for development purposes
   origin: process.env.FRONTEND_URL || "http://localhost:5173",
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 }));
 
 app.use(requestIdMiddleware);
+app.use(cookieParser());
 app.use(express.json());
 
 // Initialize Passport

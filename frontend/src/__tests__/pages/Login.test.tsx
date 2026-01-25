@@ -3,7 +3,6 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Login from '../../pages/Login';
 import * as apiModule from '../../services/api';
-import toast from 'react-hot-toast';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({

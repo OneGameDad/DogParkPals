@@ -1,9 +1,10 @@
 import organizationService from "../services/organizationService";
 import express from "express";
 import typeSafeLogger from "../utils/typeSafeLogger";
-import { toAppError, ConflictError, NotFoundError, ForbiddenError } from "../utils/errors";
+import { toAppError, ConflictError, NotFoundError, ForbiddenError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import { sanitizeOrganization } from "../utils/organizationSanitizer";
+import { awardExperience, XP_REWARDS } from "../services/xpService";
 import {
   createOrganizationSchema,
   updateOrganizationSchema,
@@ -56,11 +57,15 @@ const organizationController = {
             
             // Add the creator as OWNER of the organization
             await organizationService.addMember(newOrg.id, userId, 'OWNER');
+            await awardExperience(userId, XP_REWARDS.JOIN_ORGANIZATION, 'join_organization');
             
             typeSafeLogger.logUserAction("Organization created", { organizationId: newOrg.id, name, ownerId: userId });
             const sanitized = sanitizeOrganization(newOrg, true, 'OWNER');
             res.status(201).json(sanitized);
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to create organization", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -84,6 +89,9 @@ const organizationController = {
             const sanitized = sanitizeOrganization(org, isMember, memberRole);
             res.status(200).json(sanitized);
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to retrieve organization", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -107,6 +115,9 @@ const organizationController = {
             const sanitized = sanitizeOrganization(org, isMember, memberRole);
             res.status(200).json(sanitized);
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to retrieve organization", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -129,6 +140,9 @@ const organizationController = {
             typeSafeLogger.logUserAction("Organizations retrieved", { organizationCount: orgs.length });
             res.status(200).json(sanitizedOrgs);
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to retrieve organizations", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -151,6 +165,9 @@ const organizationController = {
             const sanitized = sanitizeOrganization(updatedOrg, true, memberRole);
             res.status(200).json(sanitized);
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to update organization", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -170,6 +187,9 @@ const organizationController = {
             typeSafeLogger.logUserAction("Organization deleted", { organizationId: orgId });
             res.status(204).send();
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to delete organization", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -186,9 +206,13 @@ const organizationController = {
             await checkOrganizationAuthorization(orgId, currentUserId, userRole);
 
             await organizationService.addMember(orgId, userId, role);
+            await awardExperience(userId, XP_REWARDS.JOIN_ORGANIZATION, 'join_organization');
             typeSafeLogger.logUserAction("Member added to organization", { organizationId: orgId, userId, role });
             res.status(201).send();
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to add member to organization", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -207,6 +231,9 @@ const organizationController = {
             typeSafeLogger.logUserAction("Member removed from organization", { organizationId: orgId, memberId });
             res.status(200).send();
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to remove member from organization", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -226,6 +253,9 @@ const organizationController = {
             typeSafeLogger.logUserAction("Member role updated in organization", { organizationId: orgId, memberId, role });
             res.status(200).send();
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to update member role in organization", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -245,6 +275,9 @@ const organizationController = {
             typeSafeLogger.logUserAction("Organization member retrieved", { organizationId: orgId, memberId });
             res.status(200).json(member);
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to retrieve organization member", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -265,6 +298,9 @@ const organizationController = {
             typeSafeLogger.logUserAction("Organization members retrieved", { organizationId: orgId, memberCount: members.length, sortBy, order });
             res.status(200).json(members);
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to retrieve organization members", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -281,6 +317,9 @@ const organizationController = {
             typeSafeLogger.logUserAction("Organization membership check completed", { organizationId: orgId, userId, isMember });
             res.status(200).json({ isMember });
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to check organization membership", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -375,6 +414,9 @@ const organizationController = {
                 accessLevel: isMember ? memberRole : (isAdmin ? 'ADMIN' : 'PUBLIC'),
             });
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to retrieve organization details", code: "INTERNAL_ERROR", statusCode: 500 })
             );

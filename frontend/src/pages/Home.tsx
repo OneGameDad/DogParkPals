@@ -7,6 +7,7 @@ import Picture from '../components/Picture';
 import BodyText from '../components/BodyText';
 import InputText from '../components/InputText';
 import NotifContainer, { type NotifContainerHandle } from '../components/Notif';
+import HealthCheck from '../components/HealthCheck';
 
 const Home = () => {
   const { t } = useTranslation();

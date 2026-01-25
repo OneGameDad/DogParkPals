@@ -1,0 +1,80 @@
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { AuthError } from '../utils/errors';
+import { isTokenBlacklisted } from '../utils/tokenBlacklist';
+
+// Extend Express Request to include userId (set by auth middleware)
+declare global {
+  namespace Express {
+    interface Request {
+      userId?: number;
+      user?: {
+        id: number;
+        role?: string;
+      };
+    }
+  }
+}
+
+interface JwtPayload {
+  userId: number;
+  email: string;
+  role?: string;
+}
+
+export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw AuthError('No authentication token provided');
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error('JWT_SECRET not configured');
+    }
+
+    const decoded = jwt.verify(token, secret) as JwtPayload;
+    if (isTokenBlacklisted(token)) {
+      throw AuthError('Invalid authentication token');
+    }
+    req.userId = decoded.userId;
+    req.user = { id: decoded.userId, role: decoded.role };
+
+    next();
+  } catch (error) {
+    if (error instanceof jwt.JsonWebTokenError) {
+      return next(AuthError('Invalid authentication token'));
+    }
+    if (error instanceof jwt.TokenExpiredError) {
+      return next(AuthError('Authentication token expired'));
+    }
+    return next(error);
+  }
+};
+
+export const optionalAuth = (req: Request, _res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return next();
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return next();
+    }
+
+    const decoded = jwt.verify(token, secret) as JwtPayload;
+      if (isTokenBlacklisted(token)) {
+        return next(AuthError('Invalid authentication token'));
+      }
+      req.userId = decoded.userId;
+      req.user = { id: decoded.userId, role: decoded.role };
+    next();
+  } catch {
+    next();
+  }
+};

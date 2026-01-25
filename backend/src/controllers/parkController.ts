@@ -1,10 +1,11 @@
 import parkService from "../services/parkService";
-import { NotFoundError, ForbiddenError } from "../utils/errors";
+import { NotFoundError, ForbiddenError, isAppError } from "../utils/errors";
 import { Request, Response, NextFunction } from "express";
 import typeSafeLogger from "../utils/typeSafeLogger";
 import { toAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import { createParkSchema, updateParkSchema, getParksNearLocationSchema } from "../utils/validationSchemas";
+import { awardExperience, hasVisitedParkBefore, XP_REWARDS } from "../services/xpService";
 
 /**
  * Check if user is authorized to modify a park (admin, or developer)
@@ -24,6 +25,13 @@ async function checkParkAuthorization(parkId: number, userRole: string | undefin
   return park;
 }
 
+function requireAdmin(userRole: string | undefined) {
+  const isAdmin = userRole === 'ADMIN' || userRole === 'DEVELOPER';
+  if (!isAdmin) {
+    throw ForbiddenError('Not authorized to perform this action');
+  }
+}
+
 const parkController = {
     getParkById: async (req: Request, res: Response, next: NextFunction) => {
       try {
@@ -37,6 +45,9 @@ const parkController = {
         typeSafeLogger.logUserAction("Park retrieved", { parkId: park.id });
         res.status(200).json(park);
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: "Failed to retrieve park", code: "INTERNAL_ERROR", statusCode: 500 })
         );
@@ -57,6 +68,9 @@ const parkController = {
         typeSafeLogger.logUserAction("Parks retrieved near location", { parkCount: parks.length });
         res.status(200).json(parks);
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: "Failed to retrieve parks near location", code: "INTERNAL_ERROR", statusCode: 500 })
         );
@@ -72,6 +86,9 @@ const parkController = {
         typeSafeLogger.logUserAction("Parks retrieved by amenity", { amenity, parkCount: parks.length });
         res.status(200).json(parks);
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: "Failed to retrieve parks by amenity", code: "INTERNAL_ERROR", statusCode: 500 })
         );
@@ -90,6 +107,9 @@ const parkController = {
         typeSafeLogger.logUserAction("Park retrieved by name", { parkId: park.id, name });
         res.status(200).json(park);
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: "Failed to retrieve park by name", code: "INTERNAL_ERROR", statusCode: 500 })
         );
@@ -104,6 +124,9 @@ const parkController = {
         typeSafeLogger.logUserAction("All parks retrieved", { parkCount: parks.length });
         res.status(200).json(parks);
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: "Failed to retrieve all parks", code: "INTERNAL_ERROR", statusCode: 500 })
         );
@@ -116,10 +139,24 @@ const parkController = {
         const userId = parseInt(req.params.userId, 10);
         const parkId = parseInt(req.params.parkId, 10);
 
+        const caller = (req as any).user;
+        const isAdmin = caller?.role === 'ADMIN' || caller?.role === 'DEVELOPER';
+        if (!caller || (caller.id !== userId && !isAdmin)) {
+          throw ForbiddenError('Not authorized to modify favorites for this user');
+        }
+
+        const parkExists = await parkService.parkExists(parkId);
+        if (!parkExists) {
+          throw NotFoundError('Park not found');
+        }
+
         await parkService.addParkToUserFavorites(userId, parkId);
         typeSafeLogger.logUserAction("Park added to user favorites", { userId, parkId });
         res.status(200).json({ message: "Park added to favorites" });
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: "Failed to add park to user favorites", code: "INTERNAL_ERROR", statusCode: 500 })
         );
@@ -132,27 +169,45 @@ const parkController = {
         const userId = parseInt(req.params.userId, 10);
         const parkId = parseInt(req.params.parkId, 10);
 
+        const caller = (req as any).user;
+        const isAdmin = caller?.role === 'ADMIN' || caller?.role === 'DEVELOPER';
+        if (!caller || (caller.id !== userId && !isAdmin)) {
+          throw ForbiddenError('Not authorized to modify favorites for this user');
+        }
+
+        const parkExists = await parkService.parkExists(parkId);
+        if (!parkExists) {
+          throw NotFoundError('Park not found');
+        }
+
         await parkService.removeParkFromUserFavorites(userId, parkId);
         typeSafeLogger.logUserAction("Park removed from user favorites", { userId, parkId });
         res.status(200).json({ message: "Park removed from favorites" });
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: "Failed to remove park from user favorites", code: "INTERNAL_ERROR", statusCode: 500 })
         );
       }
     },
-
     createPark: async (req: Request, res: Response, next: NextFunction) => {
       try {
         typeSafeLogger.logRequest("Received request to create park", { method: req.method, path: req.path });
         
         // Validate request body
+          const userRole = (req as any).user?.role;
+          requireAdmin(userRole);
         const validatedData = createParkSchema.parse(req.body);
 
         const newPark = await parkService.createPark(validatedData);
         typeSafeLogger.logUserAction("Park created", { parkId: newPark.id, name: newPark.name });
         res.status(201).json(newPark);
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: "Failed to create park", code: "INTERNAL_ERROR", statusCode: 500 })
         );
@@ -172,6 +227,9 @@ const parkController = {
             typeSafeLogger.logUserAction("Park updated", { parkId });
             res.status(200).json(updatedPark);
         } catch (error) {
+            if (isAppError(error)) {
+              return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to update park", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -189,8 +247,85 @@ const parkController = {
         typeSafeLogger.logUserAction("Park deleted", { parkId });
         res.status(204).send();
       } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
         return next(
           toAppError(error, { message: "Failed to delete park", code: "INTERNAL_ERROR", statusCode: 500 })
+        );
+      }
+    },
+
+    checkInAtPark: async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const userId = (req as any).user?.id;
+        const parkId = parseInt(req.params.parkId, 10);
+        const dogId = req.body.dogId ? parseInt(req.body.dogId, 10) : undefined;
+
+        if (!userId) {
+          throw ForbiddenError('Authentication required');
+        }
+
+        const parkExists = await parkService.parkExists(parkId);
+        if (!parkExists) {
+          throw NotFoundError('Park not found');
+        }
+
+        const checkIn = await parkService.checkIn(userId, parkId, dogId);
+        await awardExperience(userId, XP_REWARDS.PARK_VISIT, 'park_visit');
+        const visitedBefore = await hasVisitedParkBefore(userId, parkId, checkIn.id);
+        if (!visitedBefore) {
+          await awardExperience(userId, XP_REWARDS.NEW_PARK_BONUS, 'new_park_visit');
+        }
+        res.status(201).json(checkIn);
+      } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
+        return next(
+          toAppError(error, { message: "Failed to check in", code: "INTERNAL_ERROR", statusCode: 500 })
+        );
+      }
+    },
+
+    checkOutFromPark: async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const userId = (req as any).user?.id;
+        const parkId = parseInt(req.params.parkId, 10);
+
+        const parkExists = await parkService.parkExists(parkId);
+        if (!parkExists) {
+          throw NotFoundError('Park not found');
+        }
+
+        const checkOut = await parkService.checkOut(userId, parkId);
+        res.status(200).json(checkOut);
+      } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
+        return next(
+          toAppError(error, {
+            message: "Failed to check out",
+            code: "INTERNAL_ERROR",
+            statusCode: 500,
+          })
+        );
+      }
+    },
+
+    getActiveCheckInsForPark: async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const parkId = parseInt(req.params.parkId, 10);
+        const activeCheckIns = await parkService.getActiveCheckInsForPark(parkId);
+
+        res.status(200).json(activeCheckIns);
+      } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
+        return next(
+          toAppError(error, { message: 'Failed to get active check-ins', code: 'INTERNAL_ERROR', statusCode: 500 })
         );
       }
     }

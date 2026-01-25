@@ -44,7 +44,7 @@ const Notif = React.forwardRef<NotifHandle>((props, ref) => {
         }, template);
 
         return (
-          <div key={notif.id} className="bg-pink-50 border border-pink-200 text-black-800 rounded-lg p-4 flex items-center justify-between gap-3">
+          <div key={notif.id} className="bg-pink-50 border border-pink-200 text-gray-800 rounded-lg p-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span className="font-bold text-lg"></span>
               <p>{message}</p>

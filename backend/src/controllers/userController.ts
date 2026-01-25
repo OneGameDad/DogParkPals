@@ -64,7 +64,7 @@ const userController = {
     getUserById: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             typeSafeLogger.logRequest("Received request to fetch user by id", { method: req.method, path: req.path });
-            const id = req.params.id ? parseValidation(getUserByIdSchema, req.params).id : req.userId;
+            const id = req.params.id && req.params.id.trim() ? parseValidation(getUserByIdSchema, req.params).id : req.userId;
 
             if (!id) {
                 throw NotFoundError("User not found");

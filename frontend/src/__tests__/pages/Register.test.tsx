@@ -25,10 +25,8 @@ vi.mock('react-hot-toast', () => ({
       // Simulate toast.promise behavior for testing
       // Suppress errors to prevent unhandled rejections in tests
       return promise.catch((err: Error) => {
-        if (messages?.error) {
-          const errorMsg = typeof messages.error === 'function' 
-            ? messages.error(err) 
-            : messages.error;
+        if (messages?.error && typeof messages.error === 'function') {
+          messages.error(err);
         }
         // Don't re-throw in tests to avoid unhandled rejections
         return undefined;

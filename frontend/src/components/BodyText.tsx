@@ -3,14 +3,14 @@ import React from 'react';
 interface BodyProps {
   text: string;
   size?: 'sm' | 'base' | 'lg';
-  color?: string;
+  colour?: string;
   className?: string;
 }
 
 const BodyText: React.FC<BodyProps> = ({ 
   text, 
   size = 'base',
-  color = 'text-black',
+  colour = 'text-black',
   className = ''
 }) => {
   const sizeClasses = {
@@ -20,7 +20,7 @@ const BodyText: React.FC<BodyProps> = ({
   };
 
   return (
-    <p className={`${sizeClasses[size]} ${color} ${className}`}>
+    <p className={`${sizeClasses[size]} ${colour} ${className}`}>
       {text}
     </p>
   );

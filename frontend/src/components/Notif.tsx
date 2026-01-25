@@ -14,29 +14,29 @@ interface NotificationItem {
   variables?: Record<string, string | number>;
 }
 
-export interface NotifHandle {
+export interface NotifContainerHandle {
   addNotification: (messageType: string, variables?: Record<string, string | number>) => void;
 }
 
-const Notif = React.forwardRef<NotifHandle>((props, ref) => {
+const NotifContainer = React.forwardRef<NotifContainerHandle>((props, ref) => {
   const { t } = useTranslation();
   const [notifications, setNotifications] = React.useState<NotificationItem[]>([]);
 
   const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== id));
+    setNotifications(notifications.filter(notif => notif.id !== id));
   };
 
   const addNotification = (messageType: string, variables?: Record<string, string | number>) => {
     const id = Date.now().toString();
-    setNotifications(prev => [...prev, { id, messageType, variables }]);
+    setNotifications([...notifications, { id, messageType, variables }]);
+    setTimeout(() => removeNotification(id), 5000);
   };
-
   React.useImperativeHandle(ref, () => ({
     addNotification,
   }));
 
   return (
-    <div className="space-y-3 fixed top-4 right-4 w-96 max-w-full z-50">
+    <div className="space-y-3 fixed top-4 right-4 w-96 max-w-full">
       {notifications.map(notif => {
         const template = t(`notifications.${notif.messageType}`);
         const message = Object.entries(notif.variables || {}).reduce((text, [key, value]) => {
@@ -51,7 +51,6 @@ const Notif = React.forwardRef<NotifHandle>((props, ref) => {
             <button
               onClick={() => removeNotification(notif.id)}
               className="text-lg font-bold hover:opacity-70 cursor-pointer"
-              aria-label="Dismiss notification"
             >
               ×
             </button>
@@ -62,5 +61,5 @@ const Notif = React.forwardRef<NotifHandle>((props, ref) => {
   );
 });
 
-Notif.displayName = 'Notif';
-export default Notif;
+NotifContainer.displayName = 'NotifContainer';
+export default NotifContainer;

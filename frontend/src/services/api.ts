@@ -33,7 +33,10 @@ class ApiService {
       const response = await fetch(url, config);
       
       if (response.status === 401) {
-        window.location.href = '/login';
+        // Avoid redirecting on 401 responses from the logout endpoint
+        if (endpoint !== '/auth/logout') {
+          window.location.href = '/login';
+        }
         throw new Error('Unauthorized - please log in again');
       }
       

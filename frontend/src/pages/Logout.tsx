@@ -19,10 +19,13 @@ const Logout = () => {
   });
 
   useEffect(() => {
-    submit(() => api.logout()).catch(() => {
-      // If logout fails, redirect to home
-      navigate('/');
-    });
+    submit(() =>
+      api.logout().catch(() => {
+        // If logout fails, redirect to home
+        navigate('/');
+        throw new Error('Logout failed');
+      }),
+    );
   }, []);
 
   if (isSubmitting) {

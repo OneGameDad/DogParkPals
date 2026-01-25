@@ -7,6 +7,7 @@ import Picture from '../components/Picture';
 import BodyText from '../components/BodyText';
 import InputText from '../components/InputText';
 import NotifContainer, { type NotifContainerHandle } from '../components/Notif';
+import HealthCheck from '../components/HealthCheck';
 
 const Home = () => {
   const { t } = useTranslation();
@@ -40,12 +41,13 @@ const Home = () => {
       <Achievement 
         title="Explorer"
         image="imgs/exampledogpic.jpg"
+        imageAlt="Explorer badge with a dog illustration"
       />
 
-      <Picture location="imgs/exampledogpic.jpg" size={100} />
-      <Picture location="imgs/exampledogpic.jpg" size="150px" />
-      <Picture location="imgs/exampledogpic.jpg" size="10rem" shape="circle" />
-      <Picture location="imgs/exampledogpic.jpg" size="200px" shape="square" />
+      <Picture location="imgs/exampledogpic.jpg" size={100} alt="Example dog photo" />
+      <Picture location="imgs/exampledogpic.jpg" size="150px" alt="Large example dog photo" />
+      <Picture location="imgs/exampledogpic.jpg" size="10rem" shape="circle" alt="Example circular dog profile picture" />
+      <Picture location="imgs/exampledogpic.jpg" size="200px" shape="square" alt="Example square dog photo" />
 
       <BodyText text="This is body text" />
       <BodyText text="Small text" size="sm" />

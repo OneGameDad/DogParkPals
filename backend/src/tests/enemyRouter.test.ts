@@ -3,6 +3,14 @@ import type { Request, Response, NextFunction} from 'express';
 import express from 'express';
 import request from 'supertest';
 
+// Mock the auth middleware before importing the router
+jest.mock('../middlewares/authMiddleware', () => ({
+	requireAuth: (req: Request, res: Response, next: NextFunction) => {
+		(req as any).userId = 1;
+		next();
+	},
+}));
+
 const addEnemyMock = jest.fn<(req: Request, res: Response, next: NextFunction) => unknown>();
 const confirmAddEnemyMock = jest.fn<(req: Request, res: Response, next: NextFunction) => unknown>();
 const removeEnemyMock = jest.fn<(req: Request, res: Response, next: NextFunction) => unknown>();
@@ -48,10 +56,10 @@ describe('enemyRouter', () => {
 		defaultHandlers();
 	});
 
-	describe('POST /enemies', () => {
+	describe('POST /', () => {
 		test('routes to addEnemy controller', async () => {
 			const payload = { userId: 1, enemyUserId: 2 };
-			const response = await request(buildApp()).post('/enemies').send(payload);
+			const response = await request(buildApp()).post('/').send(payload);
 
 			expect(response.status).toBe(200);
 			expect(response.body.handler).toBe('addEnemy');
@@ -61,7 +69,7 @@ describe('enemyRouter', () => {
 
 		test('handles confirmed flag in payload', async () => {
 			const payload = { userId: 1, enemyUserId: 2, confirmed: true };
-			const response = await request(buildApp()).post('/enemies').send(payload);
+			const response = await request(buildApp()).post('/').send(payload);
 
 			expect(response.status).toBe(200);
 			expect(addEnemyMock).toHaveBeenCalledTimes(1);
@@ -69,10 +77,10 @@ describe('enemyRouter', () => {
 		});
 	});
 
-	describe('POST /enemies/confirm', () => {
+	describe('POST /confirm', () => {
 		test('routes to confirmAddEnemy controller', async () => {
 			const payload = { userId: 1, enemyUserId: 2 };
-			const response = await request(buildApp()).post('/enemies/confirm').send(payload);
+			const response = await request(buildApp()).post('/confirm').send(payload);
 
 			expect(response.status).toBe(200);
 			expect(response.body.handler).toBe('confirmAddEnemy');
@@ -81,10 +89,10 @@ describe('enemyRouter', () => {
 		});
 	});
 
-	describe('DELETE /enemies', () => {
+	describe('DELETE /', () => {
 		test('routes to removeEnemy controller', async () => {
 			const payload = { userId: 1, enemyUserId: 2 };
-			const response = await request(buildApp()).delete('/enemies').send(payload);
+			const response = await request(buildApp()).delete('/').send(payload);
 
 			expect(response.status).toBe(200);
 			expect(response.body.handler).toBe('removeEnemy');
@@ -93,9 +101,9 @@ describe('enemyRouter', () => {
 		});
 	});
 
-	describe('GET /enemies/:userId', () => {
+	describe('GET /:userId', () => {
 		test('routes to getEnemy controller with userId param', async () => {
-			const response = await request(buildApp()).get('/enemies/42');
+			const response = await request(buildApp()).get('/42');
 
 			expect(response.status).toBe(200);
 			expect(response.body.handler).toBe('getEnemy');
@@ -105,7 +113,7 @@ describe('enemyRouter', () => {
 		});
 
 		test('handles different userId values', async () => {
-			const response = await request(buildApp()).get('/enemies/123');
+			const response = await request(buildApp()).get('/123');
 
 			expect(response.status).toBe(200);
 			expect(response.body.params.userId).toBe('123');
@@ -113,9 +121,9 @@ describe('enemyRouter', () => {
 		});
 	});
 
-	describe('GET /enemies', () => {
+	describe('GET /', () => {
 		test('routes to getEnemiesList controller', async () => {
-			const response = await request(buildApp()).get('/enemies');
+			const response = await request(buildApp()).get('/');
 
 			expect(response.status).toBe(200);
 			expect(response.body.handler).toBe('getEnemiesList');
@@ -123,16 +131,16 @@ describe('enemyRouter', () => {
 		});
 
 		test('does not capture userId param when no path segment provided', async () => {
-			const response = await request(buildApp()).get('/enemies');
+			const response = await request(buildApp()).get('/');
 
 			expect(response.body.params).toEqual({});
 			expect(getEnemiesListMock).toHaveBeenCalledTimes(1);
 		});
 	});
 
-	describe('GET /enemies/isEnemy/:enemyUserId', () => {
+	describe('GET /isEnemy/:enemyUserId', () => {
 		test('routes to isEnemy controller with enemyUserId param', async () => {
-			const response = await request(buildApp()).get('/enemies/isEnemy/99');
+			const response = await request(buildApp()).get('/isEnemy/99');
 
 			expect(response.status).toBe(200);
 			expect(response.body.handler).toBe('isEnemy');
@@ -142,7 +150,7 @@ describe('enemyRouter', () => {
 		});
 
 		test('handles different enemyUserId values', async () => {
-			const response = await request(buildApp()).get('/enemies/isEnemy/777');
+			const response = await request(buildApp()).get('/isEnemy/777');
 
 			expect(response.status).toBe(200);
 			expect(response.body.params.enemyUserId).toBe('777');
@@ -151,24 +159,24 @@ describe('enemyRouter', () => {
 	});
 
 	describe('route precedence and conflicts', () => {
-		test('GET /enemies routes to list, not to getEnemy', async () => {
-			const response = await request(buildApp()).get('/enemies');
+		test('GET / routes to list, not to getEnemy', async () => {
+			const response = await request(buildApp()).get('/');
 
 			expect(response.body.handler).toBe('getEnemiesList');
 			expect(getEnemiesListMock).toHaveBeenCalledTimes(1);
 			expect(getEnemyMock).not.toHaveBeenCalled();
 		});
 
-		test('GET /enemies/isEnemy/:enemyUserId routes to isEnemy, not getEnemy', async () => {
-			const response = await request(buildApp()).get('/enemies/isEnemy/42');
+		test('GET /isEnemy/:enemyUserId routes to isEnemy, not getEnemy', async () => {
+			const response = await request(buildApp()).get('/isEnemy/42');
 
 			expect(response.body.handler).toBe('isEnemy');
 			expect(isEnemyMock).toHaveBeenCalledTimes(1);
 			expect(getEnemyMock).not.toHaveBeenCalled();
 		});
 
-		test('GET /enemies/:userId with numeric ID routes to getEnemy', async () => {
-			const response = await request(buildApp()).get('/enemies/42');
+		test('GET /:userId with numeric ID routes to getEnemy', async () => {
+			const response = await request(buildApp()).get('/42');
 
 			expect(response.body.handler).toBe('getEnemy');
 			expect(response.body.params.userId).toBe('42');
@@ -178,40 +186,40 @@ describe('enemyRouter', () => {
 	});
 
 	describe('HTTP method handling', () => {
-		test('POST is only supported for /enemies and /enemies/confirm', async () => {
+		test('POST is only supported for / and /confirm', async () => {
 			const app = buildApp();
 			
 			// Valid POST routes
-			const validPost1 = await request(app).post('/enemies').send({ userId: 1, enemyUserId: 2 });
+			const validPost1 = await request(app).post('/').send({ userId: 1, enemyUserId: 2 });
 			expect(validPost1.status).toBe(200);
 
-			const validPost2 = await request(app).post('/enemies/confirm').send({ userId: 1, enemyUserId: 2 });
+			const validPost2 = await request(app).post('/confirm').send({ userId: 1, enemyUserId: 2 });
 			expect(validPost2.status).toBe(200);
 		});
 
-		test('DELETE is only supported for /enemies', async () => {
-			const response = await request(buildApp()).delete('/enemies').send({ userId: 1, enemyUserId: 2 });
+		test('DELETE is only supported for /', async () => {
+			const response = await request(buildApp()).delete('/').send({ userId: 1, enemyUserId: 2 });
 			expect(response.status).toBe(200);
 			expect(removeEnemyMock).toHaveBeenCalledTimes(1);
 		});
 
-		test('GET is supported for /enemies, /enemies/:userId, and /enemies/isEnemy/:enemyUserId', async () => {
+		test('GET is supported for /, /:userId, and /isEnemy/:enemyUserId', async () => {
 			const app = buildApp();
 			
-			const response1 = await request(app).get('/enemies');
+			const response1 = await request(app).get('/');
 			expect(response1.status).toBe(200);
 
-			const response2 = await request(app).get('/enemies/42');
+			const response2 = await request(app).get('/42');
 			expect(response2.status).toBe(200);
 
-			const response3 = await request(app).get('/enemies/isEnemy/99');
+			const response3 = await request(app).get('/isEnemy/99');
 			expect(response3.status).toBe(200);
 		});
 	});
 
 	describe('request payload handling', () => {
 		test('handles empty request body gracefully', async () => {
-			const response = await request(buildApp()).post('/enemies').send({});
+			const response = await request(buildApp()).post('/').send({});
 
 			expect(response.status).toBe(200);
 			expect(addEnemyMock).toHaveBeenCalledTimes(1);
@@ -225,7 +233,7 @@ describe('enemyRouter', () => {
 				confirmed: true,
 				extraField: 'test' 
 			};
-			const response = await request(buildApp()).post('/enemies').send(payload);
+			const response = await request(buildApp()).post('/').send(payload);
 
 			expect(addEnemyMock.mock.calls[0][0].body).toEqual(payload);
 		});
@@ -233,7 +241,7 @@ describe('enemyRouter', () => {
 		test('handles JSON parsing in request body', async () => {
 			const payload = { userId: 1, enemyUserId: 2 };
 			const response = await request(buildApp())
-				.post('/enemies')
+				.post('/')
 				.set('Content-Type', 'application/json')
 				.send(JSON.stringify(payload));
 

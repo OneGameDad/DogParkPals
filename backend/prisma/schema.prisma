@@ -40,6 +40,8 @@ model User {
   achievements UserAchievement[]
   levels    UserLevel[]
   ExpPoints   Int      @default(0)
+  notifications Notification[]
+  eventAttendances EventAttendance[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -209,9 +211,24 @@ model Event {
   organization   Organization? @relation("OrganizationEvents", fields: [organizationId], references: [id])
   organizerId Int
   organizer   User     @relation("EventOrganizer", fields: [organizerId], references: [id])
+  attendees  EventAttendance[]
   comments Comment[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// Join table for users attending events
+model EventAttendance {
+  userId  Int
+  eventId Int
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([userId, eventId])
+  @@index([eventId])
 }
 
 model Comment {
@@ -272,6 +289,20 @@ model UserLevel {
   @@id([userId, levelId])
 }
 
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      NotificationType
+  payload   Json
+  read      Boolean  @default(false)
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])    
+}
+
 // Enum for user roles in the organization
 enum OrgRole {
   INVITEE
@@ -295,6 +326,7 @@ enum DogSize {
   MEDIUM
   LARGE
   GIANT
+  KAIJU
 }
 
 enum DogGender {  
@@ -339,6 +371,8 @@ enum UserRole {
 }
 
 enum DogBreed {
+  UNKNOWN
+  MIXED_BREED
   AFFENPINSCHER
   AFGHAN_HOUND
   AIDI
@@ -650,4 +684,17 @@ enum MessageStatus {
   READ
   ARCHIVED
   DELETED
+}
+
+enum NotificationType {
+  FRIENDSHIP_REQUEST
+  FRIENDSHIP_ACCEPTED
+  MESSAGE_RECEIVED
+  EVENT_INVITATION
+  EVENT_REMINDER
+  ACHIEVEMENT_EARNED
+  LEVEL_UP
+  COMMENT_REPLY
+  PARK_REVIEW
+  ORGANIZATION_INVITE
 }

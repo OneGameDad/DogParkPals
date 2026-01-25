@@ -3,6 +3,14 @@ import type { Request, Response, NextFunction} from 'express';
 import express from 'express';
 import request from 'supertest';
 
+// Mock the auth middleware before importing the router
+jest.mock('../middlewares/authMiddleware', () => ({
+	requireAuth: (req: Request, res: Response, next: NextFunction) => {
+		(req as any).userId = 1;
+		next();
+	},
+}));
+
 const addFriendMock = jest.fn<(req: Request, res: Response, next: NextFunction) => unknown>();
 const acceptFriendRequestMock = jest.fn<(req: Request, res: Response, next: NextFunction) => unknown>();
 const declineFriendRequestMock = jest.fn<(req: Request, res: Response, next: NextFunction) => unknown>();
@@ -45,9 +53,9 @@ describe('friendRouter', () => {
 		defaultHandlers();
 	});
 
-	test('POST /friends routes to addFriend', async () => {
+	test('POST / routes to addFriend', async () => {
 		const payload = { requesterId: 1, addresseeId: 2 };
-		const response = await request(buildApp()).post('/friends').send(payload);
+		const response = await request(buildApp()).post('/').send(payload);
 
 		expect(response.status).toBe(200);
 		expect(response.body.handler).toBe('addFriend');
@@ -55,9 +63,9 @@ describe('friendRouter', () => {
 		expect(addFriendMock.mock.calls[0][0].body).toEqual(payload);
 	});
 
-	test('POST /friends/accept routes to acceptFriendRequest', async () => {
+	test('POST /accept routes to acceptFriendRequest', async () => {
 		const payload = { requesterId: 1, addresseeId: 2 };
-		const response = await request(buildApp()).post('/friends/accept').send(payload);
+		const response = await request(buildApp()).post('/accept').send(payload);
 
 		expect(response.status).toBe(200);
 		expect(response.body.handler).toBe('acceptFriendRequest');
@@ -65,9 +73,9 @@ describe('friendRouter', () => {
 		expect(acceptFriendRequestMock.mock.calls[0][0].body).toEqual(payload);
 	});
 
-	test('POST /friends/decline routes to declineFriendRequest', async () => {
+	test('POST /decline routes to declineFriendRequest', async () => {
 		const payload = { requesterId: 1, addresseeId: 2 };
-		const response = await request(buildApp()).post('/friends/decline').send(payload);
+		const response = await request(buildApp()).post('/decline').send(payload);
 
 		expect(response.status).toBe(200);
 		expect(response.body.handler).toBe('declineFriendRequest');
@@ -75,9 +83,9 @@ describe('friendRouter', () => {
 		expect(declineFriendRequestMock.mock.calls[0][0].body).toEqual(payload);
 	});
 
-	test('DELETE /friends routes to removeFriend', async () => {
+	test('DELETE / routes to removeFriend', async () => {
 		const payload = { userId: 1, friendId: 2 };
-		const response = await request(buildApp()).delete('/friends').send(payload);
+		const response = await request(buildApp()).delete('/').send(payload);
 
 		expect(response.status).toBe(200);
 		expect(response.body.handler).toBe('removeFriend');
@@ -85,8 +93,8 @@ describe('friendRouter', () => {
 		expect(removeFriendMock.mock.calls[0][0].body).toEqual(payload);
 	});
 
-	test('GET /friends routes to getFriendsList', async () => {
-		const response = await request(buildApp()).get('/friends?userId=1');
+	test('GET / routes to getFriendsList', async () => {
+		const response = await request(buildApp()).get('/?userId=1');
 
 		expect(response.status).toBe(200);
 		expect(response.body.handler).toBe('getFriendsList');
@@ -95,8 +103,8 @@ describe('friendRouter', () => {
 		expect(getFriendsListMock.mock.calls[0][0].query.userId).toBe('1');
 	});
 
-	test('GET /friends with dogId routes to getFriendsList', async () => {
-		const response = await request(buildApp()).get('/friends?dogId=2');
+	test('GET / with dogId routes to getFriendsList', async () => {
+		const response = await request(buildApp()).get('/?dogId=2');
 
 		expect(response.status).toBe(200);
 		expect(response.body.handler).toBe('getFriendsList');

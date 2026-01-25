@@ -2,9 +2,10 @@ import friendService from "../services/friendService";
 import enemyService from "../services/enemyService";
 import express from "express";
 import typeSafeLogger from "../utils/typeSafeLogger";
-import { toAppError, NotFoundError } from "../utils/errors";
+import { toAppError, NotFoundError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import { createFriendRequestSchema, getUserIdSchema, removeFriendSchema, friendshipIdSchema, getFriendsSchema } from "../utils/validationSchemas";
+import { awardExperience, XP_REWARDS } from "../services/xpService";
 
 const friendController = {
     addFriend: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -36,8 +37,21 @@ const friendController = {
 
             const newFriendship = await friendService.sendFriendRequest(requesterId, addresseeId, requesterDogId, addresseeDogId);
             typeSafeLogger.logUserAction("Friend added", { requesterId, addresseeId, requesterDogId, addresseeDogId });
+            if (newFriendship.status === 'ACCEPTED') {
+                const awards = [] as Promise<any>[];
+                if (newFriendship.requesterId) {
+                    awards.push(awardExperience(newFriendship.requesterId, XP_REWARDS.ADD_FRIEND, 'friend_added'));
+                }
+                if (newFriendship.addresseeId) {
+                    awards.push(awardExperience(newFriendship.addresseeId, XP_REWARDS.ADD_FRIEND, 'friend_added'));
+                }
+                await Promise.all(awards);
+            }
             res.status(201).json(newFriendship);
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to add friend", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -51,8 +65,19 @@ const friendController = {
 
             const updatedFriendship = await friendService.acceptFriendRequest(friendshipId);
             typeSafeLogger.logUserAction("Friend request accepted", { friendshipId });
+            const awards = [] as Promise<any>[];
+            if (updatedFriendship.requesterId) {
+                awards.push(awardExperience(updatedFriendship.requesterId, XP_REWARDS.ADD_FRIEND, 'friend_accepted'));
+            }
+            if (updatedFriendship.addresseeId) {
+                awards.push(awardExperience(updatedFriendship.addresseeId, XP_REWARDS.ADD_FRIEND, 'friend_accepted'));
+            }
+            await Promise.all(awards);
             res.status(200).json(updatedFriendship);
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to accept friend request", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -68,6 +93,9 @@ const friendController = {
             typeSafeLogger.logUserAction("Friend request declined", { friendshipId });
             res.status(200).json(updatedFriendship);
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to decline friend request", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -83,6 +111,9 @@ const friendController = {
             typeSafeLogger.logUserAction("Friend removed", { userId, friendId, dogId, friendDogId });
             res.status(200).json({ message: "Friend removed successfully" });
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to remove friend", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -101,6 +132,9 @@ const friendController = {
             typeSafeLogger.logUserAction("Friends list retrieved", { userId: validatedParams.userId, dogId: validatedParams.dogId, userFriendsCount: friendsList.users.length, dogFriendsCount: friendsList.dogs.length });
             res.status(200).json(friendsList);
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to get friends list", code: "INTERNAL_ERROR", statusCode: 500 })
             );
@@ -119,6 +153,9 @@ const friendController = {
             typeSafeLogger.logUserAction("Friend retrieved", { userId: validatedParams.userId, dogId: validatedParams.dogId, userFriendsCount: friends.users.length, dogFriendsCount: friends.dogs.length });
             res.status(200).json(friends);
         } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
             return next(
                 toAppError(error, { message: "Failed to get friend", code: "INTERNAL_ERROR", statusCode: 500 })
             );

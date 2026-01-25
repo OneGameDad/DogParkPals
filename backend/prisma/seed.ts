@@ -118,7 +118,7 @@ async function main() {
   });
 
   // Event associated to organization
-  await prisma.event.create({
+  const charityWalk = await prisma.event.create({
     data: {
       title: "Weekend Charity Walk",
       date: new Date(new Date().setDate(new Date().getDate() + 7)),
@@ -130,6 +130,19 @@ async function main() {
       organizer: { connect: { id: userBob.id } },
       organization: { connect: { id: org1.id } },
     },
+  });
+
+  // Attendance records
+  await prisma.eventAttendance.upsert({
+    where: { userId_eventId: { userId: user.id, eventId: charityWalk.id } },
+    update: {},
+    create: { userId: user.id, eventId: charityWalk.id },
+  });
+
+  await prisma.eventAttendance.upsert({
+    where: { userId_eventId: { userId: userBob.id, eventId: charityWalk.id } },
+    update: {},
+    create: { userId: userBob.id, eventId: charityWalk.id },
   });
 
   // Friendships (user-to-user only)

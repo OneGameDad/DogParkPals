@@ -10,9 +10,9 @@ const uploadService = {
   async uploadFile(
     file: File,
     category: UploadCategory,
-    endpoint: string
+    endpoint: string,
+    onProgress?: (percent: number) => void
   ): Promise<UploadResponse> {
-    // Validate file
     const validation = validateFile(file, category);
     if (!validation.valid) {
       throw new Error(validation.error || 'File validation failed');
@@ -25,44 +25,59 @@ const uploadService = {
     // Get token for auth
     const token = localStorage.getItem('token');
 
-    // Send to backend
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      let errorMsg = 'Upload failed';
-      try {
-        const errorData = await response.json();
-        if (errorData?.message) errorMsg = errorData.message;
-      } catch {
-        // fallback if response is not JSON
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API_BASE_URL}${endpoint}`, true);
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
       }
-      throw new Error(errorMsg);
-    }
 
-    const data = await response.json();
-    if (!data.url) {
-      throw new Error('Upload succeeded but no URL returned');
-    }
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          onProgress(percentComplete);
+        }
+      };
+      
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            if (!data.url) reject(new Error('Upload succeeded but no URL returned'));
+            else resolve(data as UploadResponse);
+          } catch {
+            reject(new Error('Invalid JSON response from server'));
+          }
+        } else {
+          let errorMsg = 'Upload failed';
+          try {
+            const errorData = JSON.parse(xhr.responseText);
+            if (errorData?.message) errorMsg = errorData.message;
+          } catch {
+            // fallback if response is not JSON
+          }
+          reject(new Error(errorMsg));
+        }
+      };
 
-    return data as UploadResponse;
+      xhr.onerror = () => reject(new Error('Network error during file upload'));
+      xhr.send(formData);
+    });
   },
 
-  async uploadUserProfilePicture(file: File): Promise<UploadResponse> {
-    return this.uploadFile(file, 'userProfile', '/api/users/profile-picture');
+  async uploadUserProfilePicture(
+    file: File,
+    onProgress?: (percent: number) => void
+  ): Promise<UploadResponse> {
+    return this.uploadFile(file, 'userProfile', '/api/users/profile-picture', onProgress);
   },
 
-  async uploadDogPhoto(dogId: number, file: File): Promise<UploadResponse> {
-    return this.uploadFile(file, 'dogPhoto', `/api/dogs/${dogId}/photo`);
+  async uploadDogPhoto(dogId: number, file: File, onProgress?: (percent: number) => void): Promise<UploadResponse> {
+    return this.uploadFile(file, 'dogPhoto', `/api/dogs/${dogId}/photo`, onProgress);
   },
 
-  async uploadVaccinationRecord(dogId: number, file: File): Promise<UploadResponse> {
-    return this.uploadFile(file, 'document', `/api/dogs/${dogId}/vaccination-record`);
+  async uploadVaccinationRecord(dogId: number, file: File, onProgress?: (percent: number) => void): Promise<UploadResponse> {
+    return this.uploadFile(file, 'document', `/api/dogs/${dogId}/vaccination-record`, onProgress);
   },
 };
 

@@ -14,7 +14,7 @@ interface NotificationItem {
   variables?: Record<string, string | number>;
 }
 
-interface NotifHandle {
+export interface NotifHandle {
   addNotification: (messageType: string, variables?: Record<string, string | number>) => void;
 }
 

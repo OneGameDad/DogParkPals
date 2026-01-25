@@ -65,6 +65,63 @@ const uploadService = {
     });
   },
 
+  async deleteUserProfilePicture(): Promise<void> {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/api/users/profile-picture`, {
+      method: 'DELETE',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!response.ok) {
+      let errorMsg = 'Delete failed';
+      try {
+        const data = await response.json();
+        if (data?.message) errorMsg = data.message;
+      } catch {}
+      throw new Error(errorMsg);
+    }
+  },
+
+  async deleteDogPhoto(dogId: number): Promise<void> {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/api/dogs/${dogId}/photo`, {
+      method: 'DELETE',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!response.ok) {
+      let errorMsg = 'Delete failed';
+      try {
+        const data = await response.json();
+        if (data?.message) errorMsg = data.message;
+      } catch {}
+      throw new Error(errorMsg);
+    }
+  },
+
+  async deleteVaccinationRecord(dogId: number): Promise<void> {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/api/dogs/${dogId}/vaccination-record`, {
+      method: 'DELETE',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!response.ok) {
+      let errorMsg = 'Delete failed';
+      try {
+        const data = await response.json();
+        if (data?.message) errorMsg = data.message;
+      } catch {}
+      throw new Error(errorMsg);
+    }
+  },
+
   async uploadUserProfilePicture(
     file: File,
     onProgress?: (percent: number) => void

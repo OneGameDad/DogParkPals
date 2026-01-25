@@ -26,6 +26,7 @@ const FileUpload = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [progress, setProgress] = useState<number | null>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,26 +59,27 @@ const FileUpload = ({
     try {
       let response;
       if (category === 'userProfile') {
-        response = await uploadService.uploadUserProfilePicture(selectedFile);
+        response = await uploadService.uploadUserProfilePicture(selectedFile, (percent) => setProgress(percent));
       } else if (category === 'dogPhoto') {
         if (!itemId) throw new Error('Dog ID is required for dog photo upload');
-        response = await uploadService.uploadDogPhoto(itemId, selectedFile);
+        response = await uploadService.uploadDogPhoto(itemId, selectedFile, (percent) => setProgress(percent));
       } else if (category === 'document') {
         if (!itemId) throw new Error('Dog ID is required for vaccination record upload');
-        response = await uploadService.uploadVaccinationRecord(itemId, selectedFile);
+        response = await uploadService.uploadVaccinationRecord(itemId, selectedFile, (percent) => setProgress(percent));
       } else {
         response = await uploadService.uploadFile(selectedFile, category, '/api/upload');
       }
 
       onUpload(response.url);
       setSelectedFile(null);
-      if (selectedFile.type.startsWith('image/')) setPreview(null);
+      if (selectedFile && selectedFile.type.startsWith('image/')) setPreview(null);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Upload failed';
       setError(errorMsg);
       onError?.(errorMsg);
     } finally {
       setLoading(false);
+      setProgress(null);
     }
   };
 
@@ -102,6 +104,16 @@ const FileUpload = ({
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
 
+      {progress !== null && (
+        <div className="w-full bg-gray-200 rounded-full h-4 mt-2 relative">
+          <div
+            className="bg-blue-500 h-4 rounded-full transition-all flex items-center justify-center text-white text-xs font-medium"
+            style={{ width: `${progress}%` }}
+          >
+            {progress}%
+          </div>
+        </div>
+      )}
       {selectedFile && (
         <button
           onClick={handleUpload}

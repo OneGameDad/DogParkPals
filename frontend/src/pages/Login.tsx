@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import { useSubmit } from '../hooks/useSubmit';
@@ -77,9 +77,9 @@ const Login = () => {
           />
 
           <div className="text-center mt-4">
-            <a href="/register" className="text-blue-600 hover:text-blue-800">
+            <Link to="/register" className="text-blue-600 hover:text-blue-800">
               {t('auth.login.noAccount')}
-            </a>
+            </Link>
           </div>
         </form>
       </div>

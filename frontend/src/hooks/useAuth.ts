@@ -11,7 +11,11 @@ export function useAuth() {
 
     useEffect(() => {
         const checkSession = async () => {
-            if (DEV_FORCE_LOGIN) return;
+            if (DEV_FORCE_LOGIN) {
+                setUser({ id: 999, username: 'DevUser', email: 'dev@test.com' } as User);
+                setLoading(false);
+                return;
+            }
             try {
                 const user = await api.get<User>('/auth/me');
                 setIsAuthenticated(true);

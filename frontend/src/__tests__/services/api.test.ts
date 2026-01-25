@@ -255,6 +255,25 @@ describe('ApiService with Cookie Authentication', () => {
         expect.objectContaining({ method: 'DELETE' })
       );
     });
+
+    it('should make PATCH requests with body', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ success: true }),
+      });
+
+      const data = { status: 'active' };
+      await api.patch('/test/1', data);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        })
+      );
+    });
   });
 
   describe('getBaseUrl', () => {

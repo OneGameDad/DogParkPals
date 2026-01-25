@@ -23,12 +23,12 @@ const Notif = React.forwardRef<NotifHandle>((props, ref) => {
   const [notifications, setNotifications] = React.useState<NotificationItem[]>([]);
 
   const removeNotification = (id: string) => {
-    setNotifications(notifications.filter(notif => notif.id !== id));
+    setNotifications(prev => prev.filter(notif => notif.id !== id));
   };
 
   const addNotification = (messageType: string, variables?: Record<string, string | number>) => {
     const id = Date.now().toString();
-    setNotifications([...notifications, { id, messageType, variables }]);
+    setNotifications(prev => [...prev, { id, messageType, variables }]);
   };
 
   React.useImperativeHandle(ref, () => ({

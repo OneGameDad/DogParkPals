@@ -25,6 +25,7 @@ import authRouter from "./routes/authRouter";
 import dogRouter from "./routes/dogRouter";
 import parkRouter from "./routes/parkRouter";
 import eventRouter from "./routes/eventRouter";
+import fileRouter from "./routes/fileRouter";
 import organizationRouter from "./routes/organizationRouter";
 import friendRouter from "./routes/friendRouter";
 import messageRouter from "./routes/messageRouter";
@@ -70,6 +71,7 @@ app.use("/api/messages", messageRouter);
 app.use("/api/notifications", notificationRouter);
 app.use("/api/enemies", enemyRouter);
 app.use("/api/achievements", achievementRouter);
+app.use("/api/files", fileRouter);
 
 app.use(errorHandler);
 

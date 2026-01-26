@@ -21,31 +21,20 @@ const InputText: React.FC<InputTextProps> = ({
 }) => {
   return (
     <div className="flex flex-col gap-2">
-      {label ? (
-        <label className="flex flex-col gap-2 cursor-pointer">
-          <span className="font-semibold text-sm">
-            {label}
-            {required && <span className="text-red-500 ml-1">*</span>}
-          </span>
-          <input
-            type={type}
-            placeholder={placeholder}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            required={required}
-            className={`bg-white border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
-          />
+      {label && (
+        <label className="font-semibold text-sm">
+          {label}
+          {required && <span className="text-red-500 ml-1">*</span>}
         </label>
-      ) : (
-        <input
-          type={type}
-          placeholder={placeholder}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          required={required}
-          className={`bg-white border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
-        />
       )}
+      <input
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required={required}
+        className={`bg-white border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+      />
     </div>
   );
 };

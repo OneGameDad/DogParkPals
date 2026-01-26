@@ -11,6 +11,7 @@ const mockGetFriendsList = jest.fn<any>();
 const mockGetFriend = jest.fn<any>();
 const mockIsEnemy = jest.fn<any>();
 const mockRemoveEnemy = jest.fn<any>();
+const mockAwardExperience = jest.fn<any>();
 
 jest.mock('../utils/validator', () => ({
 	parseValidation: mockParseValidation,
@@ -36,6 +37,12 @@ jest.mock('../services/enemyService', () => ({
 	},
 }));
 
+jest.mock('../services/xpService', () => ({
+	__esModule: true,
+	awardExperience: mockAwardExperience,
+	XP_REWARDS: { ADD_FRIEND: 25 },
+}));
+
 import friendController from '../controllers/friendController';
 
 describe('friendController', () => {
@@ -53,6 +60,8 @@ describe('friendController', () => {
 		mockReq = { body: {}, params: {}, query: {}, cookies: {} };
 		mockRes = { status: mockStatus, json: mockJson, cookie: jest.fn(), clearCookie: jest.fn() } as Partial<Response> as Response;
 		mockNext = jest.fn() as unknown as jest.MockedFunction<NextFunction>;
+
+		mockAwardExperience.mockResolvedValue({ totalExp: 0, level: null });
 	});
 
 	describe('addFriend', () => {

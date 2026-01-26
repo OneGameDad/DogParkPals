@@ -34,26 +34,28 @@ const EditProfile = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) return;
 
+    const updates: any = {};
+
+    if (formData.firstName.trim()) {
+      updates.first_name = formData.firstName.trim();
+    }
+    if (formData.lastName.trim()) {
+      updates.last_name = formData.lastName.trim();
+    }
+    if (formData.profilePictureUrl.trim()) {
+      updates.profilePictureUrl = formData.profilePictureUrl.trim();
+    }
+
+    if (Object.keys(updates).length === 0) {
+      // No fields were changed; show a localized validation message and skip submit.
+      window.alert(t('profile.updateAtLeastOneField'));
+      return;
+    }
+
     await submit(async () => {
-      const updates: any = {};
-      
-      if (formData.firstName.trim()) {
-        updates.first_name = formData.firstName.trim();
-      }
-      if (formData.lastName.trim()) {
-        updates.last_name = formData.lastName.trim();
-      }
-      if (formData.profilePictureUrl.trim()) {
-        updates.profilePictureUrl = formData.profilePictureUrl.trim();
-      }
-      
-      if (Object.keys(updates).length === 0) {
-        throw new Error('Please update at least one field');
-      }
-      
       await api.patch('/users/profile', updates);
     });
   };

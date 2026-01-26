@@ -94,7 +94,7 @@ const Profile = () => {
 			/>
 		  </div>
 		  {dogsError ? (
-            <ErrorMessage message={t('profile.failedToLoadDogs')} />
+            <ErrorMessage message={t('profile.failedToLoad')} />
           ) : !dogs || dogs.length === 0 ? (
             <BodyText text={t('profile.noDogs')} colour="text-gray-500" className="text-center py-4" />
           ) : (

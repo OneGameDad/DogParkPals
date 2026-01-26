@@ -17,10 +17,8 @@ const EditProfile = () => {
   const { submit, isSubmitting } = useSubmit();
 
   const [formData, setFormData] = useState({
-    username: user?.username || '',
     firstName: user?.first_name || '',
     lastName: user?.last_name || '',
-    email: user?.email || '',
     profilePictureUrl: user?.profilePictureUrl || '',
   });
 

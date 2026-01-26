@@ -53,7 +53,7 @@ const EditDogProfile = () => {
 
   const { submit, isSubmitting } = useSubmit({
     onSuccess: (data) => {
-      const targetId = id || (data as any)?.id;
+      const targetId = id || (data as Dog)?.id;
       if (targetId) {
         navigate(`/dog/${targetId}`);
       } else {
@@ -259,3 +259,4 @@ const EditDogProfile = () => {
 };
 
 export default EditDogProfile;
+

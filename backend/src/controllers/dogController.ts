@@ -9,7 +9,7 @@ import { addDogSchema, addOwnerToDogSchema, removeOwnerFromDogSchema } from "../
 /**
  * Check if user is authorized to modify a dog (owner, admin, or developer)
  */
-async function checkDogAuthorization(dogId: number, userId: number | undefined, userRole: string | undefined) {
+export async function checkDogAuthorization(dogId: number, userId: number | undefined, userRole: string | undefined) {
   const dog = await dogService.getDogById(dogId);
   if (!dog) {
     throw NotFoundError("Dog not found");
@@ -47,6 +47,7 @@ declare global {
         id: number;
         role?: string;
       };
+      file?: Express.Multer.File;
     }
   }
 }
@@ -234,7 +235,93 @@ const dogController = {
             }
             return next(toAppError(error, { message: "Failed to remove owner from dog", code: "INTERNAL_ERROR", statusCode: 500 }));
         }
-    }
+    },
+
+    uploadDogPhoto: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+        const dogId = parseInt(req.params.id, 10);
+        const userId = req.userId;
+        const userRole = (req as any).user?.role;
+        await checkDogAuthorization(dogId, userId, userRole);
+        
+        if (!req.file) {
+          throw toAppError(new Error("No file uploaded"), { message: "No file uploaded", code: "NO_FILE", statusCode: 400 });
+        }
+
+        await dogService.uploadDogPhoto(dogId, req.file.path);
+        const dogPhotoUrl = `/api/files/dogs/${dogId}/photo`;
+
+        res.status(200).json({
+          message: "Dog photo uploaded successfully",
+          dogPhotoUrl,
+        });
+        } catch (error) {
+            if (isAppError(error)) {
+              return next(error);
+            }
+            return next(toAppError(error, { message: "Failed to upload dog photo", code: "INTERNAL_ERROR", statusCode: 500 }));
+        }
+    },
+
+    uploadDocument: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+        const dogId = parseInt(req.params.id, 10);
+        const userId = req.userId;
+        const userRole = req.user?.role;
+        await checkDogAuthorization(dogId, userId, userRole);
+        
+        if (!req.file) {
+          throw toAppError(new Error("No file uploaded"), { message: "No file uploaded", code: "NO_FILE", statusCode: 400 });
+        }
+
+        await dogService.uploadDocument(dogId, req.file.path);
+        const documentUrl = `/api/files/dogs/${dogId}/document`;
+
+        res.status(200).json({
+          message: "Document uploaded successfully",
+          documentUrl,
+        });
+        } catch (error) {
+            if (isAppError(error)) {
+              return next(error);
+            }
+            return next(toAppError(error, { message: "Failed to upload document", code: "INTERNAL_ERROR", statusCode: 500 }));
+        }
+    },
+    
+    deleteDogPhoto: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+        const dogId = parseInt(req.params.id, 10);
+        const userId = req.userId;
+        const userRole = (req as any).user?.role;
+        await checkDogAuthorization(dogId, userId, userRole);
+        
+        await dogService.deleteDogPhoto(dogId);
+        res.status(204).send();
+        } catch (error) {
+            if (isAppError(error)) {
+              return next(error);
+            }
+            return next(toAppError(error, { message: "Failed to delete dog photo", code: "INTERNAL_ERROR", statusCode: 500 }));
+        }
+    },
+
+    deleteDocument: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+        const dogId = parseInt(req.params.id, 10);
+        const userId = req.userId;
+        const userRole = (req as any).user?.role;
+        await checkDogAuthorization(dogId, userId, userRole);
+        
+        await dogService.deleteDocument(dogId);
+        res.status(204).send();
+        } catch (error) {
+            if (isAppError(error)) {
+              return next(error);
+            }
+            return next(toAppError(error, { message: "Failed to delete document", code: "INTERNAL_ERROR", statusCode: 500 }));
+        }
+    },
 };
 
 export default dogController;

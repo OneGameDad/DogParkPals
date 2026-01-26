@@ -120,7 +120,7 @@ const EditDogProfile = () => {
             </div>
           </div>
 
-          {/* Wont be require in final push, just messes up the api call if not there */}
+          {/* Won't be required in final push, just messes up the API call if not there */}
           <InputText
             label={t('dogProfile.profilePictureUrl')}
             value={formData.profilePictureUrl}

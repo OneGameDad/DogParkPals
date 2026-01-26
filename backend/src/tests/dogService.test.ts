@@ -82,11 +82,11 @@ describe('Dog Service', () => {
     test('creates a new dog with valid data', async () => {
       const dogInput = {
         name: 'Rex',
-          breed: 'LABRADOR_RETRIEVER',
-          gender: 'MALE',
+        breed: 'LABRADOR_RETRIEVER',
+        gender: 'MALE',
         dateOfBirth: new Date('2020-01-15'),
-          playstyle: 'SOCIAL',
-          size: 'LARGE',
+        playstyle: 'SOCIAL',
+        size: 'LARGE',
         description: 'A friendly labrador',
         profilePictureUrl: 'https://example.com/rex.jpg',
         vaccinationRecordUrl: 'https://example.com/vax.pdf',
@@ -114,11 +114,11 @@ describe('Dog Service', () => {
     test('converts dateOfBirth string to Date', async () => {
       const dogInput = {
         name: 'Bella',
-          breed: 'GOLDEN_RETRIEVER',
-          gender: 'FEMALE',
+        breed: 'GOLDEN_RETRIEVER',
+        gender: 'FEMALE',
         dateOfBirth: '2021-06-10T00:00:00Z',
-          playstyle: 'ENERGETIC',
-          size: 'MEDIUM',
+        playstyle: 'ENERGETIC',
+        size: 'MEDIUM',
       };
 
       const bellaData = {
@@ -137,11 +137,11 @@ describe('Dog Service', () => {
     test('throws error when dog creation fails', async () => {
       const dogInput = {
         name: 'Rex',
-          breed: 'LABRADOR_RETRIEVER',
-          gender: 'MALE',
+        breed: 'LABRADOR_RETRIEVER',
+        gender: 'MALE',
         dateOfBirth: new Date(),
-          playstyle: 'SOCIAL',
-          size: 'LARGE',
+        playstyle: 'SOCIAL',
+        size: 'LARGE',
       };
 
       mockPrisma.dog.create.mockRejectedValue(new Error('Database error'));
@@ -281,7 +281,7 @@ describe('Dog Service', () => {
     test('updates dog with valid data', async () => {
       const updateData = {
         name: 'Rex Jr',
-          playstyle: 'CALM',
+        playstyle: 'CALM',
       };
 
       const updatedDog = { ...mockDogData, name: 'Rex Jr', playstyle: 'CALM' };
@@ -431,6 +431,186 @@ describe('Dog Service', () => {
       mockPrisma.user.findMany.mockRejectedValue(new Error('Database error'));
 
       await expect(dogService.getOwnersOfDog(1)).rejects.toThrow();
+    });
+  });
+
+  describe('uploadDogPhoto', () => {
+    test('updates dog profile picture successfully', async () => {
+      mockPrisma.dog.update.mockResolvedValue({
+        ...mockDogData,
+        profilePictureUrl: '/uploads/photo.jpg',
+      });
+
+      const result = await dogService.uploadDogPhoto(1, '/uploads/photo.jpg');
+
+      expect(mockPrisma.dog.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: {
+          profilePictureUrl: '/uploads/photo.jpg',
+        },
+      });
+      expect(result.profilePictureUrl).toBe('/uploads/photo.jpg');
+    });
+
+    test('throws error when update fails', async () => {
+      mockPrisma.dog.update.mockRejectedValue(new Error('Database error'));
+
+      await expect(dogService.uploadDogPhoto(1, '/uploads/photo.jpg')).rejects.toThrow();
+    });
+  });
+
+  describe('uploadDocument', () => {
+    test('updates dog vaccination record successfully', async () => {
+      mockPrisma.dog.update.mockResolvedValue({
+        ...mockDogData,
+        vaccinationRecordUrl: '/uploads/vax.pdf',
+      });
+
+      const result = await dogService.uploadDocument(1, '/uploads/vax.pdf');
+
+      expect(mockPrisma.dog.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: {
+          vaccinationRecordUrl: '/uploads/vax.pdf',
+        },
+      });
+      expect(result.vaccinationRecordUrl).toBe('/uploads/vax.pdf');
+    });
+
+    test('throws error when update fails', async () => {
+      mockPrisma.dog.update.mockRejectedValue(new Error('Database error'));
+
+      await expect(dogService.uploadDocument(1, '/uploads/vax.pdf')).rejects.toThrow();
+    });
+  });
+
+  describe('deleteDogPhoto', () => {
+    test('deletes dog photo successfully when file exists', async () => {
+      mockPrisma.dog.findUnique.mockResolvedValue({
+        profilePictureUrl: '/uploads/photo.jpg',
+      });
+      mockPrisma.dog.update.mockResolvedValue({
+        ...mockDogData,
+        profilePictureUrl: null,
+      });
+
+      const result = await dogService.deleteDogPhoto(1);
+
+      expect(mockPrisma.dog.findUnique).toHaveBeenCalledWith({
+        where: { id: 1 },
+        select: { profilePictureUrl: true },
+      });
+      expect(mockPrisma.dog.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: {
+          profilePictureUrl: null,
+        },
+      });
+      expect(result.profilePictureUrl).toBeNull();
+    });
+
+    test('deletes photo entry even when file does not exist on disk', async () => {
+      mockPrisma.dog.findUnique.mockResolvedValue({
+        profilePictureUrl: '/uploads/missing.jpg',
+      });
+      mockPrisma.dog.update.mockResolvedValue({
+        ...mockDogData,
+        profilePictureUrl: null,
+      });
+
+      const result = await dogService.deleteDogPhoto(1);
+
+      expect(mockPrisma.dog.update).toHaveBeenCalled();
+      expect(result.profilePictureUrl).toBeNull();
+    });
+
+    test('handles dog with no photo', async () => {
+      mockPrisma.dog.findUnique.mockResolvedValue({
+        profilePictureUrl: null,
+      });
+      mockPrisma.dog.update.mockResolvedValue({
+        ...mockDogData,
+        profilePictureUrl: null,
+      });
+
+      const result = await dogService.deleteDogPhoto(1);
+
+      expect(mockPrisma.dog.update).toHaveBeenCalled();
+      expect(result.profilePictureUrl).toBeNull();
+    });
+
+    test('throws error when update fails', async () => {
+      mockPrisma.dog.findUnique.mockResolvedValue({
+        profilePictureUrl: '/uploads/photo.jpg',
+      });
+      mockPrisma.dog.update.mockRejectedValue(new Error('Database error'));
+
+      await expect(dogService.deleteDogPhoto(1)).rejects.toThrow();
+    });
+  });
+
+  describe('deleteDocument', () => {
+    test('deletes dog document successfully when file exists', async () => {
+      mockPrisma.dog.findUnique.mockResolvedValue({
+        vaccinationRecordUrl: '/uploads/vax.pdf',
+      });
+      mockPrisma.dog.update.mockResolvedValue({
+        ...mockDogData,
+        vaccinationRecordUrl: null,
+      });
+
+      const result = await dogService.deleteDocument(1);
+
+      expect(mockPrisma.dog.findUnique).toHaveBeenCalledWith({
+        where: { id: 1 },
+        select: { vaccinationRecordUrl: true },
+      });
+      expect(mockPrisma.dog.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: {
+          vaccinationRecordUrl: null,
+        },
+      });
+      expect(result.vaccinationRecordUrl).toBeNull();
+    });
+
+    test('deletes document entry even when file does not exist on disk', async () => {
+      mockPrisma.dog.findUnique.mockResolvedValue({
+        vaccinationRecordUrl: '/uploads/missing.pdf',
+      });
+      mockPrisma.dog.update.mockResolvedValue({
+        ...mockDogData,
+        vaccinationRecordUrl: null,
+      });
+
+      const result = await dogService.deleteDocument(1);
+
+      expect(mockPrisma.dog.update).toHaveBeenCalled();
+      expect(result.vaccinationRecordUrl).toBeNull();
+    });
+
+    test('handles dog with no document', async () => {
+      mockPrisma.dog.findUnique.mockResolvedValue({
+        vaccinationRecordUrl: null,
+      });
+      mockPrisma.dog.update.mockResolvedValue({
+        ...mockDogData,
+        vaccinationRecordUrl: null,
+      });
+
+      const result = await dogService.deleteDocument(1);
+
+      expect(mockPrisma.dog.update).toHaveBeenCalled();
+      expect(result.vaccinationRecordUrl).toBeNull();
+    });
+
+    test('throws error when update fails', async () => {
+      mockPrisma.dog.findUnique.mockResolvedValue({
+        vaccinationRecordUrl: '/uploads/vax.pdf',
+      });
+      mockPrisma.dog.update.mockRejectedValue(new Error('Database error'));
+
+      await expect(dogService.deleteDocument(1)).rejects.toThrow();
     });
   });
 });

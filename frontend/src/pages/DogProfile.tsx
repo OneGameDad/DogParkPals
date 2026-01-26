@@ -62,7 +62,7 @@ const DogProfile = () => {
         <div className="space-y-4">
           <div className="flex justify-between border-b pb-2">
             <span className="font-semibold text-gray-700">{t('dogProfile.breed')}:</span>
-            <span className="text-gray-900">{dog.breed}</span>
+            <span className="text-gray-900">{dog.breed.replace(/_/g, ' ')}</span>
           </div>
           <div className="flex justify-between border-b pb-2">
             <span className="font-semibold text-gray-700">{t('dogProfile.gender')}:</span>
@@ -95,5 +95,6 @@ const DogProfile = () => {
     </div>
   );
 };
+
 
 export default DogProfile;

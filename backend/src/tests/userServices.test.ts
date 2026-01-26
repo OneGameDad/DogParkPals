@@ -297,4 +297,152 @@ describe('User Services', () => {
     jest.dontMock('@prisma/client');
   });
 
+  test('uploadProfilePicture updates profilePictureUrl', async () => {
+    const mockUpdate = jest.fn().mockResolvedValue({
+      profilePictureUrl: 'uploads/profile.jpg',
+    });
+
+    jest.doMock('@prisma/client', () => ({
+      PrismaClient: jest.fn(() => ({
+        user: {
+          update: mockUpdate,
+        },
+      })),
+    }));
+
+    const userService = await import('../services/userServices');
+
+    const result = await userService.default.uploadProfilePicture(
+      1,
+      'uploads/profile.jpg'
+    );
+
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { profilePictureUrl: 'uploads/profile.jpg' },
+      select: { profilePictureUrl: true },
+    });
+
+    expect(result.profilePictureUrl).toBe('uploads/profile.jpg');
+
+    jest.dontMock('@prisma/client');
+  });
+
+  test('uploadProfilePicture throws AppError when prisma fails', async () => {
+    const mockUpdate = jest.fn().mockRejectedValue(new Error('DB fail'));
+
+    jest.doMock('@prisma/client', () => ({
+      PrismaClient: jest.fn(() => ({
+        user: { update: mockUpdate },
+      })),
+      Prisma: {
+        PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error {},
+      },
+    }));
+
+    const userService = await import('../services/userServices');
+
+    await expect(
+      userService.default.uploadProfilePicture(1, 'uploads/profile.jpg')
+    ).rejects.toMatchObject({
+      code: 'UPLOAD_PROFILE_PICTURE_FAILED',
+    });
+
+    jest.dontMock('@prisma/client');
+  });
+
+  test('deleteProfilePicture returns null when no profile picture exists', async () => {
+    const mockFindUnique = jest.fn().mockResolvedValue({
+      profilePictureUrl: null,
+    });
+
+    jest.doMock('@prisma/client', () => ({
+      PrismaClient: jest.fn(() => ({
+        user: {
+          findUnique: mockFindUnique,
+        },
+      })),
+    }));
+
+    const userService = await import('../services/userServices');
+
+    const result = await userService.default.deleteProfilePicture(1);
+
+    expect(result).toBeNull();
+    expect(mockFindUnique).toHaveBeenCalledWith({
+      where: { id: 1 },
+      select: { profilePictureUrl: true },
+    });
+
+    jest.dontMock('@prisma/client');
+  });
+
+  test('deleteProfilePicture deletes file and clears profilePictureUrl', async () => {
+    jest.doMock('../utils/password', () => ({
+      hashPassword: jest.fn(),
+      verifyPassword: jest.fn(),
+    }));
+    const mockFindUnique = jest.fn().mockResolvedValue({
+      profilePictureUrl: 'uploads/profile.jpg',
+    });
+
+    const mockUpdate = jest.fn().mockResolvedValue({
+      profilePictureUrl: null,
+    });
+
+    jest.doMock('fs', () => ({
+      existsSync: jest.fn().mockReturnValue(true),
+      unlinkSync: jest.fn(),
+    }));
+
+    jest.doMock('@prisma/client', () => ({
+      PrismaClient: jest.fn(() => ({
+        user: {
+          findUnique: mockFindUnique,
+          update: mockUpdate,
+        },
+      })),
+    }));
+
+    const fs = await import('fs');
+    const userService = await import('../services/userServices');
+
+    const result = await userService.default.deleteProfilePicture(1);
+
+    expect(fs.existsSync).toHaveBeenCalled();
+    expect(fs.unlinkSync).toHaveBeenCalled();
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { profilePictureUrl: null },
+    });
+
+    expect(result.profilePictureUrl).toBeNull();
+
+    jest.dontMock('fs');
+    jest.dontMock('@prisma/client');
+    jest.dontMock('../utils/password');
+  });
+
+  test('deleteProfilePicture throws AppError on failure', async () => {
+    const mockFindUnique = jest.fn().mockRejectedValue(new Error('DB fail'));
+
+    jest.doMock('@prisma/client', () => ({
+      PrismaClient: jest.fn(() => ({
+        user: { findUnique: mockFindUnique },
+      })),
+      Prisma: {
+        PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error {},
+      },
+    }));
+
+    const userService = await import('../services/userServices');
+
+    await expect(
+      userService.default.deleteProfilePicture(1)
+    ).rejects.toMatchObject({
+      code: 'DELETE_PROFILE_PICTURE_FAILED',
+    });
+
+    jest.dontMock('@prisma/client');
+  });
 });

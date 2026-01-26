@@ -12,6 +12,8 @@ const mockListUsers = jest.fn<any>();
 const mockDeleteUser = jest.fn<any>();
 const mockChangePassword = jest.fn<any>();
 const mockResetUserPassword = jest.fn<any>();
+const mockUploadProfilePicture = jest.fn<any>();
+const mockDeleteProfilePicture = jest.fn<any>();
 
 // Mock the entire userServices module
 jest.mock('../services/userServices', () => ({
@@ -25,6 +27,8 @@ jest.mock('../services/userServices', () => ({
     deleteUser: mockDeleteUser,
     changePassword: mockChangePassword,
     resetUserPassword: mockResetUserPassword,
+    uploadProfilePicture: mockUploadProfilePicture,
+    deleteProfilePicture: mockDeleteProfilePicture,
   },
 }));
 
@@ -50,7 +54,7 @@ describe('User Controller', () => {
     mockReq = {
       body: {},
       params: {},
-        query: {},
+      query: {},
     };
 
     // Create fresh Express response mock
@@ -183,7 +187,7 @@ describe('User Controller', () => {
       expect(mockGetUserByEmail).toHaveBeenCalledWith('new@example.com');
       expect(mockCreateUser).toHaveBeenCalledWith('newuser', 'new@example.com', 'password123');
       expect(mockStatus).toHaveBeenCalledWith(201);
-      
+
       // Verify response does not contain password_hash
       const responseCall = mockJson.mock.calls[0][0] as any;
       expect(responseCall).not.toHaveProperty('password_hash');
@@ -254,7 +258,7 @@ describe('User Controller', () => {
 
       expect(mockGetUserByEmail).toHaveBeenCalledWith('test@example.com');
       expect(mockStatus).toHaveBeenCalledWith(200);
-      
+
       // Verify response does not contain password_hash
       const responseCall = mockJson.mock.calls[0][0] as any;
       expect(responseCall).not.toHaveProperty('password_hash');
@@ -473,4 +477,114 @@ describe('User Controller', () => {
       expect(mockStatus).toHaveBeenCalledWith(200);
     });
   });
+
+  describe('uploadProfilePicture', () => {
+    test('forwards forbidden when not authenticated', async () => {
+      mockReq.file = { path: 'uploads/pic.jpg' } as any;
+
+      await userController.uploadProfilePicture(
+        mockReq as Request,
+        mockRes as Response,
+        mockNext as any
+      );
+
+      const error = mockNext.mock.calls[0][0] as AppError;
+      expect(error.statusCode).toBe(403);
+    });
+
+    test('forwards error when no file is uploaded', async () => {
+      (mockReq as any).userId = 1;
+
+      await userController.uploadProfilePicture(
+        mockReq as Request,
+        mockRes as Response,
+        mockNext as any
+      );
+
+      const error = mockNext.mock.calls[0][0] as AppError;
+      expect(error.statusCode).toBe(400);
+      expect(error.code).toBe('NO_FILE_UPLOADED');
+    });
+
+    test('uploads profile picture successfully', async () => {
+      (mockReq as any).userId = 5;
+      mockReq.file = { path: 'uploads/pic.jpg' } as any;
+
+      mockUploadProfilePicture.mockResolvedValue(undefined);
+
+      await userController.uploadProfilePicture(
+        mockReq as Request,
+        mockRes as Response,
+        mockNext as any
+      );
+
+      expect(mockUploadProfilePicture).toHaveBeenCalledWith(5, 'uploads/pic.jpg');
+      expect(mockStatus).toHaveBeenCalledWith(200);
+
+      const response = mockJson.mock.calls[0][0];
+      expect(response.profilePictureUrl).toBe('/api/files/users/5/profile-picture');
+    });
+
+    test('forwards 500 when service throws', async () => {
+      (mockReq as any).userId = 1;
+      mockReq.file = { path: 'uploads/pic.jpg' } as any;
+      mockUploadProfilePicture.mockRejectedValue(new Error('boom'));
+
+      await userController.uploadProfilePicture(
+        mockReq as Request,
+        mockRes as Response,
+        mockNext as any
+      );
+
+      const error = mockNext.mock.calls[0][0] as AppError;
+      expect(error.statusCode).toBe(500);
+      expect(error.code).toBe('INTERNAL_ERROR');
+    });
+  });
+
+  describe('deleteProfilePicture', () => {
+    test('forwards forbidden when not authenticated', async () => {
+      await userController.deleteProfilePicture(
+        mockReq as Request,
+        mockRes as Response,
+        mockNext as any
+      );
+
+      const error = mockNext.mock.calls[0][0] as AppError;
+      expect(error.statusCode).toBe(403);
+    });
+
+    test('deletes profile picture successfully', async () => {
+      (mockReq as any).userId = 3;
+      mockDeleteProfilePicture.mockResolvedValue(undefined);
+
+      await userController.deleteProfilePicture(
+        mockReq as Request,
+        mockRes as Response,
+        mockNext as any
+      );
+
+      expect(mockDeleteProfilePicture).toHaveBeenCalledWith(3);
+      expect(mockStatus).toHaveBeenCalledWith(200);
+
+      const response = mockJson.mock.calls[0][0];
+      expect(response.message).toBe('Profile picture deleted successfully');
+    });
+
+    test('forwards 500 when service throws', async () => {
+      (mockReq as any).userId = 3;
+      mockDeleteProfilePicture.mockRejectedValue(new Error('boom'));
+
+      await userController.deleteProfilePicture(
+        mockReq as Request,
+        mockRes as Response,
+        mockNext as any
+      );
+
+      const error = mockNext.mock.calls[0][0] as AppError;
+      expect(error.statusCode).toBe(500);
+      expect(error.code).toBe('INTERNAL_ERROR');
+    });
+  });
+
 });

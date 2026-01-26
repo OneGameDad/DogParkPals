@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import FileUpload from '../components/FileUpload';
 
 const Profile = () => {
   const dogs = [
@@ -8,15 +9,32 @@ const Profile = () => {
   ];
   const { t } = useTranslation();
 
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  useEffect(() => {
+	const userId = //TODO: get user id from auth context or similar
+	fetch(`/api/files/users/${userId}/profile-picture`, { credentials: 'include' })
+	  .then(res => res.json())
+	  .then(data => setProfileImage(data.url))
+	  .catch(() => setProfileImage("/imgs/exampleprofilepic.jpg"));
+  }, []);
+
   return (
 	<div className="max-w-2xl mx-auto p-6">
 	  <div className="bg-white rounded-lg shadow-md p-8">
 		<div className="flex justify-center mb-6">
 		  <img
-			src="/imgs/exampleprofilepic.jpg"
+			src={profileImage || "/imgs/exampleprofilepic.jpg"}
 			alt="Profile"
 			className="w-32 h-32 rounded-full object-cover border-4 border-gray-200"
 		  />
+
+		  <FileUpload
+		  	category="userProfile"
+			label="Change Profile Picture"
+			onUpload={(res) => setProfileImage(res.url)}
+			onError={(err) => console.error(err)}
+			/>
 		</div>
 		<h1 className="text-3xl font-bold text-center mb-8">Example User</h1> {/* needs to be changed */}
 		<div className="space-y-4">

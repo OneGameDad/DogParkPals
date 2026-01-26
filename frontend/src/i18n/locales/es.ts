@@ -5,7 +5,6 @@ export const es = {
     login: "Spanish Login",
     dashboard: "Spanish Dashboard",
     settings: "Spanish Settings",
-    profile: "Spanish Profile",
     exampleData: "Spanish Example Data",
     memberSince: "Spanish Member Since",
     exampleDate: "Spanish January 2026",
@@ -72,5 +71,31 @@ export const es = {
         error: "Spanish Error logging out"
       }
     },
+    profile: {
+      title: "Spanish Profile",
+      editProfile: "Spanish Edit Profile",
+      loadingProfile: "Spanish Loading profile...",
+      failedToLoad: "Spanish Failed to load user profile",
+      username: "Spanish Username",
+      email: "Spanish Email",
+      experiencePoints: "Spanish Experience Points",
+      dogs: "Spanish Dogs",
+      addDog: "Spanish + Add Dog",
+      noDogs: "Spanish No dogs added yet",
+      editProfileTitle: "Spanish Edit Profile",
+      cancel: "Spanish Cancel",
+      profilePictureUrl: "Spanish Profile Picture URL",
+      profilePictureUrlPlaceholder: "Spanish https://example.com/image.jpg",
+      firstName: "Spanish First Name",
+      lastName: "Spanish Last Name",
+      saveChanges: "Spanish Save Changes",
+      saving: "Spanish Saving...",
+      updatingProfile: "Spanish Updating profile...",
+      profileUpdated: "Spanish Profile updated successfully!",
+      failedToUpdate: "Spanish Failed to update profile",
+      pleaseLogin: "Spanish Please log in to edit your profile",
+      loading: "Spanish Loading...",
+      required: "Spanish *"
+    }
   }
 };

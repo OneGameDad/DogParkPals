@@ -63,11 +63,6 @@ function App() {
               <Logout />
             </ProtectedRoute>
           } />
-          <Route path="/profile" element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } />
           <Route path="/profile/edit" element={
             <ProtectedRoute>
               <EditProfile />

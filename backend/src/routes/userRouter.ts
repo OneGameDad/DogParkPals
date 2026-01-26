@@ -1,6 +1,7 @@
 import express from "express";
 import userController from "../controllers/userController";
 import { requireAuth } from "../middlewares/authMiddleware";
+import { uploadSingleFile } from "../middlewares/uploadMiddleware";
 
 const router = express.Router();
 
@@ -13,5 +14,7 @@ router.delete("/:id", requireAuth, (req, res, next) => userController.deleteUser
 router.patch("/profile", requireAuth, (req, res, next) => userController.updateProfile(req, res, next));
 router.post("/change-password", requireAuth, (req, res, next) => userController.changePassword(req, res, next));
 router.post("/reset-password", requireAuth, (req, res, next) => userController.resetUserPassword(req, res, next));
+router.post("/profile-picture", requireAuth, uploadSingleFile, (req, res, next) => userController.uploadProfilePicture(req, res, next));
+router.delete("/profile-picture", requireAuth, (req, res, next) => userController.deleteProfilePicture(req, res, next));
 
 export default router;

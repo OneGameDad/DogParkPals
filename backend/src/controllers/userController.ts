@@ -203,7 +203,62 @@ const userController = {
                 toAppError(error, { message: "Failed to reset password", code: "INTERNAL_ERROR", statusCode: 500 })
             );
         }
-    }
+    },
+
+    uploadProfilePicture: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            typeSafeLogger.logRequest("Received request to upload profile picture", {
+              method: req.method,
+              path: req.path,
+            });
+
+            if (!req.userId) throw ForbiddenError("Authentication required");
+            if (!req.file) throw toAppError(new Error("No file uploaded"), {
+                      message: "No file uploaded",
+                      code: "NO_FILE_UPLOADED",
+                    statusCode: 400,
+                    });
+            await userService.uploadProfilePicture(req.userId, req.file.path);
+            const profilePictureUrl = `/api/files/users/${req.userId}/profile-picture`;
+
+            res.status(200).json({
+              message: "Profile picture uploaded successfully",
+              profilePictureUrl,
+            });
+        } catch (error) {
+            if (isAppError(error)) return next(error);
+
+            return next(toAppError(error, {
+                message: "Failed to upload profile picture",
+                code: "INTERNAL_ERROR",
+                statusCode: 500,
+              }));
+        }
+    },
+
+    deleteProfilePicture: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            typeSafeLogger.logRequest("Received request to delete profile picture", {
+                method: req.method,
+                path: req.path,
+            });
+
+            if (!req.userId) throw ForbiddenError("Authentication required");
+
+            await userService.deleteProfilePicture(req.userId);
+
+            res.status(200).json({ message: "Profile picture deleted successfully", });
+        } catch (error) {
+            if (isAppError(error)) return next(error);
+
+            return next(
+                toAppError(error, {
+                    message: "Failed to delete profile picture",
+                    code: "INTERNAL_ERROR",
+                    statusCode: 500,
+                }));
+        }
+    },
 };
 
 export default userController;

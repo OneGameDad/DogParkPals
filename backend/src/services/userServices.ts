@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client';
 import { hashPassword, verifyPassword } from '../utils/password';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { AuthError, NotFoundError, toAppError } from '../utils/errors';
+import path from 'path';
+import fs from "fs";
 
 const prisma = new PrismaClient();
 
@@ -255,6 +257,53 @@ const userService = {
     }
   },
 
+  async uploadProfilePicture(userId: number, filePath: string) {
+    typeSafeLogger.logUserAction('Uploading profile picture', { userId, filePath });
+    try {
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { profilePictureUrl: filePath },
+        select: { profilePictureUrl: true },
+      });
+      typeSafeLogger.logUserAction('Profile picture uploaded', { userId, filePath });
+      return updatedUser;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to upload profile picture',
+        code: 'UPLOAD_PROFILE_PICTURE_FAILED',
+      });
+      typeSafeLogger.logError('Failed to upload profile picture', appError, { userId, filePath });
+      throw appError;
+    }
+  },
+
+  async deleteProfilePicture(userId: number) {
+    typeSafeLogger.logUserAction('Deleting profile picture', { userId });
+    try {
+      const existingUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { profilePictureUrl: true },
+      });
+      if (!existingUser?.profilePictureUrl) return null;
+      const filePath = path.join(__dirname, '../../', existingUser.profilePictureUrl);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { profilePictureUrl: null },
+      });
+      typeSafeLogger.logUserAction('Profile picture deleted', { userId });
+      return updatedUser;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to delete profile picture',
+        code: 'DELETE_PROFILE_PICTURE_FAILED',
+      });
+      typeSafeLogger.logError('Failed to delete profile picture', appError, { userId });
+      throw appError;
+    }
+  },
 };
 
 export default userService;

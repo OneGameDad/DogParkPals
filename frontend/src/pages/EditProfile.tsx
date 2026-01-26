@@ -106,7 +106,7 @@ const EditProfile = () => {
           {/* Profile Picture URL */}
           <InputText
             label={t('profile.profilePictureUrl')}
-            type="url"
+            type="text"
             value={formData.profilePictureUrl}
             onChange={(value) => setFormData(prev => ({ ...prev, profilePictureUrl: value }))}
             placeholder={t('profile.profilePictureUrlPlaceholder')}

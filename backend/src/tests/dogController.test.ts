@@ -13,6 +13,10 @@ const mockDeleteDog = jest.fn<any>();
 const mockAddOwnerToDog = jest.fn<any>();
 const mockRemoveOwnerFromDog = jest.fn<any>();
 const mockGetOwnersOfDog = jest.fn<any>();
+const mockUploadDogPhoto = jest.fn<any>();
+const mockUploadDocument = jest.fn<any>();
+const mockDeleteDogPhoto = jest.fn<any>();
+const mockDeleteDocument = jest.fn<any>();
 
 // Mock friend service
 const mockGetFriend = jest.fn<any>();
@@ -38,6 +42,10 @@ jest.mock('../services/dogService', () => ({
     addOwnerToDog: mockAddOwnerToDog,
     removeOwnerFromDog: mockRemoveOwnerFromDog,
     getOwnersOfDog: mockGetOwnersOfDog,
+    uploadDogPhoto: mockUploadDogPhoto,
+    uploadDocument: mockUploadDocument,
+    deleteDogPhoto: mockDeleteDogPhoto,
+    deleteDocument: mockDeleteDocument,
   },
 }));
 
@@ -450,6 +458,142 @@ describe('Dog Controller', () => {
       await dogController.removeOwnerFromDog(mockReq as Request, mockRes as Response, mockNext as NextFunction);
 
       expect(mockRemoveOwnerFromDog).not.toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('uploadDogPhoto', () => {
+    test('uploads dog photo successfully', async () => {
+      mockReq.params = { id: '1' };
+      mockReq.userId = 1;
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+      mockReq.file = { path: '/uploads/photo.jpg' } as any;
+      const mockUploadDogPhoto = jest.fn().mockResolvedValue(undefined);
+
+      // Need to mock dogService.uploadDogPhoto
+      await dogController.uploadDogPhoto(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      expect(mockJson).toHaveBeenCalledWith({
+        message: 'Dog photo uploaded successfully',
+        dogPhotoUrl: '/api/files/dogs/1/photo',
+      });
+    });
+
+    test('forwards error when no file is uploaded', async () => {
+      mockReq.params = { id: '1' };
+      mockReq.userId = 1;
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+      mockReq.file = undefined;
+
+      await dogController.uploadDogPhoto(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockNext).toHaveBeenCalledTimes(1);
+      const error = mockNext.mock.calls[0][0] as AppError;
+      expect(error.statusCode).toBe(400);
+    });
+
+    test('forwards ForbiddenError when user is not authorized', async () => {
+      mockReq.params = { id: '1' };
+      mockReq.userId = 99;
+      (mockReq as any).user = { id: 99, role: 'CLIENT' };
+      mockReq.file = { path: '/uploads/photo.jpg' } as any;
+      mockGetDogById.mockResolvedValue(mockDog);
+
+      await dogController.uploadDogPhoto(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockNext).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('uploadDocument', () => {
+    test('uploads document successfully', async () => {
+      mockReq.params = { id: '1' };
+      mockReq.userId = 1;
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+      mockReq.file = { path: '/uploads/document.pdf' } as any;
+
+      await dogController.uploadDocument(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      expect(mockJson).toHaveBeenCalledWith({
+        message: 'Document uploaded successfully',
+        documentUrl: '/api/files/dogs/1/document',
+      });
+    });
+
+    test('forwards error when no file is uploaded', async () => {
+      mockReq.params = { id: '1' };
+      mockReq.userId = 1;
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+      mockReq.file = undefined;
+
+      await dogController.uploadDocument(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockNext).toHaveBeenCalledTimes(1);
+      const error = mockNext.mock.calls[0][0] as AppError;
+      expect(error.statusCode).toBe(400);
+    });
+
+    test('forwards ForbiddenError when user is not authorized', async () => {
+      mockReq.params = { id: '1' };
+      mockReq.userId = 99;
+      (mockReq as any).user = { id: 99, role: 'CLIENT' };
+      mockReq.file = { path: '/uploads/document.pdf' } as any;
+      mockGetDogById.mockResolvedValue(mockDog);
+
+      await dogController.uploadDocument(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockNext).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('deleteDogPhoto', () => {
+    test('deletes dog photo successfully', async () => {
+      mockReq.params = { id: '1' };
+      mockReq.userId = 1;
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+      const mockDeleteDogPhoto = jest.fn().mockResolvedValue(undefined);
+
+      await dogController.deleteDogPhoto(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockStatus).toHaveBeenCalledWith(204);
+      expect(mockSend).toHaveBeenCalled();
+    });
+
+    test('forwards ForbiddenError when user is not authorized', async () => {
+      mockReq.params = { id: '1' };
+      mockReq.userId = 99;
+      (mockReq as any).user = { id: 99, role: 'CLIENT' };
+      mockGetDogById.mockResolvedValue(mockDog);
+
+      await dogController.deleteDogPhoto(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockNext).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('deleteDocument', () => {
+    test('deletes document successfully', async () => {
+      mockReq.params = { id: '1' };
+      mockReq.userId = 1;
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+      const mockDeleteDocument = jest.fn().mockResolvedValue(undefined);
+
+      await dogController.deleteDocument(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockStatus).toHaveBeenCalledWith(204);
+      expect(mockSend).toHaveBeenCalled();
+    });
+
+    test('forwards ForbiddenError when user is not authorized', async () => {
+      mockReq.params = { id: '1' };
+      mockReq.userId = 99;
+      (mockReq as any).user = { id: 99, role: 'CLIENT' };
+      mockGetDogById.mockResolvedValue(mockDog);
+
+      await dogController.deleteDocument(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
       expect(mockNext).toHaveBeenCalledTimes(1);
     });
   });

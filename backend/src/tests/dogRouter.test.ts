@@ -11,6 +11,12 @@ jest.mock('../middlewares/authMiddleware', () => ({
   },
 }));
 
+jest.mock('../middlewares/uploadMiddleware', () => ({
+  uploadSingleFile: (req: Request, res: Response, next: NextFunction) => {
+    next();
+  },
+}));
+
 // Create mock functions
 const mockAddDog = jest.fn() as any;
 const mockGetDogById = jest.fn() as any;
@@ -21,6 +27,10 @@ const mockUpdateDog = jest.fn() as any;
 const mockDeleteDog = jest.fn() as any;
 const mockAddOwnerToDog = jest.fn() as any;
 const mockRemoveOwnerFromDog = jest.fn() as any;
+const mockUploadDogPhoto = jest.fn() as any;
+const mockUploadDocument = jest.fn() as any;
+const mockDeleteDogPhoto = jest.fn() as any;
+const mockDeleteDocument = jest.fn() as any;
 
 // Mock the controller
 jest.mock('../controllers/dogController', () => ({
@@ -35,6 +45,10 @@ jest.mock('../controllers/dogController', () => ({
     deleteDog: mockDeleteDog,
     addOwnerToDog: mockAddOwnerToDog,
     removeOwnerFromDog: mockRemoveOwnerFromDog,
+    uploadDogPhoto: mockUploadDogPhoto,
+    uploadDocument: mockUploadDocument,
+    deleteDogPhoto: mockDeleteDogPhoto,
+    deleteDocument: mockDeleteDocument,
   },
 }));
 
@@ -239,6 +253,62 @@ describe('Dog Router', () => {
 
       expect(mockGetAllDogsByPark).toHaveBeenCalled();
       expect(mockGetDogById).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('POST /:id/photo', () => {
+    test('calls uploadDogPhoto controller method with correct dog ID', async () => {
+      mockUploadDogPhoto.mockImplementation((req: Request, res: Response) => {
+        res.status(200).json({ ...mockDog, profilePictureUrl: 'https://example.com/new-photo.jpg' });
+      });
+
+      const response = await request(app)
+        .post('/1/photo')
+        .attach('file', Buffer.from('photo data'), 'photo.jpg');
+
+      expect(mockUploadDogPhoto).toHaveBeenCalled();
+      expect(response.status).toBe(200);
+    });
+  });
+
+  describe('POST /:id/document', () => {
+    test('calls uploadDocument controller method with correct dog ID', async () => {
+      mockUploadDocument.mockImplementation((req: Request, res: Response) => {
+        res.status(200).json({ ...mockDog, vaccinationRecordUrl: 'https://example.com/new-doc.pdf' });
+      });
+
+      const response = await request(app)
+        .post('/1/document')
+        .attach('file', Buffer.from('document data'), 'document.pdf');
+
+      expect(mockUploadDocument).toHaveBeenCalled();
+      expect(response.status).toBe(200);
+    });
+  });
+
+  describe('DELETE /:id/photo', () => {
+    test('calls deleteDogPhoto controller method with correct dog ID', async () => {
+      mockDeleteDogPhoto.mockImplementation((req: Request, res: Response) => {
+        res.status(204).send();
+      });
+
+      const response = await request(app).delete('/1/photo');
+
+      expect(mockDeleteDogPhoto).toHaveBeenCalled();
+      expect(response.status).toBe(204);
+    });
+  });
+
+  describe('DELETE /:id/document', () => {
+    test('calls deleteDocument controller method with correct dog ID', async () => {
+      mockDeleteDocument.mockImplementation((req: Request, res: Response) => {
+        res.status(204).send();
+      });
+
+      const response = await request(app).delete('/1/document');
+
+      expect(mockDeleteDocument).toHaveBeenCalled();
+      expect(response.status).toBe(204);
     });
   });
 });

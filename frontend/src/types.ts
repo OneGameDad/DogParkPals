@@ -176,10 +176,6 @@ export interface DogOwner {
   dogId: number;
 }
 
-export interface DogOwnerWithUser extends DogOwner {
-  user: User;
-}
-
 export interface UserFavoritePark {
   userId: number;
   parkId: number;

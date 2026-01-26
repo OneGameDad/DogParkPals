@@ -11,7 +11,7 @@ import BodyText from '../components/BodyText';
 import type { Dog } from '../types';
 
 const Profile = () => {
-  const { t , i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { data: dogs, loading: dogsLoading, error: dogsError } = useFetch<Dog[]>(

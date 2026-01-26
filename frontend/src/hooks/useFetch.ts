@@ -8,11 +8,14 @@ export function useFetch<T>(endpoint: string) {
 
     const fetchData = useCallback(async () => {
         if (!endpoint) {
+            setData(null);
+            setError(null);
             setLoading(false);
             return;
         }
-        
+
         setLoading(true);
+        setData(null);
         setError(null);
         try {
             const result = await api.get<T>(endpoint);

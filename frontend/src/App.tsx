@@ -14,6 +14,7 @@ import Footer from './components/Footer';
 import DogProfile from './pages/DogProfile';
 import GoogleCallback from './pages/GoogleCallback';
 import ProtectedRoute from './components/ProtectedRoute';
+import EditProfile from './pages/EditProfile';
 
 
 
@@ -60,6 +61,11 @@ function App() {
           <Route path="/logout" element={
             <ProtectedRoute>
               <Logout />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile/edit" element={
+            <ProtectedRoute>
+              <EditProfile />
             </ProtectedRoute>
           } />
         </Routes>

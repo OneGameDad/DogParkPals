@@ -5,11 +5,13 @@ export const en = {
     login: "Login",
     dashboard: "Dashboard",
     settings: "Settings",
-    profile: "Profile",
     exampleData: "Example Data",
     memberSince: "Member Since",
     exampleDate: "January 2026",
     owner: "Owner",
+    common: {
+      goBack: "Go Back"
+    },
     footer: {
       privacy: "Privacy Policy",
       terms: "Terms of Service",
@@ -71,6 +73,33 @@ export const en = {
         error: "Error logging out"
       }
     },
+    profile: {
+      title: "Profile",
+      editProfile: "Edit Profile",
+      loadingProfile: "Loading profile...",
+      failedToLoad: "Failed to load user profile",
+      username: "Username",
+      email: "Email",
+      experiencePoints: "Experience Points",
+      dogs: "Dogs",
+      addDog: "+ Add Dog",
+      noDogs: "No dogs added yet",
+      editProfileTitle: "Edit Profile",
+      cancel: "Cancel",
+      profilePictureUrl: "Profile Picture URL",
+      profilePictureUrlPlaceholder: "https://example.com/image.jpg",
+      firstName: "First Name",
+      lastName: "Last Name",
+      saveChanges: "Save Changes",
+      saving: "Saving...",
+      updatingProfile: "Updating profile...",
+      profileUpdated: "Profile updated successfully!",
+      failedToUpdate: "Failed to update profile",
+      pleaseLogin: "Please log in to edit your profile",
+      loading: "Loading...",
+      required: "*"
+    }
   }
 };
+
 

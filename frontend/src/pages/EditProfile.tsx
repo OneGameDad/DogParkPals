@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
@@ -17,10 +17,20 @@ const EditProfile = () => {
   const { user, loading: authLoading } = useAuth();
 
   const [formData, setFormData] = useState({
-    firstName: user?.first_name || '',
-    lastName: user?.last_name || '',
-    profilePictureUrl: user?.profilePictureUrl || '',
+    firstName: '',
+    lastName: '',
+    profilePictureUrl: '',
   });
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        firstName: user.first_name || '',
+        lastName: user.last_name || '',
+        profilePictureUrl: user.profilePictureUrl || '',
+      });
+    }
+  }, [user]);
 
   const { submit, isSubmitting } = useSubmit({
     onSuccess: () => {

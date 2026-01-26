@@ -22,6 +22,7 @@ const EditProfile = () => {
     profilePictureUrl: user?.profilePictureUrl || '',
   });
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -29,11 +30,11 @@ const EditProfile = () => {
 
     await submit(
       async () => {
-        const updates: Record<string, string | null> = {};
-        
-        if (formData.firstName) updates.first_name = formData.firstName;
-        if (formData.lastName) updates.last_name = formData.lastName;
-        if (formData.profilePictureUrl) updates.profilePictureUrl = formData.profilePictureUrl;
+        const updates = {
+          first_name: formData.firstName || null,
+          last_name: formData.lastName || null,
+          profilePictureUrl: formData.profilePictureUrl || null,
+        };
         
         await api.patch('/users/profile', updates);
       },

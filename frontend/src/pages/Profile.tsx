@@ -11,10 +11,10 @@ import BodyText from '../components/BodyText';
 import type { Dog } from '../types';
 
 const Profile = () => {
-  const { t } = useTranslation();
+  const { t , i18n } = useTranslation();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { data: dogs, loading: dogsLoading } = useFetch<Dog[]>(
+  const { data: dogs, loading: dogsLoading, error: dogsError } = useFetch<Dog[]>(
     user ? `/api/dogs/owner/${user.id}` : ''
   );
 
@@ -29,7 +29,7 @@ const Profile = () => {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString(i18n.language, {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -93,7 +93,9 @@ const Profile = () => {
 			  className="bg-green-600 hover:bg-green-700"
 			/>
 		  </div>
-		  {!dogs || dogs.length === 0 ? (
+		  {dogsError ? (
+            <ErrorMessage message={t('profile.failedToLoadDogs')} />
+          ) : !dogs || dogs.length === 0 ? (
             <BodyText text={t('profile.noDogs')} colour="text-gray-500" className="text-center py-4" />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">

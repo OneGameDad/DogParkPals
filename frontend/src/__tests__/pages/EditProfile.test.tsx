@@ -241,7 +241,7 @@ describe('EditProfile Component', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/profile');
   });
 
-  it('should handle empty first name', async () => {
+  it('should send null for empty first name', async () => {
     const mockPatch = vi.spyOn(apiModule.api, 'patch').mockResolvedValueOnce({});
     mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
 
@@ -262,7 +262,7 @@ describe('EditProfile Component', () => {
     });
   });
 
-  it('should handle empty last name', async () => {
+  it('should send null for empty last name', async () => {
     const mockPatch = vi.spyOn(apiModule.api, 'patch').mockResolvedValueOnce({});
     mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
 
@@ -283,7 +283,7 @@ describe('EditProfile Component', () => {
     });
   });
 
-  it('should handle empty profile picture URL', async () => {
+  it('should send null for empty profile picture URL', async () => {
     const mockPatch = vi.spyOn(apiModule.api, 'patch').mockResolvedValueOnce({});
     mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
 
@@ -353,8 +353,6 @@ describe('EditProfile Component', () => {
   });
 
   it('should not submit form without user', async () => {
-    const mockPatch = vi.spyOn(apiModule.api, 'patch').mockResolvedValueOnce({});
-    
     // Set user to null after initial render
     mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
     const { rerender } = renderEditProfile();

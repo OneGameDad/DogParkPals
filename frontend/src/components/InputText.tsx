@@ -5,7 +5,7 @@ interface InputTextProps {
   value: string;
   onChange: (value: string) => void;
   label?: string;
-  type?: 'text' | 'email' | 'password' | 'number';
+  type?: 'text' | 'email' | 'password' | 'number' | 'date';
   required?: boolean;
   className?: string;
 }

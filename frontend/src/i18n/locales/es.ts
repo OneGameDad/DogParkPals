@@ -9,6 +9,9 @@ export const es = {
     memberSince: "Spanish Member Since",
     exampleDate: "Spanish January 2026",
     owner: "Spanish Owner",
+    common: {
+      goBack: "Spanish Go Back"
+    },
     footer: {
       privacy: "Spanish Privacy Policy",
       terms: "Spanish Terms of Service",

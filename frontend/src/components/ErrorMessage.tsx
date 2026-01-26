@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface ErrorMessageProps {
   message: string;
@@ -8,6 +9,7 @@ interface ErrorMessageProps {
 
 const ErrorMessage = ({ message, showBackButton = false, backTo = '/' }: ErrorMessageProps) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="max-w-2xl mx-auto p-6">
@@ -18,7 +20,7 @@ const ErrorMessage = ({ message, showBackButton = false, backTo = '/' }: ErrorMe
             onClick={() => navigate(backTo)}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-semibold"
           >
-            Go Back
+            {t('common.goBack')}
           </button>
         )}
       </div>

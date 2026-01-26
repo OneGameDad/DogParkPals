@@ -9,6 +9,9 @@ export const en = {
     memberSince: "Member Since",
     exampleDate: "January 2026",
     owner: "Owner",
+    common: {
+      goBack: "Go Back"
+    },
     footer: {
       privacy: "Privacy Policy",
       terms: "Terms of Service",

@@ -1,15 +1,32 @@
-import { describe, test, expect, beforeAll } from '@jest/globals';
+import { describe, test, expect, beforeAll, jest } from '@jest/globals';
 import request from 'supertest';
+
+const mockGetUserByEmail = jest.fn<any>();
+
+jest.mock('../services/userServices', () => ({
+  __esModule: true,
+  default: {
+    getUserByEmail: mockGetUserByEmail,
+  },
+}));
+
 let app: any;
 
 beforeAll(async () => {
   process.env.GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'test-client-id';
   process.env.GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'test-client-secret';
   process.env.GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3000/auth/google/callback';
+  process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key';
   app = (await import('../app')).default;
 });
 
 describe('Google OAuth Routes - Unit Tests', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Mock user not found scenario
+    mockGetUserByEmail.mockResolvedValue(null);
+  });
+
   test('GET /auth/google initiates OAuth flow and redirects', async () => {
     const res = await request(app).get('/auth/google');
 
@@ -27,13 +44,15 @@ describe('Google OAuth Routes - Unit Tests', () => {
     expect(location).toMatch(/scope/i);
   });
 
-  test('POST /auth/login endpoint returns auth/validation error on invalid input', async () => {
+  test('POST /auth/login endpoint returns 404 when user not found', async () => {
+    mockGetUserByEmail.mockResolvedValue(null);
+
     const res = await request(app)
       .post('/auth/login')
-      .send({ email: 'test@example.com', password: 'test' });
+      .send({ email: 'nonexistent@example.com', password: 'Password123' });
 
-    // Should return 404 (user not found) or 401 (invalid password) or 500 (DB error in test environment)
-    expect([401, 404, 500]).toContain(res.status);
+    // User not found should return 404
+    expect(res.status).toBe(404);
   });
 
   test('POST /auth/logout endpoint requires authorization', async () => {

@@ -102,7 +102,7 @@ const EditDogProfile = () => {
         <div className="flex items-center justify-between mb-6">
           <Header text={title} level="h1" />
           <Button
-            text={t('cancel')}
+            text={t('dogProfile.cancel')}
             onClick={() => navigate(isEditMode ? `/dog/${id}` : '/profile')}
             className="bg-transparent hover:bg-gray-100 text-gray-600 hover:text-gray-800"
           />

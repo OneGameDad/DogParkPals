@@ -18,6 +18,8 @@ const mockCheckIn = jest.fn<any>();
 const mockCheckOut = jest.fn<any>();
 const mockGetActiveCheckInsForPark = jest.fn<any>();
 const mockParkExists = jest.fn<any>();
+const mockAwardExperience = jest.fn<any>();
+const mockHasVisitedParkBefore = jest.fn<any>();
 
 jest.mock('../services/parkService', () => ({
   __esModule: true,
@@ -37,6 +39,13 @@ jest.mock('../services/parkService', () => ({
     getActiveCheckInsForPark: mockGetActiveCheckInsForPark,
     parkExists: mockParkExists,
   },
+}));
+
+jest.mock('../services/xpService', () => ({
+  __esModule: true,
+  awardExperience: mockAwardExperience,
+  hasVisitedParkBefore: mockHasVisitedParkBefore,
+  XP_REWARDS: { PARK_VISIT: 10, NEW_PARK_BONUS: 30 },
 }));
 
 // Mock utilities
@@ -92,6 +101,9 @@ describe('Park Controller', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    mockAwardExperience.mockResolvedValue({ totalExp: 0, level: null });
+    mockHasVisitedParkBefore.mockResolvedValue(true);
 
     mockJson = jest.fn().mockReturnValue(undefined);
     mockStatus = jest.fn().mockReturnValue({ json: mockJson, send: jest.fn() });
@@ -720,19 +732,14 @@ describe('Park Controller', () => {
       mockParkExists.mockResolvedValue(true);
       mockCheckIn.mockResolvedValue(checkInData);
 
-      // Mock xpService import
-      jest.doMock('../services/xpService', () => ({
-        awardExperience: jest.fn().mockResolvedValue({ totalExp: 10, level: null }),
-        XP_REWARDS: { PARK_VISIT: 10 },
-      }));
+      mockHasVisitedParkBefore.mockResolvedValue(true);
+      mockAwardExperience.mockResolvedValue({ totalExp: 10, level: null });
 
       await parkController.checkInAtPark(mockReq as Request, mockRes as Response, mockNext as any);
 
       expect(mockCheckIn).toHaveBeenCalledWith(1, 1, undefined);
       expect(mockStatus).toHaveBeenCalledWith(201);
       expect(mockJson).toHaveBeenCalledWith(checkInData);
-
-      jest.dontMock('../services/xpService');
     });
   });
   

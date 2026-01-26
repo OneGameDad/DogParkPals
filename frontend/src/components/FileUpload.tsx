@@ -2,6 +2,7 @@ import { useState } from 'react';
 import uploadService from '../services/uploadService';
 import { validateFile } from '../utils/fileValidation';
 import type { UploadCategory } from '../constants';
+import Button from './Button'; // TODO: Or wherever is located
 
 interface FileUploadProps {
   category: UploadCategory;
@@ -83,6 +84,35 @@ const FileUpload = ({
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this file?')) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (category === 'userProfile') {
+        await uploadService.deleteUserProfilePicture();
+      } else if (category === 'dogPhoto') {
+        if (!itemId) throw new Error('Dog ID required for deletion');
+        await uploadService.deleteDogPhoto(itemId);
+      } else if (category === 'document') {
+        if (!itemId) throw new Error('Dog ID required for deletion');
+        await uploadService.deleteVaccinationRecord(itemId);
+      }
+
+      setPreview(null);
+      setSelectedFile(null);
+      onUpload('');
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Delete failed';
+      setError(errorMsg);
+      onError?.(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -105,24 +135,28 @@ const FileUpload = ({
       {error && <p className="text-red-500 text-sm">{error}</p>}
 
       {progress !== null && (
-        <div className="w-full bg-gray-200 rounded-full h-4 mt-2 relative">
+        <div className="w-full bg-gray-200 rounded mt-2">
           <div
-            className="bg-blue-500 h-4 rounded-full transition-all flex items-center justify-center text-white text-xs font-medium"
+            className="bg-blue-500 text-xs text-white text-center rounded"
             style={{ width: `${progress}%` }}
           >
             {progress}%
           </div>
         </div>
       )}
-      {selectedFile && (
-        <button
-          onClick={handleUpload}
-          disabled={loading}
-          className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-400"
-        >
-          {loading ? 'Uploading...' : 'Upload'}
-        </button>
-      )}
+
+      <div className="flex gap-2">
+        {selectedFile && (
+          <Button onClick={handleUpload} disabled={loading} variant="primary">
+            {loading ? 'Uploading...' : 'Upload'}
+          </Button>
+        )}
+        {(preview || selectedFile === null) && !loading && (
+          <Button onClick={handleDelete} variant="danger">
+            Delete
+          </Button>
+        )}
+      </div>
     </div>
   );
 };

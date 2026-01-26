@@ -255,7 +255,7 @@ describe('Profile Component', () => {
     mockUseFetch.mockReturnValue({ 
       data: null, 
       loading: false, 
-      error: 'Failed to load dogs' 
+      error: new Error('Failed to load dogs') 
     });
 
     renderProfile();

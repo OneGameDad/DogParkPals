@@ -12,6 +12,8 @@ const mockGetUserByUsername = jest.fn() as any;
 const mockGetAllUsers = jest.fn() as any;
 const mockDeleteUser = jest.fn() as any;
 const mockChangePassword = jest.fn() as any;
+const mockUploadProfilePicture = jest.fn() as any;
+const mockDeleteProfilePicture = jest.fn() as any;
 
 // Mock the controller
 jest.mock('../controllers/userController', () => ({
@@ -24,6 +26,8 @@ jest.mock('../controllers/userController', () => ({
     getAllUsers: mockGetAllUsers,
     deleteUser: mockDeleteUser,
     changePassword: mockChangePassword,
+    uploadProfilePicture: mockUploadProfilePicture,
+    deleteProfilePicture: mockDeleteProfilePicture,
   },
 }));
 
@@ -32,6 +36,14 @@ jest.mock('../middlewares/authMiddleware', () => ({
   __esModule: true,
   requireAuth: (req: Request, res: Response, next: NextFunction) => {
     (req as any).userId = 1;
+    next();
+  },
+}));
+
+jest.mock('../middlewares/uploadMiddleware', () => ({
+  uploadSingleFile: (req: Request, res: Response, next: NextFunction) => {
+    // simulate a file being attached
+    (req as any).file = { originalname: 'mock.png', buffer: Buffer.from('mock') };
     next();
   },
 }));
@@ -78,9 +90,9 @@ describe('User Router', () => {
       const response = await request(app)
         .post('/')
         .send({
-        email: 'test@example.com',
-        // Missing username and password
-      });
+          email: 'test@example.com',
+          // Missing username and password
+        });
 
       expect(mockCreateUser).toHaveBeenCalled();
       expect(response.status).toBe(400);
@@ -334,6 +346,64 @@ describe('User Router', () => {
       const response = await request(app).get('/undefined-route');
 
       expect(response.status).toBe(404);
+    });
+  });
+
+  describe('POST /profile-picture', () => {
+    test('calls uploadProfilePicture controller and returns 201', async () => {
+      mockUploadProfilePicture.mockImplementation((_req: Request, res: Response) => {
+        res.status(201).json({ url: '/api/files/users/1/profile-picture' });
+      });
+
+      const response = await request(app)
+        .post('/profile-picture')
+        .attach('file', Buffer.from('test'), 'profile.png');
+
+      expect(mockUploadProfilePicture).toHaveBeenCalled();
+      expect(response.status).toBe(201);
+      expect(response.body.url).toBe('/api/files/users/1/profile-picture');
+    });
+
+    test('returns 500 on server error', async () => {
+      mockUploadProfilePicture.mockImplementation((_req: Request, res: Response) => {
+        res.status(500).json({ error: 'Upload failed', code: 'INTERNAL_ERROR' });
+      });
+
+      const response = await request(app)
+        .post('/profile-picture')
+        .attach('file', Buffer.from('test'), 'profile.png');
+
+      expect(mockUploadProfilePicture).toHaveBeenCalled();
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Upload failed');
+      expect(response.body.code).toBe('INTERNAL_ERROR');
+    });
+  });
+
+  describe('DELETE /profile-picture', () => {
+    test('calls deleteProfilePicture controller and returns 200', async () => {
+      mockDeleteProfilePicture.mockImplementation((_req, res) => {
+        res.status(200).json({ message: 'Profile picture deleted' });
+      });
+
+      const response = await request(app).delete('/profile-picture');
+
+      expect(mockDeleteProfilePicture).toHaveBeenCalled();
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('Profile picture deleted');
+    });
+
+    test('returns 500 on server error', async () => {
+      mockDeleteProfilePicture.mockImplementation((_req, res) => {
+        res.status(500).json({ error: 'Delete failed', code: 'INTERNAL_ERROR' });
+      });
+
+      const response = await request(app).delete('/profile-picture');
+
+      expect(mockDeleteProfilePicture).toHaveBeenCalled();
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Delete failed');
+      expect(response.body.code).toBe('INTERNAL_ERROR');
     });
   });
 });

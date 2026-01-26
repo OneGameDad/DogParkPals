@@ -45,7 +45,8 @@ export function useSubmit<T = any>(options: UseSubmitOptions<T> = {}): UseSubmit
         }
       );
 
-      if (options.onSuccess) {
+      // Only call onSuccess if the operation actually succeeded
+      if (options.onSuccess && result !== undefined) {
         await options.onSuccess(result);
       }
       

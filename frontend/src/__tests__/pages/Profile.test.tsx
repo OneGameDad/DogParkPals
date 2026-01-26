@@ -249,4 +249,17 @@ describe('Profile Component', () => {
     
     expect(screen.getByText('profile.noDogs')).toBeInTheDocument();
   });
+
+  it('should display error message when dogs fetch fails', () => {
+    mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
+    mockUseFetch.mockReturnValue({ 
+      data: null, 
+      loading: false, 
+      error: 'Failed to load dogs' 
+    });
+
+    renderProfile();
+    
+    expect(screen.getByText('profile.failedToLoad')).toBeInTheDocument();
+  });
 });

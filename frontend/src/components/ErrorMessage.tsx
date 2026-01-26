@@ -14,7 +14,13 @@ const ErrorMessage = ({ message, showBackButton = false, backTo = '/' }: ErrorMe
   return (
     <div className="max-w-2xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-md p-8 text-center">
-        <p className="text-red-600 text-lg mb-4">{message}</p>
+        <p
+          className="text-red-600 text-lg mb-4"
+          role="alert"
+          aria-live="assertive"
+        >
+          {message}
+        </p>
         {showBackButton && (
           <button
             onClick={() => navigate(backTo)}

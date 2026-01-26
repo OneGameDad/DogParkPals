@@ -3,6 +3,8 @@ import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
 import { parseValidation } from '../utils/validator';
 import { addDogSchema, updateDogSchema } from '../utils/validationSchemas';
+import fs from "fs";
+import path from "path";
 
 const prisma = new PrismaClient();
 
@@ -247,6 +249,110 @@ const dogService = {
         code: 'FETCH_OWNERS_OF_DOG_FAILED',
       });
       typeSafeLogger.logError('Failed to fetch owners of dog', appError, { dogId });
+      throw appError;
+    }
+  },
+
+  async uploadDogPhoto(dogId: number, filePath: string) {
+    typeSafeLogger.logUserAction('Uploading dog photo', { dogId, filePath });
+    try {
+      const updatedDog = await prisma.dog.update({
+        where: { id: dogId },
+        data: {
+          profilePictureUrl: filePath,
+        },
+      });
+      typeSafeLogger.logUserAction('Dog photo uploaded successfully', { dogId, filePath });
+      return updatedDog;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to upload dog photo',
+        code: 'UPLOAD_DOG_PHOTO_FAILED',
+      });
+      typeSafeLogger.logError('Failed to upload dog photo', appError, { dogId, filePath });
+      throw appError;
+    }
+  },
+
+  async uploadDocument(dogId: number, filePath: string) {
+    typeSafeLogger.logUserAction('Uploading dog document', { dogId, filePath });
+    try {
+      const updatedDog = await prisma.dog.update({
+        where: { id: dogId },
+        data: {
+          vaccinationRecordUrl: filePath,
+        },
+      });
+      typeSafeLogger.logUserAction('Dog document uploaded successfully', { dogId, filePath });
+      return updatedDog;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to upload dog document',
+        code: 'UPLOAD_DOG_DOCUMENT_FAILED',
+      });
+      typeSafeLogger.logError('Failed to upload dog document', appError, { dogId, filePath });
+      throw appError;
+    }
+  },
+
+  async deleteDogPhoto(dogId: number) {
+    typeSafeLogger.logUserAction('Deleting dog photo', { dogId });
+    try {
+      const existingDog = await prisma.dog.findUnique({
+        where: { id: dogId },
+        select: { profilePictureUrl: true },
+      });
+      if (existingDog?.profilePictureUrl) {
+        const filePath = path.join(__dirname, '../../', existingDog.profilePictureUrl);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
+      const updatedDog = await prisma.dog.update({
+        where: { id: dogId },
+        data: {
+          profilePictureUrl: null,
+        },
+      });
+      typeSafeLogger.logUserAction('Dog photo deleted successfully', { dogId });
+      return updatedDog;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to delete dog photo',
+        code: 'DELETE_DOG_PHOTO_FAILED',
+      });
+      typeSafeLogger.logError('Failed to delete dog photo', appError, { dogId });
+      throw appError;
+    }
+  },
+
+  async deleteDocument(dogId: number) {
+    typeSafeLogger.logUserAction('Deleting dog document', { dogId });
+    try {
+      const existingDog = await prisma.dog.findUnique({
+        where: { id: dogId },
+        select: { vaccinationRecordUrl: true },
+      });
+      if (existingDog?.vaccinationRecordUrl) {
+        const filePath = path.join(__dirname, '../../', existingDog.vaccinationRecordUrl);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
+      const updatedDog = await prisma.dog.update({
+        where: { id: dogId },
+        data: {
+          vaccinationRecordUrl: null,
+        },
+      });
+      typeSafeLogger.logUserAction('Dog document deleted successfully', { dogId });
+      return updatedDog;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to delete dog document',
+        code: 'DELETE_DOG_DOCUMENT_FAILED',
+      });
+      typeSafeLogger.logError('Failed to delete dog document', appError, { dogId });
       throw appError;
     }
   },

@@ -9,12 +9,12 @@ import Button from '../components/Button';
 import Picture from '../components/Picture';
 import BodyText from '../components/BodyText';
 import InputText from '../components/InputText';
+import Loading from '../components/Loading';
 
 const EditProfile = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { submit, isSubmitting } = useSubmit();
 
   const [formData, setFormData] = useState({
     firstName: user?.first_name || '',
@@ -22,48 +22,44 @@ const EditProfile = () => {
     profilePictureUrl: user?.profilePictureUrl || '',
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  const { submit, isSubmitting } = useSubmit({
+    onSuccess: () => {
+      window.dispatchEvent(new Event('auth:login'));
+      navigate('/profile');
+    },
+    successMessage: t('profile.profileUpdated'),
+    loadingMessage: t('profile.updatingProfile'),
+    errorMessage: t('profile.failedToUpdate'),
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!user) return;
 
-    await submit(
-      async () => {
-        const updates: Record<string, string | null> = {};
-        
-        if (formData.firstName) updates.first_name = formData.firstName;
-        if (formData.lastName) updates.last_name = formData.lastName;
-        if (formData.profilePictureUrl) updates.profilePictureUrl = formData.profilePictureUrl;
-        
-        await api.patch('/users/profile', updates);
-      },
-      {
-        loading: t('profile.updatingProfile'),
-        success: t('profile.profileUpdated'),
-        error: t('profile.failedToUpdate'),
-      },
-      () => {
-        // Dispatch event to refresh auth state
-        window.dispatchEvent(new Event('auth:login'));
-        navigate('/profile');
+    await submit(async () => {
+      const updates: any = {};
+      
+      if (formData.firstName.trim()) {
+        updates.first_name = formData.firstName.trim();
       }
-    );
+      if (formData.lastName.trim()) {
+        updates.last_name = formData.lastName.trim();
+      }
+      if (formData.profilePictureUrl.trim()) {
+        updates.profilePictureUrl = formData.profilePictureUrl.trim();
+      }
+      
+      if (Object.keys(updates).length === 0) {
+        throw new Error('Please update at least one field');
+      }
+      
+      await api.patch('/users/profile', updates);
+    });
   };
 
   if (authLoading) {
-    return (
-      <div className="max-w-2xl mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-md p-8 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <BodyText text={t('profile.loading')} colour="text-gray-600" className="mt-4" />
-        </div>
-      </div>
-    );
+    return <Loading message={t('profile.loading')} />;
   }
 
   if (!user) {

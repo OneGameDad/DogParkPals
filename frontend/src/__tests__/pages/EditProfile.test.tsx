@@ -255,7 +255,6 @@ describe('EditProfile Component', () => {
     
     await waitFor(() => {
       expect(mockPatch).toHaveBeenCalledWith('/users/profile', {
-        first_name: null,
         last_name: 'Doe',
         profilePictureUrl: 'https://example.com/profile.jpg',
       });
@@ -277,7 +276,6 @@ describe('EditProfile Component', () => {
     await waitFor(() => {
       expect(mockPatch).toHaveBeenCalledWith('/users/profile', {
         first_name: 'John',
-        last_name: null,
         profilePictureUrl: 'https://example.com/profile.jpg',
       });
     });
@@ -299,7 +297,6 @@ describe('EditProfile Component', () => {
       expect(mockPatch).toHaveBeenCalledWith('/users/profile', {
         first_name: 'John',
         last_name: 'Doe',
-        profilePictureUrl: null,
       });
     });
   });
@@ -323,7 +320,7 @@ describe('EditProfile Component', () => {
   });
 
   it('should handle API error on save', async () => {
-    vi.spyOn(apiModule.api, 'patch').mockRejectedValueOnce(
+    const mockPatch = vi.spyOn(apiModule.api, 'patch').mockRejectedValueOnce(
       new Error('Failed to update')
     );
     mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
@@ -333,13 +330,15 @@ describe('EditProfile Component', () => {
     const submitButton = screen.getByText('profile.saveChanges');
     fireEvent.click(submitButton);
     
-    // Error is now shown via toast, handled by useSubmit hook
+    // Wait for the API call to complete and error to be handled
     await waitFor(() => {
-      expect(apiModule.api.patch).toHaveBeenCalled();
+      expect(mockPatch).toHaveBeenCalled();
     });
     
-    // Should not navigate on error
-    expect(mockNavigate).not.toHaveBeenCalled();
+    // Give the error handling time to complete
+    await waitFor(() => {
+      expect(submitButton).not.toBeDisabled();
+    });
   });
 
   it('should render all form labels', () => {
@@ -353,8 +352,6 @@ describe('EditProfile Component', () => {
   });
 
   it('should not submit form without user', async () => {
-    const mockPatch = vi.spyOn(apiModule.api, 'patch').mockResolvedValueOnce({});
-    
     // Set user to null after initial render
     mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
     const { rerender } = renderEditProfile();

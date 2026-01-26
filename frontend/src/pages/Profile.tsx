@@ -11,7 +11,7 @@ import BodyText from '../components/BodyText';
 import type { Dog } from '../types';
 
 const Profile = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { data: dogs, loading: dogsLoading } = useFetch<Dog[]>(
@@ -29,7 +29,7 @@ const Profile = () => {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString(i18n.language, {
       year: 'numeric',
       month: 'long',
       day: 'numeric'

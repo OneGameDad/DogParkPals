@@ -1,4 +1,5 @@
 import request from "supertest";
+import path from "path";
 import app from "../../app";
 import { makeToken, ids } from "../fixtures/integrationFixtures";
 
@@ -283,5 +284,127 @@ describe("concurrent user operations", () => {
 
     expect(noTokenRes.status).toBe(401);
     expect(noTokenRes.body.code).toBe("AUTH_ERROR");
+  });
+});
+
+describe("user profile picture upload", () => {
+  test("upload profile picture succeeds with valid token", async () => {
+    const fixturePath = path.join(__dirname, "../fixtures/Greg.png");
+    const res = await request(app)
+      .post("/users/profile-picture")
+      .set("Authorization", `Bearer ${userAToken()}`)
+      .attach("file", fixturePath);
+
+    expect(res.status).toBe(200);
+    expect(res.body.message).toMatch(/uploaded successfully/i);
+    expect(res.body.profilePictureUrl).toBeDefined();
+    expect(res.body.profilePictureUrl).toMatch(/\/api\/files\/users\//);
+  });
+
+  test("upload profile picture fails without auth token", async () => {
+    const fixturePath = path.join(__dirname, "../fixtures/Greg.png");
+    const res = await request(app)
+      .post("/users/profile-picture")
+      .attach("file", fixturePath);
+
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe("AUTH_ERROR");
+  });
+
+  test("upload profile picture fails without file", async () => {
+    const res = await request(app)
+      .post("/users/profile-picture")
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe("NO_FILE_UPLOADED");
+  });
+
+  test("get profile picture URL requires auth", async () => {
+    const res = await request(app).get(`/api/files/users/${ids.users.userA}/profile-picture`);
+    expect(res.status).toBe(401);
+  });
+
+  test("user can access own profile picture URL", async () => {
+    // Upload first
+    const fixturePath = path.join(__dirname, "../fixtures/Greg.png");
+    const uploadRes = await request(app)
+      .post("/users/profile-picture")
+      .set("Authorization", `Bearer ${userAToken()}`)
+      .attach("file", fixturePath);
+
+    expect(uploadRes.status).toBe(200);
+
+    // Retrieve the URL
+    const res = await request(app)
+      .get(`/api/files/users/${ids.users.userA}/profile-picture`)
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.url).toBeDefined();
+    expect(res.body.url).toMatch(/\/api\/files\/users\//);
+  });
+
+  test("admin can access any user's profile picture URL", async () => {
+    // Upload first as userA
+    const fixturePath = path.join(__dirname, "../fixtures/Greg.png");
+    const uploadRes = await request(app)
+      .post("/users/profile-picture")
+      .set("Authorization", `Bearer ${userAToken()}`)
+      .attach("file", fixturePath);
+
+    expect(uploadRes.status).toBe(200);
+
+    // Admin retrieves userA's profile picture
+    const res = await request(app)
+      .get(`/api/files/users/${ids.users.userA}/profile-picture`)
+      .set("Authorization", `Bearer ${adminToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.url).toBeDefined();
+  });
+
+  test("non-owner cannot access another user's profile picture URL", async () => {
+    // Upload first as userA
+    const fixturePath = path.join(__dirname, "../fixtures/Greg.png");
+    const uploadRes = await request(app)
+      .post("/users/profile-picture")
+      .set("Authorization", `Bearer ${userAToken()}`)
+      .attach("file", fixturePath);
+
+    expect(uploadRes.status).toBe(200);
+
+    // userB tries to access userA's profile picture
+    const res = await request(app)
+      .get(`/api/files/users/${ids.users.userA}/profile-picture`)
+      .set("Authorization", `Bearer ${userBToken()}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  test("delete profile picture succeeds for authenticated user", async () => {
+    // Upload first
+    const fixturePath = path.join(__dirname, "../fixtures/Greg.png");
+    const uploadRes = await request(app)
+      .post("/users/profile-picture")
+      .set("Authorization", `Bearer ${userAToken()}`)
+      .attach("file", fixturePath);
+
+    expect(uploadRes.status).toBe(200);
+
+    // Delete the picture
+    const deleteRes = await request(app)
+      .delete("/users/profile-picture")
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    expect(deleteRes.status).toBe(200);
+    expect(deleteRes.body.message).toMatch(/deleted successfully/i);
+  });
+
+  test("delete profile picture fails without auth", async () => {
+    const res = await request(app).delete("/users/profile-picture");
+
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe("AUTH_ERROR");
   });
 });

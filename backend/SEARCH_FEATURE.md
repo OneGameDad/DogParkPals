@@ -68,10 +68,10 @@ GET /api/search?q=<query>&type=<type>&limit=<limit>&offset=<offset>
 **Query Parameters:**
 | Parameter | Required | Default | Max | Description |
 |-----------|----------|---------|-----|-------------|
-| `q` | Yes | - | 100 chars | Search query string |
+| `q` | Yes | - | 100 chars | Search query string (trimmed, min 1 char after trim) |
 | `type` | No | (all types) | - | Entity type filter: PARK, USER, DOG, ORGANIZATION, EVENT |
-| `limit` | No | 10 | 50 | Results per entity type |
-| `offset` | No | 0 | - | Pagination offset |
+| `limit` | No | 10 | 50 | Results per entity type (min 1, max 50) |
+| `offset` | No | 0 | - | Pagination offset (min 0) |
 
 **Response:**
 ```json
@@ -110,9 +110,9 @@ GET /api/search/<type>?q=<query>&limit=<limit>&offset=<offset>
 **Query Parameters:**
 | Parameter | Required | Default | Max | Description |
 |-----------|----------|---------|-----|-------------|
-| `q` | Yes | - | 100 chars | Search query string |
-| `limit` | No | 10 | 50 | Results limit |
-| `offset` | No | 0 | - | Pagination offset |
+| `q` | Yes | - | 100 chars | Search query string (trimmed, min 1 char after trim) |
+| `limit` | No | 10 | 50 | Results limit (min 1, max 50) |
+| `offset` | No | 0 | - | Pagination offset (min 0) |
 
 **Response:**
 ```json
@@ -159,15 +159,16 @@ curl -H "Authorization: Bearer token123" \
 - **Access:** No restrictions - visible to all authenticated users
 
 #### Dogs
-- **Search fields:** name
+- **Search fields:** name only (breed is an enum, not searchable via text)
 - **Visible fields:** id, name, breed, gender, size, playstyle, profilePictureUrl
 - **Access:** No restrictions - visible to all authenticated users
+- **Note:** For breed filtering, use a dedicated breed filter parameter (not part of general search)
 
 #### Users
-- **Search fields:** username, email, first_name, last_name
+- **Search fields:** username, first_name, last_name
 - **Visible fields:** id, username, first_name, last_name, profilePictureUrl
 - **Access:** Basic info visible to all users
-- **Security:** Passwords and sensitive data never exposed
+- **Security:** Passwords and email never exposed in search (email searchable only via dedicated getUserByEmail endpoint)
 
 ### Private Entities (Role-Based Access)
 
@@ -312,11 +313,12 @@ curl -H "Authorization: Bearer token123" \
 ### Files Created
 
 **Backend Services:**
-- `backend/src/services/searchService.ts` (406 lines)
+- `backend/src/services/searchService.ts` (504 lines)
   - Core search logic for all 5 entity types
-  - Authorization enforcement
+  - Authorization enforcement with batch membership lookups
+  - N+1 query optimization
   - SQLite compatible queries
-  - Comprehensive error handling
+  - Comprehensive error handling with proper error propagation
 
 **Backend Controllers:**
 - `backend/src/controllers/searchController.ts` (116 lines)
@@ -330,8 +332,9 @@ curl -H "Authorization: Bearer token123" \
   - Authentication middleware integration
 
 **Tests:**
-- `backend/src/tests/searchService.test.ts` (26 passing tests)
-- `backend/src/tests/integration/search.test.ts` (Integration tests)
+- `backend/src/tests/searchService.test.ts` (26 unit tests - all passing with proper mocking)
+- `backend/src/tests/integration/search.test.ts` (20 integration tests - all passing)
+- `backend/prisma/test.db` (Test database with seeded fixture data)
 
 ### Files Modified
 
@@ -356,24 +359,47 @@ npm test -- src/tests/searchService.test.ts
 ```
 
 ### Test Results
+
+**Unit Tests:**
 ```
 Test Suites: 1 passed
 Tests: 26 passed
-Execution Time: ~1.3 seconds
+Execution Time: ~1 second
+```
+
+**Integration Tests:**
+```
+Test Suites: 1 passed
+Tests: 20 passed
+Execution Time: ~12 seconds
 ```
 
 ### Test Coverage
 
+**Unit Tests (26 tests):**
 | Test Category | Count | Status |
 |---------------|-------|--------|
-| Empty query handling | 1 | ✅ |
+| Empty query handling | 2 | ✅ |
 | Multi-type search | 1 | ✅ |
 | Type filtering | 1 | ✅ |
-| Pagination limits | 3 | ✅ |
-| Entity-specific search | 5 | ✅ |
-| Sensitive data protection | 3 | ✅ |
-| Authorization rules | 5 | ✅ |
-| Admin permissions | 1 | ✅ |
+| Pagination limits | 2 | ✅ |
+| Parks search | 3 | ✅ |
+| Users search | 3 | ✅ |
+| Dogs search | 2 | ✅ |
+| Organizations search | 3 | ✅ |
+| Events search | 3 | ✅ |
+| Search by type | 6 | ✅ |
+
+**Integration Tests (20 tests):**
+| Test Category | Count | Status |
+|---------------|-------|--------|
+| Authentication | 2 | ✅ |
+| Input validation | 3 | ✅ |
+| Multi-type search | 2 | ✅ |
+| Pagination | 3 | ✅ |
+| Event visibility rules | 3 | ✅ |
+| Type-specific search | 6 | ✅ |
+| Organization membership | 1 | ✅ |
 
 ---
 
@@ -404,14 +430,17 @@ Execution Time: ~1.3 seconds
 ---
 
 ## Validation Rules
-
+### Input Sanitization
+- All query strings are **trimmed** before validation
+- Whitespace-only queries are rejected (400 Bad Request)
+- Empty queries after trimming are rejected
 ### Query Parameters
 
 | Parameter | Min | Max | Pattern | Example |
 |-----------|-----|-----|---------|---------|
-| `q` | 1 char | 100 chars | Any | "central park" |
-| `limit` | 1 | 50 | Number | 10 |
-| `offset` | 0 | Unlimited | Number | 20 |
+| `q` | 1 char (after trim) | 100 chars | Any | "central park" |
+| `limit` | 1 | 50 | Positive integer | 10 |
+| `offset` | 0 | Unlimited | Non-negative integer | 20 |
 | `type` | - | - | PARK\|USER\|DOG\|ORGANIZATION\|EVENT | "PARK" |
 
 ### Search Fields by Entity
@@ -419,8 +448,8 @@ Execution Time: ~1.3 seconds
 | Entity | Field 1 | Field 2 |
 |--------|---------|---------|
 | PARK | name | description |
-| USER | username | email, first_name, last_name |
-| DOG | name | - |
+| USER | username | first_name, last_name |
+| DOG | name | (breed not searchable - enum field) |
 | ORGANIZATION | name | description |
 | EVENT | title | description |
 
@@ -436,9 +465,13 @@ Execution Time: ~1.3 seconds
 - **Example:** Add `-H "Authorization: Bearer <valid_token>"`
 
 **400 Bad Request**
-- **Cause:** Missing required query parameter or invalid value
-- **Solution:** Verify `q` parameter is provided and valid
-- **Example:** `?q=search_term&type=PARK` (q is required)
+- **Cause:** Missing required query parameter, invalid value, or whitespace-only query
+- **Solution:** Verify `q` parameter is provided, non-empty after trimming, and valid
+- **Common errors:**
+  - Missing `q` parameter
+  - Empty or whitespace-only query (e.g., `?q=` or `?q=%20`)
+  - Invalid limit (< 1 or > 50) or offset (< 0)
+- **Example:** `?q=search_term&type=PARK&limit=10`
 
 **404 Not Found**
 - **Cause:** Endpoint not registered

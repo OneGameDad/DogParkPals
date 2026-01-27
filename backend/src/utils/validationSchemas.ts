@@ -466,3 +466,21 @@ export const awardAchievementSchema = z.object({
 });
 
 export type AwardAchievementRequest = z.infer<typeof awardAchievementSchema>;
+
+export const advancedSearchSchema = z.object({
+  q: z.string().min(1, 'Search query is required').max(100, 'Search query too long'),
+  type: z.enum(['PARK', 'USER', 'DOG', 'ORGANIZATION', 'EVENT']).optional(),
+  limit: z.string().regex(/^\d+$/, 'Limit must be a number').optional(),
+  offset: z.string().regex(/^\d+$/, 'Offset must be a number').optional(),
+});
+
+export type AdvancedSearchRequest = z.infer<typeof advancedSearchSchema>;
+
+export const searchByTypeSchema = z.object({
+  type: z.enum(['PARK', 'USER', 'DOG', 'ORGANIZATION', 'EVENT']),
+  q: z.string().min(1, 'Search query is required').max(100, 'Search query too long'),
+  limit: z.string().regex(/^\d+$/, 'Limit must be a number').optional(),
+  offset: z.string().regex(/^\d+$/, 'Offset must be a number').optional(),
+});
+
+export type SearchByTypeRequest = z.infer<typeof searchByTypeSchema>;

@@ -1,16 +1,45 @@
 import searchService from '../services/searchService';
 import { PrismaClient } from '@prisma/client';
-import organizationService from '../services/organizationService';
 
-const prisma = new PrismaClient();
+// Mock Prisma Client
+jest.mock('@prisma/client', () => {
+  const mockPrismaClient = {
+    park: {
+      findMany: jest.fn(),
+    },
+    user: {
+      findMany: jest.fn(),
+    },
+    dog: {
+      findMany: jest.fn(),
+    },
+    organization: {
+      findMany: jest.fn(),
+    },
+    organizationMember: {
+      findMany: jest.fn(),
+    },
+    event: {
+      findMany: jest.fn(),
+    },
+  };
+  return {
+    PrismaClient: jest.fn(() => mockPrismaClient),
+  };
+});
 
-jest.mock('../services/organizationService');
-
-const mockGetMember = organizationService.getMember as jest.MockedFunction<typeof organizationService.getMember>;
+const prisma = new PrismaClient() as jest.Mocked<PrismaClient>;
 
 describe('Search Service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset all mock implementations
+    (prisma.park.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.dog.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.organization.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.organizationMember.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.event.findMany as jest.Mock).mockResolvedValue([]);
   });
 
   describe('search', () => {
@@ -56,6 +85,19 @@ describe('Search Service', () => {
 
   describe('searchParks', () => {
     test('should find parks by name', async () => {
+      const mockParks = [
+        {
+          id: 1,
+          name: 'Central Park',
+          latitude: 40.785091,
+          longitude: -73.968285,
+          description: 'A large park',
+          amenities: ['fountain', 'benches'],
+          profilePictureUrl: null,
+        },
+      ];
+      (prisma.park.findMany as jest.Mock).mockResolvedValue(mockParks);
+      
       const results = await searchService.searchParks('%park%', 10, 0);
       expect(Array.isArray(results)).toBe(true);
       results.forEach(park => {
@@ -64,16 +106,30 @@ describe('Search Service', () => {
     });
 
     test('should include park details', async () => {
+      const mockParks = [
+        {
+          id: 1,
+          name: 'Central Park',
+          latitude: 40.785091,
+          longitude: -73.968285,
+          description: 'A large park',
+          amenities: ['fountain'],
+          profilePictureUrl: null,
+        },
+      ];
+      (prisma.park.findMany as jest.Mock).mockResolvedValue(mockParks);
+      
       const results = await searchService.searchParks('%park%', 10, 0);
-      if (results.length > 0) {
-        const park = results[0];
-        expect(park).toHaveProperty('id');
-        expect(park).toHaveProperty('name');
-        expect(park).toHaveProperty('entityType', 'PARK');
-      }
+      expect(results.length).toBeGreaterThan(0);
+      const park = results[0];
+      expect(park).toHaveProperty('id');
+      expect(park).toHaveProperty('name');
+      expect(park).toHaveProperty('entityType', 'PARK');
     });
 
     test('should handle case-insensitive search', async () => {
+      (prisma.park.findMany as jest.Mock).mockResolvedValue([]);
+      
       const results = await searchService.searchParks('%PARK%', 10, 0);
       expect(Array.isArray(results)).toBe(true);
     });
@@ -81,6 +137,17 @@ describe('Search Service', () => {
 
   describe('searchUsers', () => {
     test('should find users by username', async () => {
+      const mockUsers = [
+        {
+          id: 1,
+          username: 'testuser',
+          first_name: 'Test',
+          last_name: 'User',
+          profilePictureUrl: null,
+        },
+      ];
+      (prisma.user.findMany as jest.Mock).mockResolvedValue(mockUsers);
+      
       const results = await searchService.searchUsers('%user%', 10, 0);
       expect(Array.isArray(results)).toBe(true);
       results.forEach(user => {
@@ -89,25 +156,58 @@ describe('Search Service', () => {
     });
 
     test('should not expose sensitive user data', async () => {
+      const mockUsers = [
+        {
+          id: 1,
+          username: 'testuser',
+          first_name: 'Test',
+          last_name: 'User',
+          profilePictureUrl: null,
+        },
+      ];
+      (prisma.user.findMany as jest.Mock).mockResolvedValue(mockUsers);
+      
       const results = await searchService.searchUsers('%user%', 10, 0);
-      if (results.length > 0) {
-        const user = results[0];
-        expect(user).not.toHaveProperty('password_hash');
-      }
+      expect(results.length).toBeGreaterThan(0);
+      const user = results[0];
+      expect(user).not.toHaveProperty('password_hash');
     });
 
     test('should include basic user fields', async () => {
+      const mockUsers = [
+        {
+          id: 1,
+          username: 'testuser',
+          first_name: 'Test',
+          last_name: 'User',
+          profilePictureUrl: null,
+        },
+      ];
+      (prisma.user.findMany as jest.Mock).mockResolvedValue(mockUsers);
+      
       const results = await searchService.searchUsers('%user%', 10, 0);
-      if (results.length > 0) {
-        const user = results[0];
-        expect(user).toHaveProperty('id');
-        expect(user).toHaveProperty('username');
-      }
+      expect(results.length).toBeGreaterThan(0);
+      const user = results[0];
+      expect(user).toHaveProperty('id');
+      expect(user).toHaveProperty('username');
     });
   });
 
   describe('searchDogs', () => {
     test('should find dogs by name', async () => {
+      const mockDogs = [
+        {
+          id: 1,
+          name: 'Buddy',
+          breed: 'GOLDEN_RETRIEVER',
+          gender: 'MALE',
+          size: 'LARGE',
+          playstyle: 'ACTIVE',
+          profilePictureUrl: null,
+        },
+      ];
+      (prisma.dog.findMany as jest.Mock).mockResolvedValue(mockDogs);
+      
       const results = await searchService.searchDogs('%dog%', 10, 0);
       expect(Array.isArray(results)).toBe(true);
       results.forEach(dog => {
@@ -116,54 +216,120 @@ describe('Search Service', () => {
     });
 
     test('should include dog details', async () => {
+      const mockDogs = [
+        {
+          id: 1,
+          name: 'Buddy',
+          breed: 'GOLDEN_RETRIEVER',
+          gender: 'MALE',
+          size: 'LARGE',
+          playstyle: 'ACTIVE',
+          profilePictureUrl: null,
+        },
+      ];
+      (prisma.dog.findMany as jest.Mock).mockResolvedValue(mockDogs);
+      
       const results = await searchService.searchDogs('%dog%', 10, 0);
-      if (results.length > 0) {
-        const dog = results[0];
-        expect(dog).toHaveProperty('breed');
-        expect(dog).toHaveProperty('entityType', 'DOG');
-      }
+      expect(results.length).toBeGreaterThan(0);
+      const dog = results[0];
+      expect(dog).toHaveProperty('breed');
+      expect(dog).toHaveProperty('entityType', 'DOG');
     });
   });
 
   describe('searchOrganizations', () => {
     test('should return public fields for all users', async () => {
+      const mockOrgs = [
+        {
+          id: 1,
+          name: 'Dog Lovers',
+          description: 'A community of dog lovers',
+          profilePictureUrl: null,
+          websiteUrl: 'https://example.com',
+          ownerId: 1,
+        },
+      ];
+      (prisma.organization.findMany as jest.Mock).mockResolvedValue(mockOrgs);
+      (prisma.organizationMember.findMany as jest.Mock).mockResolvedValue([]);
+      
       const results = await searchService.searchOrganizations('%org%', 10, 0);
-      if (results.length > 0) {
-        const org = results[0];
-        expect(org).toHaveProperty('name');
-        expect(org).toHaveProperty('description');
-        expect(org).toHaveProperty('entityType', 'ORGANIZATION');
-      }
+      expect(results.length).toBeGreaterThan(0);
+      const org = results[0];
+      expect(org).toHaveProperty('name');
+      expect(org).toHaveProperty('description');
+      expect(org).toHaveProperty('entityType', 'ORGANIZATION');
     });
 
     test('should include additional fields for members', async () => {
-      mockGetMember.mockResolvedValue({ role: 'OWNER' } as any);
+      const mockOrgs = [
+        {
+          id: 1,
+          name: 'Dog Lovers',
+          description: 'A community',
+          profilePictureUrl: null,
+          websiteUrl: 'https://example.com',
+          ownerId: 1,
+        },
+      ];
+      const mockMemberships = [
+        {
+          organizationId: 1,
+          role: 'OWNER',
+        },
+      ];
+      (prisma.organization.findMany as jest.Mock).mockResolvedValue(mockOrgs);
+      (prisma.organizationMember.findMany as jest.Mock).mockResolvedValue(mockMemberships);
+      
       const results = await searchService.searchOrganizations('%org%', 10, 0, 1, 'CLIENT');
-
-      if (results.length > 0) {
-        const orgWithMembership = results.find((o: any) => o.memberRole);
-        if (orgWithMembership) {
-          expect(orgWithMembership).toHaveProperty('ownerId');
-          expect(orgWithMembership).toHaveProperty('memberRole');
-        }
-      }
+      expect(results.length).toBeGreaterThan(0);
+      const org = results[0];
+      expect(org).toHaveProperty('ownerId');
+      expect(org).toHaveProperty('memberRole', 'OWNER');
     });
 
     test('should hide owner info from non-members', async () => {
-      mockGetMember.mockResolvedValue(null);
+      const mockOrgs = [
+        {
+          id: 1,
+          name: 'Dog Lovers',
+          description: 'A community',
+          profilePictureUrl: null,
+          websiteUrl: 'https://example.com',
+          ownerId: 1,
+        },
+      ];
+      (prisma.organization.findMany as jest.Mock).mockResolvedValue(mockOrgs);
+      (prisma.organizationMember.findMany as jest.Mock).mockResolvedValue([]);
+      
       const results = await searchService.searchOrganizations('%org%', 10, 0, 1, 'CLIENT');
-
-      if (results.length > 0) {
-        const org = results[0];
-        if (!org.memberRole) {
-          expect(org).not.toHaveProperty('ownerId');
-        }
-      }
+      expect(results.length).toBeGreaterThan(0);
+      const org = results[0];
+      expect(org).not.toHaveProperty('ownerId');
+      expect(org).not.toHaveProperty('memberRole');
     });
   });
 
   describe('searchEvents', () => {
     test('should find public events for all users', async () => {
+      const mockEvents = [
+        {
+          id: 1,
+          title: 'Dog Meetup',
+          description: 'Meet other dogs',
+          date: new Date('2026-02-01'),
+          startTime: new Date('2026-02-01T10:00:00'),
+          endTime: new Date('2026-02-01T12:00:00'),
+          private: 'PUBLIC',
+          parkId: 1,
+          organizerId: 1,
+          organizationId: null,
+          park: { id: 1, name: 'Central Park' },
+          organizer: { id: 1, username: 'organizer', profilePictureUrl: null },
+        },
+      ];
+      (prisma.event.findMany as jest.Mock).mockResolvedValue(mockEvents);
+      (prisma.organizationMember.findMany as jest.Mock).mockResolvedValue([]);
+      
       const results = await searchService.searchEvents('%event%', 10, 0);
       expect(Array.isArray(results)).toBe(true);
       results.forEach(event => {
@@ -172,15 +338,81 @@ describe('Search Service', () => {
     });
 
     test('should not show private events to unauthenticated users', async () => {
+      const mockEvents = [
+        {
+          id: 1,
+          title: 'Public Event',
+          description: 'Open to all',
+          date: new Date('2026-02-01'),
+          startTime: new Date('2026-02-01T10:00:00'),
+          endTime: new Date('2026-02-01T12:00:00'),
+          private: 'PUBLIC',
+          parkId: 1,
+          organizerId: 1,
+          organizationId: null,
+          park: { id: 1, name: 'Central Park' },
+          organizer: { id: 1, username: 'organizer', profilePictureUrl: null },
+        },
+        {
+          id: 2,
+          title: 'Private Event',
+          description: 'Members only',
+          date: new Date('2026-02-01'),
+          startTime: new Date('2026-02-01T14:00:00'),
+          endTime: new Date('2026-02-01T16:00:00'),
+          private: 'PRIVATE',
+          parkId: 1,
+          organizerId: 2,
+          organizationId: 1,
+          park: { id: 1, name: 'Central Park' },
+          organizer: { id: 2, username: 'other', profilePictureUrl: null },
+        },
+      ];
+      (prisma.event.findMany as jest.Mock).mockResolvedValue(mockEvents);
+      (prisma.organizationMember.findMany as jest.Mock).mockResolvedValue([]);
+      
       const results = await searchService.searchEvents('%event%', 10, 0);
       results.forEach(event => {
-        expect(event.private).toBe(false);
+        expect(event.private).toBe('PUBLIC');
       });
     });
 
     test('should show all events to admins', async () => {
+      const mockEvents = [
+        {
+          id: 1,
+          title: 'Public Event',
+          description: 'Open to all',
+          date: new Date('2026-02-01'),
+          startTime: new Date('2026-02-01T10:00:00'),
+          endTime: new Date('2026-02-01T12:00:00'),
+          private: 'PUBLIC',
+          parkId: 1,
+          organizerId: 1,
+          organizationId: null,
+          park: { id: 1, name: 'Central Park' },
+          organizer: { id: 1, username: 'organizer', profilePictureUrl: null },
+        },
+        {
+          id: 2,
+          title: 'Private Event',
+          description: 'Members only',
+          date: new Date('2026-02-01'),
+          startTime: new Date('2026-02-01T14:00:00'),
+          endTime: new Date('2026-02-01T16:00:00'),
+          private: 'PRIVATE',
+          parkId: 1,
+          organizerId: 2,
+          organizationId: 1,
+          park: { id: 1, name: 'Central Park' },
+          organizer: { id: 2, username: 'other', profilePictureUrl: null },
+        },
+      ];
+      (prisma.event.findMany as jest.Mock).mockResolvedValue(mockEvents);
+      
       const results = await searchService.searchEvents('%event%', 10, 0, 1, 'ADMIN');
       expect(Array.isArray(results)).toBe(true);
+      expect(results.length).toBe(2); // Admin sees both public and private
     });
   });
 

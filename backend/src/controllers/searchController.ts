@@ -25,7 +25,9 @@ const searchController = {
         query: req.query,
       });
 
-      const { q, type, limit, offset } = parseValidation(advancedSearchSchema, req.query);
+      // Convert query object to plain object (req.query has null prototype)
+      const queryData = JSON.parse(JSON.stringify(req.query));
+      const { q, type, limit, offset } = parseValidation(advancedSearchSchema, queryData);
       const userId = (req as any).user?.id;
       const userRole = (req as any).user?.role;
 

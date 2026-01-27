@@ -447,10 +447,10 @@ Execution Time: ~1.3 seconds
 **No Results Returned**
 - **Cause:** Entity doesn't exist or authorization blocked result
 - **Solution:**
-  - Check search term matches data (searches are case-sensitive)
+  - Check search term matches data (searches are case-insensitive for ASCII characters)
   - User has permission to see result (private content)
   - Correct entity type is being searched
-  - Try shorter search term
+  - Try shorter search term or different keywords
 
 **Slow Responses**
 - **Cause:** Too many results or inefficient query

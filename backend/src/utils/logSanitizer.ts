@@ -44,7 +44,7 @@ export const sanitizeLogData = (data: any): any => {
   ];
 
   for (const key in data) {
-    if (data.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(data, key)) {
       // Normalize key by removing underscores, dashes, and converting to lowercase
       const normalizedKey = key.toLowerCase().replace(/[_-]/g, '');
       

@@ -6,56 +6,130 @@
  * - 5 parks
  * - 5 users (2 admins, 3 developers)
  * - 5 dogs (one per user)
+ * - 2 organizations (owned by admins)
  * 
- * SETUP INSTRUCTIONS:
- * -------------------
+ * SECURITY & SETUP INSTRUCTIONS:
+ * ==============================
  * 
- * 1. PASSWORD SETUP (Important!)
- *    - Passwords must be bcrypt hashed for security
- *    - Generate hashed passwords using Node.js:
- *    
+ * 1. PASSWORD SETUP (⚠️ CRITICAL!)
+ *    - Passwords MUST be bcrypt hashed with cost factor 10
+ *    - NEVER use the placeholder hashes in production
+ *    - Generate hashes with:
  *      npm install bcryptjs
  *      node -e "require('bcryptjs').hash('your_password', 10, (err, hash) => console.log(hash))"
- *    
- *    - Replace the placeholder hashes in the USERS array with your hashed passwords
- *    - Example: $2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36gZvQOm
+ *    - Example valid hash: $2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36gZvQOm
+ *    - This script validates all hashes at runtime and REFUSES to run if:
+ *      * Any hash matches a placeholder pattern
+ *      * Any hash is not a valid bcrypt hash
+ *    - Consider using environment variables for production passwords:
+ *      ADMIN_USER1_HASH=<bcrypt_hash> npm run seed:prod
  * 
  * 2. CUSTOMIZE DATA
  *    - Edit the PARKS array for your park locations and details
  *    - Edit the USERS array with your admin/developer credentials
+ *    - Edit the ORGANIZATIONS array for community groups
  *    - Edit the DOGS array with dog information
  * 
  * 3. VERIFY DATABASE CONNECTION
  *    - Ensure DATABASE_URL is set in your .env file
- *    - For SQLite: DATABASE_URL="file:./dev.db" or "file:./prod.db"
- *    - For other databases, use appropriate connection string
+ *    - For SQLite: DATABASE_URL="file:./prod.db"
+ *    - Verify with: npx prisma db execute --stdin < /dev/null
  * 
  * 4. RUN THE SCRIPT
  *    - From the backend directory:
- *      npx ts-node prisma/seedProduction.ts
- *    
- *    - Or compile and run:
- *      npx tsc prisma/seedProduction.ts
- *      node prisma/seedProduction.js
+ *      npm run seed:prod  (recommended - uses npm script)
+ *      npx ts-node prisma/seedProduction.ts  (direct execution)
  * 
  * 5. VERIFY THE SEED
  *    - Check the console output for confirmation messages
- *    - Open Prisma Studio to verify data:
- *      npx prisma studio
+ *    - Open Prisma Studio: npx prisma studio
+ *    - Verify organization members were created correctly
  * 
- * NOTES:
- * ------
- * - Parks use upsert to prevent duplicates on re-runs
- * - Users must have unique emails and usernames
- * - Dogs are automatically associated with users via DogOwner records
- * - All timestamps are set automatically (createdAt, updatedAt)
- * - Dog breeds, sizes, and playstyles must match Prisma enums
+ * DEPLOYMENT NOTES:
+ * -----------------
+ * - This script is for INITIAL setup only
+ * - Do NOT run on subsequent deployments (will update existing data)
+ * - devDependencies must be installed to run (includes tsx and bcryptjs)
+ * - Script validates all passwords before making any DB changes
  */
 
 import "dotenv/config";
-import { PrismaClient, DogBreed, DogPlaystyle, DogSize, UserRole } from "@prisma/client";
+import { PrismaClient, DogBreed, DogPlaystyle, DogSize, UserRole, OrgRole } from "@prisma/client";
 
 const prisma = new PrismaClient();
+
+// ============================================================================
+// Validation Functions
+// ============================================================================
+
+/**
+ * Validates that a string is a valid bcrypt hash (format: $2a$|$2b$|$2x$|$2y$ followed by cost and salt+hash)
+ */
+function isValidBcryptHash(hash: string): boolean {
+  // Bcrypt hashes are 60 characters long and start with $2a$, $2b$, $2x$, or $2y$
+  const bcryptRegex = /^\$2[aby]\$\d{2}\$.{53}$/;
+  return bcryptRegex.test(hash);
+}
+
+/**
+ * Checks if a hash matches the placeholder pattern (indicates it wasn't replaced)
+ */
+function isPlaceholderHash(hash: string): boolean {
+  return /^\$2[aby]\$10\$hashedpassword\d+/i.test(hash);
+}
+
+/**
+ * Validates all user passwords before seeding
+ */
+function validateAllPasswords(users: UserData[]): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  users.forEach((user, index) => {
+    if (isPlaceholderHash(user.password_hash)) {
+      errors.push(
+        `User #${index + 1} (${user.email}): Password hash is still a placeholder. ` +
+        `Generate a real bcrypt hash before running this script.`
+      );
+    } else if (!isValidBcryptHash(user.password_hash)) {
+      errors.push(
+        `User #${index + 1} (${user.email}): Password hash is not a valid bcrypt hash. ` +
+        `Use: node -e "require('bcryptjs').hash('password', 10, (err, hash) => console.log(hash))"`
+      );
+    }
+  });
+
+  return { valid: errors.length === 0, errors };
+}
+
+/**
+ * Validates array lengths match (DOGS.length === USERS.length)
+ */
+function validateArrayLengths(
+  parks: ParkData[],
+  users: UserData[],
+  dogs: DogData[],
+  orgs: OrganizationData[]
+): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (users.length !== dogs.length) {
+    errors.push(
+      `USERS array (length: ${users.length}) must match DOGS array (length: ${dogs.length}). ` +
+      `Each dog is assigned to a user by index.`
+    );
+  }
+
+  for (const org of orgs) {
+    if (org.ownerIndex < 0 || org.ownerIndex >= users.length) {
+      errors.push(
+        `Organization "${org.name}" ownerIndex (${org.ownerIndex}) is out of bounds. ` +
+        `Valid range: 0-${users.length - 1}`
+      );
+    }
+  }
+
+  return { valid: errors.length === 0, errors };
+}
 
 interface ParkData {
   name: string;
@@ -340,16 +414,46 @@ async function seedProduction() {
   try {
     console.log("🌱 Starting production database seed...\n");
 
+    // ========== VALIDATION PHASE ==========
+    console.log("✓ Validating configuration...");
+    
+    // Check array lengths
+    const lengthValidation = validateArrayLengths(PARKS, USERS, DOGS, ORGANIZATIONS);
+    if (!lengthValidation.valid) {
+      throw new Error(
+        "Configuration validation failed:\n" + lengthValidation.errors.join("\n")
+      );
+    }
+
+    // Check password hashes
+    const passwordValidation = validateAllPasswords(USERS);
+    if (!passwordValidation.valid) {
+      throw new Error(
+        "Password validation failed - refusing to seed:\n" + passwordValidation.errors.join("\n")
+      );
+    }
+    console.log("  ✓ All passwords are valid bcrypt hashes\n");
+
+    // ========== SEEDING PHASE ========== 
+
     // Seed Parks
     console.log("📍 Creating parks...");
     const createdParks = [];
     for (const parkData of PARKS) {
+      // Use park name as stable unique key for upsert (add unique constraint to schema if not present)
+      // For now, upsert by name to make seeding idempotent
       const park = await prisma.park.upsert({
-        where: { id: createdParks.length + 1 },
-        update: {},
+        where: { name: parkData.name },
+        update: {
+          latitude: parkData.latitude,
+          longitude: parkData.longitude,
+          description: parkData.description,
+          separateSmallDogArea: parkData.separateSmallDogArea,
+          amenities: parkData.amenities ? parkData.amenities : null, // Store as JSON array, not string
+        },
         create: {
           ...parkData,
-          amenities: parkData.amenities ? JSON.stringify(parkData.amenities) : null,
+          amenities: parkData.amenities ? parkData.amenities : null, // Store as JSON array, not string
         },
       });
       createdParks.push(park);
@@ -381,12 +485,18 @@ async function seedProduction() {
         data: dogData,
       });
 
-      // Create dog ownership
-      await prisma.dogOwner.create({
-        data: {
-          dogId: dog.id,
+      // Create dog ownership record (upsert by composite key)
+      await prisma.dogOwner.upsert({
+        where: {
+          userId_dogId: {
+            userId: owner.id,
+            dogId: dog.id,
+          },
+        },
+        update: {}, // No updates needed
+        create: {
           userId: owner.id,
-          currentOwner: true,
+          dogId: dog.id,
         },
       });
 
@@ -399,13 +509,41 @@ async function seedProduction() {
     console.log("\n🏢 Creating organizations...");
     for (const orgData of ORGANIZATIONS) {
       const owner = createdUsers[orgData.ownerIndex];
-      const organization = await prisma.organization.create({
-        data: {
+      
+      // Upsert organization by name to make idempotent
+      const organization = await prisma.organization.upsert({
+        where: { name: orgData.name },
+        update: {
+          description: orgData.description,
+          websiteUrl: orgData.websiteUrl,
+          profilePictureUrl: orgData.profilePictureUrl,
+          ownerId: owner.id,
+        },
+        create: {
           name: orgData.name,
           description: orgData.description,
           websiteUrl: orgData.websiteUrl,
           profilePictureUrl: orgData.profilePictureUrl,
           ownerId: owner.id,
+        },
+      });
+
+      // Create/update OrganizationMember record for the owner with OWNER role
+      // This is required because authorization logic checks OrganizationMember, not just ownerId
+      await prisma.organizationMember.upsert({
+        where: {
+          userId_organizationId: {
+            userId: owner.id,
+            organizationId: organization.id,
+          },
+        },
+        update: {
+          role: OrgRole.OWNER,
+        },
+        create: {
+          userId: owner.id,
+          organizationId: organization.id,
+          role: OrgRole.OWNER,
         },
       });
 
@@ -416,16 +554,21 @@ async function seedProduction() {
 
     console.log("\n✅ Production seed completed successfully!\n");
     console.log("Summary:");
-    console.log(`  - Parks created: ${PARKS.length}`);
+    console.log(`  - Parks created/updated: ${PARKS.length}`);
     console.log(`  - Users created: ${USERS.length}`);
     console.log(`  - Dogs created: ${DOGS.length}`);
-    console.log(`  - Organizations created: ${ORGANIZATIONS.length}`);
+    console.log(`  - Organizations created/updated: ${ORGANIZATIONS.length}`);
+    console.log("\n⚠️  Remember: Only run this script during initial setup, not on subsequent deployments.");
   } catch (error) {
-    console.error("❌ Error during seeding:", error);
-    throw error;
+    console.error("\n❌ Error during seeding:", error instanceof Error ? error.message : error);
+    process.exit(1);
   } finally {
     await prisma.$disconnect();
   }
 }
 
-seedProduction();
+// Run the seeding function and handle any unhandled rejections
+seedProduction().catch((error) => {
+  console.error("Unhandled error:", error);
+  process.exit(1);
+});

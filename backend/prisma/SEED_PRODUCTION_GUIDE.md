@@ -1,6 +1,76 @@
 # Production Database Seeding Guide
 
-This guide explains how to set up and run the production database seeding script (`seedProduction.ts`).
+Complete guide for seeding the production database. Start at the section that matches your needs:
+- **Quick start?** → Jump to [Quick Start (5 minutes)](#quick-start-5-minutes)
+- **Need setup details?** → Start at [Step-by-Step Setup](#step-by-step-setup)
+- **Going to production?** → Use [Pre-Production Checklist](#pre-production-checklist)
+- **Seeing errors?** → Check [Troubleshooting](#troubleshooting-common-issues)
+
+---
+
+## Quick Start (5 minutes)
+
+### Step 1: Generate Password Hashes (2 min)
+
+```bash
+npm install bcryptjs
+
+# Generate 5 hashes - replace passwords with your actual ones
+node -e "require('bcryptjs').hash('admin1password', 10, (err, hash) => console.log('ADMIN 1:', hash))"
+node -e "require('bcryptjs').hash('admin2password', 10, (err, hash) => console.log('ADMIN 2:', hash))"
+node -e "require('bcryptjs').hash('dev1password', 10, (err, hash) => console.log('DEV 1:', hash))"
+node -e "require('bcryptjs').hash('dev2password', 10, (err, hash) => console.log('DEV 2:', hash))"
+node -e "require('bcryptjs').hash('dev3password', 10, (err, hash) => console.log('DEV 3:', hash))"
+
+# Save these 5 hashes somewhere safe!
+```
+
+### Step 2: Update seedProduction.ts (2 min)
+
+Open `backend/prisma/seedProduction.ts`:
+1. `PARKS` array → Update with your park names & coordinates
+2. `USERS` array → Replace password_hash values with generated hashes
+3. `ORGANIZATIONS` array → Update names and descriptions
+4. `DOGS` array → Update with your dog information
+
+### Step 3: Run the Seed (1 min)
+
+```bash
+cd backend
+npm install              # Install dependencies (including devDeps)
+npm run migrate         # Apply database migrations
+npm run seed:prod       # Run the seeding script
+```
+
+### Verify It Worked
+
+```bash
+npx prisma studio      # Open visual database editor
+# Check: 5 parks, 5 users, 5 dogs, 2 organizations
+```
+
+---
+
+## Step-by-Step Setup
+
+### Database Provider Notice
+
+**This repository uses SQLite** as configured in `prisma/schema.prisma`. 
+
+```prisma
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+```
+
+If you need PostgreSQL or MySQL instead:
+1. Change `provider` in `prisma/schema.prisma`
+2. Update your `DATABASE_URL` environment variable
+3. Run `npx prisma migrate reset --force` to recreate migrations
+4. Follow the new provider's connection string format
+
+This guide assumes **SQLite**. Adjust database paths and commands accordingly if using PostgreSQL/MySQL.
 
 ## Production-Ready Checklist
 
@@ -24,9 +94,22 @@ The seeding script creates:
 - **5 Dogs** (one per user) with breed and personality info
 - **2 Organizations** (community groups run by admins)
 
-## Prerequisites
+### Important: devDependencies Must Be Installed
 
-1. **Node.js and npm installed**
+The `npm run seed:prod` script uses `tsx` (TypeScript executor), which is a **devDependency**. 
+
+When deploying:
+```bash
+# ✅ Install WITH devDependencies (allows seeding)
+npm install
+
+# ❌ DON'T omit devDependencies if you need to seed
+npm install --production  # This will fail because tsx isn't available
+```
+
+**For initial production setup:** Install with devDependencies, run seeding, then optionally deploy a slim production image without them.
+
+**For subsequent deployments:** Don't run seeding again—just run migrations and start the server.
    ```bash
    node --version
    npm --version
@@ -86,6 +169,21 @@ const USERS: UserData[] = [
   // ... repeat for all 5 users
 ];
 ```
+
+**Password Hash Validation:**
+The script validates ALL passwords before seeding and will REFUSE to run if:
+- Any password hash matches a placeholder pattern (`$2b$10$hashedpassword*`)
+- Any password hash is not a valid bcrypt hash (60 characters, starting with `$2a$`, `$2b$`, `$2x$`, or `$2y$`)
+
+This prevents accidentally seeding production with invalid or demo credentials.
+
+**If validation fails:** You'll see a clear error like:
+```
+Password validation failed - refusing to seed:
+User #1 (admin1@dogparkpals.com): Password hash is still a placeholder.
+```
+
+Generate proper hashes and try again.
 
 ### Step 3: Customize Organizations
 
@@ -147,6 +245,19 @@ const PARKS: ParkData[] = [
 - Use [Google Maps](https://maps.google.com)
 - Right-click on location → coordinates appear at top
 - Format: latitude, longitude (both are decimal numbers)
+
+**Park Names Must Be Unique:**
+Parks are upserted by name, so each park must have a unique name. Re-running the script will update existing parks with matching names (rather than creating duplicates).
+
+**Amenities Format:**
+Amenities are stored as JSON array in the database, not as a string. Always use an array:
+```typescript
+// ✅ Correct
+amenities: ["WATER_FOUNTAIN", "BENCHES", "SHADE"]
+
+// ❌ Wrong (don't stringify)
+amenities: JSON.stringify(["WATER_FOUNTAIN"])
+```
 
 **Available Amenities:**
 - `WATER_FOUNTAIN` - Drinking water available
@@ -312,6 +423,87 @@ SELECT * FROM "Dog";
 SELECT * FROM "DogOwner";
 ```
 
+## Pre-Production Checklist
+
+Before running `npm run seed:prod` in production, verify all items:
+
+### Security & Configuration
+
+- [ ] **Password Hashes Generated**
+  - [ ] Generated 5 bcrypt hashes (see Quick Start above)
+  - [ ] All hashes are exactly 60 characters
+  - [ ] All hashes start with `$2a$`, `$2b$`, `$2x$`, or `$2y$`
+  - [ ] Replaced ALL placeholder hashes in `USERS` array
+
+- [ ] **Database Configured**
+  - [ ] `DATABASE_URL` is set in `.env` file
+  - [ ] Database connection working: `npx prisma db execute --stdin < /dev/null`
+  - [ ] Database is empty or you have a backup
+
+- [ ] **Environment Correct**
+  - [ ] Using correct database file/connection string
+  - [ ] All other environment variables set
+
+### Data Customization
+
+- [ ] **Parks Updated** (`PARKS` array)
+  - [ ] 5 parks with unique names
+  - [ ] Correct latitude/longitude coordinates
+  - [ ] Appropriate amenities for each park
+
+- [ ] **Users Updated** (`USERS` array)
+  - [ ] 5 unique email addresses
+  - [ ] 5 unique usernames
+  - [ ] All password hashes replaced with real bcrypt hashes
+  - [ ] Correct roles (2 ADMIN, 3 DEVELOPER)
+
+- [ ] **Dogs Updated** (`DOGS` array)
+  - [ ] 5 dogs with unique names
+  - [ ] Correct breeds (matching DogBreed enum)
+  - [ ] DOGS.length === USERS.length (both 5)
+
+- [ ] **Organizations Updated** (`ORGANIZATIONS` array)
+  - [ ] Unique organization names
+  - [ ] Valid ownerIndex values (0-4)
+
+### Pre-Run Validation
+
+- [ ] **Install Dependencies**
+  ```bash
+  npm install  # Includes devDependencies (tsx)
+  ```
+
+- [ ] **Apply Migrations**
+  ```bash
+  npm run migrate
+  ```
+
+### Running & Verification
+
+- [ ] **Run Seeding Script**
+  ```bash
+  npm run seed:prod
+  ```
+
+- [ ] **Verify with Prisma Studio**
+  ```bash
+  npx prisma studio
+  ```
+  - [ ] 5 parks exist with correct data
+  - [ ] 5 users exist with correct roles
+  - [ ] 5 dogs exist with correct owners
+  - [ ] 2 organizations exist
+  - [ ] OrganizationMember records exist for org owners
+
+- [ ] **Test User Authentication** (if possible)
+  - [ ] Try logging in with generated users
+  - [ ] Verify admins have correct permissions
+  - [ ] Verify developers have correct permissions
+
+- [ ] **Database Backup**
+  - [ ] Create a backup of the database after successful seeding
+  - [ ] Store backup securely
+
 ## Troubleshooting
 
 ### Error: "Database connection failed"
@@ -470,16 +662,25 @@ This prevents accidental data loss during redeploys.
 .env.*.local
 dist/
 node_modules/
+
+# ⚠️ SQLite database files (NEVER commit live databases with user data!)
+*.db
+*.db-shm
+*.db-wal
 prisma/dev.db
+prisma/prod.db
+prisma/staging.db
 ```
+
+**⚠️ CRITICAL SECURITY:** SQLite databases contain user credentials and password hashes. Accidentally committing a production database to version control can expose sensitive data. Always add `*.db` patterns to `.gitignore` to prevent this risk.
 
 ## Environment Configuration
 
-### Example .env for Production
+### Example .env for Production (SQLite)
 
 ```env
-# Database
-DATABASE_URL="postgresql://user:securepassword@db.example.com:5432/dogparkpals_prod"
+# Database (using SQLite)
+DATABASE_URL="file:./prod.db"
 
 # Server
 NODE_ENV=production
@@ -489,18 +690,6 @@ PORT=3000
 JWT_SECRET=your-jwt-secret-here
 GOOGLE_CLIENT_ID=your-client-id
 GOOGLE_CLIENT_SECRET=your-client-secret
-```
-
-### .env Template
-
-Create `.env.example` for the team:
-
-```env
-# Copy this to .env and fill in production values
-DATABASE_URL=postgresql://user:password@host:5432/dbname
-NODE_ENV=production
-PORT=3000
-JWT_SECRET=your-jwt-secret
 ```
 
 ## CI/CD Integration

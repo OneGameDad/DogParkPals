@@ -22,15 +22,10 @@ const uploadService = {
     const formData = new FormData();
     formData.append('file', file);
 
-    // Get token for auth
-    const token = localStorage.getItem('token');
-
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `${API_BASE_URL}${endpoint}`, true);
-      if (token) {
-        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-      }
+      xhr.withCredentials = true;
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable && onProgress) {
@@ -66,12 +61,9 @@ const uploadService = {
   },
 
   async deleteUserProfilePicture(): Promise<void> {
-    const token = localStorage.getItem('token');
     const response = await fetch(`${API_BASE_URL}/api/users/profile-picture`, {
       method: 'DELETE',
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
+      credentials: 'include',
     });
 
     if (!response.ok) {
@@ -85,12 +77,9 @@ const uploadService = {
   },
 
   async deleteDogPhoto(dogId: number): Promise<void> {
-    const token = localStorage.getItem('token');
     const response = await fetch(`${API_BASE_URL}/api/dogs/${dogId}/photo`, {
       method: 'DELETE',
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
+      credentials: 'include',
     });
 
     if (!response.ok) {
@@ -104,12 +93,9 @@ const uploadService = {
   },
 
   async deleteVaccinationRecord(dogId: number): Promise<void> {
-    const token = localStorage.getItem('token');
     const response = await fetch(`${API_BASE_URL}/api/dogs/${dogId}/vaccination-record`, {
       method: 'DELETE',
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
+      credentials: 'include',
     });
 
     if (!response.ok) {

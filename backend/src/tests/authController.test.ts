@@ -78,7 +78,7 @@ describe('Auth Controller', () => {
       const payload = mockJson.mock.calls[0][0] as any;
       expect(payload.user).toBeDefined();
       expect(payload.user).not.toHaveProperty('password_hash');
-      expect(payload.token).toBeUndefined();
+      expect(payload.token).toBe('jwt-token');
       expect(mockJwtSign).toHaveBeenCalledWith({ userId: 1, email: 'user@example.com', role: undefined }, expect.any(String), { expiresIn: '7d' });
     });
 

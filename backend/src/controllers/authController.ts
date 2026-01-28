@@ -42,7 +42,7 @@ const authController = {
         path: '/'
       });
 
-      res.status(200).json({ user: sanitizeUser(user) });
+      res.status(200).json({ token, user: sanitizeUser(user) });
     } catch (error) {
       if (isAppError(error)) {
         return next(error);

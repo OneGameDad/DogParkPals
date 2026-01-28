@@ -1,4 +1,5 @@
 import request from "supertest";
+import path from "path";
 import app from "../../app";
 import { ids, makeToken } from "../fixtures/integrationFixtures";
 
@@ -272,3 +273,151 @@ describe("dogs CRUD and ownership", () => {
       expect(fetch2.body.name).toBe(fetch3.body.name);
     });
   });
+
+describe("dog photo upload", () => {
+  test("upload dog photo succeeds for dog owner", async () => {
+    const fixturePath = path.join(__dirname, "../fixtures/Helga.jpg");
+    const res = await request(app)
+      .post(`/api/dogs/${ids.dogs.dogA}/photo`)
+      .set("Authorization", `Bearer ${userAToken()}`)
+      .attach("file", fixturePath);
+
+    expect(res.status).toBe(200);
+    expect(res.body.message).toMatch(/uploaded successfully/i);
+    expect(res.body.dogPhotoUrl).toBeDefined();
+    expect(res.body.dogPhotoUrl).toMatch(/\/api\/files\/dogs\//);
+  });
+
+  test("upload dog photo fails for non-owner", async () => {
+    const fixturePath = path.join(__dirname, "../fixtures/Helga.jpg");
+    const res = await request(app)
+      .post(`/api/dogs/${ids.dogs.dogA}/photo`)
+      .set("Authorization", `Bearer ${userBToken()}`)
+      .attach("file", fixturePath);
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("FORBIDDEN");
+  });
+
+  test("upload dog photo fails for missing dog", async () => {
+    const fixturePath = path.join(__dirname, "../fixtures/Helga.jpg");
+    const res = await request(app)
+      .post(`/api/dogs/99999/photo`)
+      .set("Authorization", `Bearer ${userAToken()}`)
+      .attach("file", fixturePath);
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe("NOT_FOUND");
+  });
+
+  test("upload dog photo fails without auth", async () => {
+    const fixturePath = path.join(__dirname, "../fixtures/Helga.jpg");
+    const res = await request(app)
+      .post(`/api/dogs/${ids.dogs.dogA}/photo`)
+      .attach("file", fixturePath);
+
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe("AUTH_ERROR");
+  });
+
+  test("upload dog photo fails without file", async () => {
+    const res = await request(app)
+      .post(`/api/dogs/${ids.dogs.dogA}/photo`)
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe("NO_FILE");
+  });
+
+  test("admin can upload dog photo for any dog", async () => {
+    const fixturePath = path.join(__dirname, "../fixtures/Helga.jpg");
+    const res = await request(app)
+      .post(`/api/dogs/${ids.dogs.dogB}/photo`)
+      .set("Authorization", `Bearer ${adminToken()}`)
+      .attach("file", fixturePath);
+
+    expect(res.status).toBe(200);
+    expect(res.body.dogPhotoUrl).toBeDefined();
+  });
+
+  test("get dog photo URL requires auth", async () => {
+    const res = await request(app).get(`/api/files/dogs/${ids.dogs.dogA}/photo`);
+    expect(res.status).toBe(401);
+  });
+
+  test("authorized user can get dog photo URL", async () => {
+    // Upload first
+    const fixturePath = path.join(__dirname, "../fixtures/Helga.jpg");
+    const uploadRes = await request(app)
+      .post(`/api/dogs/${ids.dogs.dogA}/photo`)
+      .set("Authorization", `Bearer ${userAToken()}`)
+      .attach("file", fixturePath);
+
+    expect(uploadRes.status).toBe(200);
+
+    // Get the URL
+    const res = await request(app)
+      .get(`/api/files/dogs/${ids.dogs.dogA}/photo`)
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.url).toBeDefined();
+    expect(res.body.url).toMatch(/\/api\/files\/dogs\//);
+  });
+
+  test("dog without photo returns 404 for owner", async () => {
+    // dogB is owned by userB, but has no photo uploaded
+    const res = await request(app)
+      .get(`/api/files/dogs/${ids.dogs.dogB}/photo`)
+      .set("Authorization", `Bearer ${userBToken()}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.message).toMatch(/not found/i);
+  });
+
+  test("accessing dog without authorization returns 403", async () => {
+    // userA tries to access dogB which is owned by userB
+    const res = await request(app)
+      .get(`/api/files/dogs/${ids.dogs.dogB}/photo`)
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  test("delete dog photo succeeds for owner", async () => {
+    // Upload first
+    const fixturePath = path.join(__dirname, "../fixtures/Helga.jpg");
+    const uploadRes = await request(app)
+      .post(`/api/dogs/${ids.dogs.dogA}/photo`)
+      .set("Authorization", `Bearer ${userAToken()}`)
+      .attach("file", fixturePath);
+
+    expect(uploadRes.status).toBe(200);
+
+    // Delete the photo
+    const deleteRes = await request(app)
+      .delete(`/api/dogs/${ids.dogs.dogA}/photo`)
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    expect(deleteRes.status).toBe(204);
+  });
+
+  test("delete dog photo fails for non-owner", async () => {
+    // Upload first as owner
+    const fixturePath = path.join(__dirname, "../fixtures/Helga.jpg");
+    const uploadRes = await request(app)
+      .post(`/api/dogs/${ids.dogs.dogA}/photo`)
+      .set("Authorization", `Bearer ${userAToken()}`)
+      .attach("file", fixturePath);
+
+    expect(uploadRes.status).toBe(200);
+
+    // Try to delete as non-owner
+    const deleteRes = await request(app)
+      .delete(`/api/dogs/${ids.dogs.dogA}/photo`)
+      .set("Authorization", `Bearer ${userBToken()}`);
+
+    expect(deleteRes.status).toBe(403);
+    expect(deleteRes.body.code).toBe("FORBIDDEN");
+  });
+});

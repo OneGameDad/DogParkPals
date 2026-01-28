@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
+import { rimraf } from "rimraf";
 
 const projectRoot = path.resolve(__dirname, "..", "..", "..");
 const testDbPath = path.join(projectRoot, "prisma", "test.db");
@@ -32,9 +33,19 @@ beforeAll(async () => {
 afterEach(async () => {
   await resetData();
   await seedAll();
+  // Clean up uploaded files to prevent disk accumulation
+  const uploadsDir = path.join(projectRoot, "uploads");
+  if (fs.existsSync(uploadsDir)) {
+    await rimraf(uploadsDir);
+  }
 });
 
 afterAll(async () => {
   await resetData();
+  // Final cleanup
+  const uploadsDir = path.join(projectRoot, "uploads");
+  if (fs.existsSync(uploadsDir)) {
+    await rimraf(uploadsDir);
+  }
   await closeDb();
 });

@@ -8,6 +8,7 @@ router.use(requireAuth);
 router.get("/name/:name", parkController.getParkByName);
 router.get("/amenities", parkController.getParksByAmenity);
 router.get("/nearby", parkController.getParksNearLocation);
+router.get("/favorites/:userId", parkController.getUserFavoriteParks);
 router.post("/favorites/:userId/:parkId", parkController.addParkToUserFavorites);
 router.delete("/favorites/:userId/:parkId", parkController.removeParkFromUserFavorites);
 router.post("/:parkId/check-in", parkController.checkInAtPark);

@@ -24,6 +24,7 @@ const mockUpdatePark = jest.fn();
 const mockDeletePark = jest.fn();
 const mockAddParkToUserFavorites = jest.fn();
 const mockRemoveParkFromUserFavorites = jest.fn();
+const mockGetUserFavoriteParks = jest.fn();
 const mockCheckInAtPark = jest.fn();
 const mockCheckOutFromPark = jest.fn();
 const mockGetActiveCheckInsForPark = jest.fn();
@@ -41,6 +42,7 @@ jest.mock('../controllers/parkController', () => ({
     deletePark: (req: any, res: any, next: any) => mockDeletePark(req, res, next),
     addParkToUserFavorites: (req: any, res: any, next: any) => mockAddParkToUserFavorites(req, res, next),
     removeParkFromUserFavorites: (req: any, res: any, next: any) => mockRemoveParkFromUserFavorites(req, res, next),
+    getUserFavoriteParks: (req: any, res: any, next: any) => mockGetUserFavoriteParks(req, res, next),
     checkInAtPark: (req: any, res: any, next: any) => mockCheckInAtPark(req, res, next),
     checkOutFromPark: (req: any, res: any, next: any) => mockCheckOutFromPark(req, res, next),
     getActiveCheckInsForPark: (req: any, res: any, next: any) => mockGetActiveCheckInsForPark(req, res, next),
@@ -312,6 +314,31 @@ describe('Park Router', () => {
       await request(app).post('/favorites/1/2');
 
       expect(mockAddParkToUserFavorites).toHaveBeenCalled();
+    });
+  });
+
+  describe('GET /favorites/:userId', () => {
+    test('should call getUserFavoriteParks with userId', async () => {
+      mockGetUserFavoriteParks.mockImplementation((req, res) => {
+        res.status(200).json([]);
+      });
+
+      await request(app)
+        .get('/favorites/1')
+        .expect(200);
+
+      expect(mockGetUserFavoriteParks).toHaveBeenCalled();
+    });
+
+    test('should pass userId to controller', async () => {
+      mockGetUserFavoriteParks.mockImplementation((req, res) => {
+        expect(req.params.userId).toBe('2');
+        res.status(200).json([]);
+      });
+
+      await request(app).get('/favorites/2');
+
+      expect(mockGetUserFavoriteParks).toHaveBeenCalled();
     });
   });
 

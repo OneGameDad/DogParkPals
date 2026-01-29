@@ -14,6 +14,7 @@ const mockUpdatePark = jest.fn<any>();
 const mockDeletePark = jest.fn<any>();
 const mockAddParkToUserFavorites = jest.fn<any>();
 const mockRemoveParkFromUserFavorites = jest.fn<any>();
+const mockGetUserFavoriteParks = jest.fn<any>();
 const mockCheckIn = jest.fn<any>();
 const mockCheckOut = jest.fn<any>();
 const mockGetActiveCheckInsForPark = jest.fn<any>();
@@ -34,6 +35,7 @@ jest.mock('../services/parkService', () => ({
     deletePark: mockDeletePark,
     addParkToUserFavorites: mockAddParkToUserFavorites,
     removeParkFromUserFavorites: mockRemoveParkFromUserFavorites,
+    getUserFavoriteParks: mockGetUserFavoriteParks,
     checkIn: mockCheckIn,
     checkOut: mockCheckOut,
     getActiveCheckInsForPark: mockGetActiveCheckInsForPark,
@@ -534,6 +536,54 @@ describe('Park Controller', () => {
       mockAddParkToUserFavorites.mockRejectedValue(new Error('Database error'));
 
       await parkController.addParkToUserFavorites(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockNext).toHaveBeenCalled();
+    });
+  });
+
+  describe('getUserFavoriteParks', () => {
+    test('should return favorite parks for self', async () => {
+      const favorites = [mockParkData, { ...mockParkData, id: 2, name: 'North Park' }];
+      mockReq.params = { userId: '1' };
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+      mockGetUserFavoriteParks.mockResolvedValue(favorites);
+
+      await parkController.getUserFavoriteParks(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockGetUserFavoriteParks).toHaveBeenCalledWith(1);
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      expect(mockJson).toHaveBeenCalledWith(favorites);
+    });
+
+    test('should allow admin to view favorites for other user', async () => {
+      mockReq.params = { userId: '2' };
+      (mockReq as any).user = { id: 1, role: 'ADMIN' };
+      mockGetUserFavoriteParks.mockResolvedValue([]);
+
+      await parkController.getUserFavoriteParks(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockGetUserFavoriteParks).toHaveBeenCalledWith(2);
+      expect(mockStatus).toHaveBeenCalledWith(200);
+    });
+
+    test('should reject viewing favorites for other user without admin', async () => {
+      mockReq.params = { userId: '2' };
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+
+      await parkController.getUserFavoriteParks(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockNext).toHaveBeenCalled();
+      const error = mockNext.mock.calls[0][0] as Error;
+      expect(error.message).toContain('Not authorized');
+      expect(mockGetUserFavoriteParks).not.toHaveBeenCalled();
+    });
+
+    test('should handle error when fetching favorites', async () => {
+      mockReq.params = { userId: '1' };
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+      mockGetUserFavoriteParks.mockRejectedValue(new Error('Database error'));
+
+      await parkController.getUserFavoriteParks(mockReq as Request, mockRes as Response, mockNext as any);
 
       expect(mockNext).toHaveBeenCalled();
     });

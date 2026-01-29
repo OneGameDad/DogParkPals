@@ -147,14 +147,10 @@ const FileUpload = ({
 
       <div className="flex gap-2">
         {selectedFile && (
-          <Button onClick={handleUpload} disabled={loading} variant="primary">
-            {loading ? 'Uploading...' : 'Upload'}
-          </Button>
+          <Button onClick={handleUpload} disabled={loading} text={loading ? 'Uploading...' : 'Upload'} />
         )}
         {(preview || selectedFile === null) && !loading && (
-          <Button onClick={handleDelete} variant="danger">
-            Delete
-          </Button>
+          <Button onClick={handleDelete} text="Delete" className="bg-red-500 hover:bg-red-600" />
         )}
       </div>
     </div>

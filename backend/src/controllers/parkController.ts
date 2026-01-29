@@ -133,6 +133,30 @@ const parkController = {
       }
     },
 
+    getUserFavoriteParks: async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        typeSafeLogger.logRequest("Received request to fetch user favorite parks", { method: req.method, path: req.path });
+        const userId = parseInt(req.params.userId, 10);
+
+        const caller = (req as any).user;
+        const isAdmin = caller?.role === 'ADMIN' || caller?.role === 'DEVELOPER';
+        if (!caller || (caller.id !== userId && !isAdmin)) {
+          throw ForbiddenError('Not authorized to view favorites for this user');
+        }
+
+        const favorites = await parkService.getUserFavoriteParks(userId);
+        typeSafeLogger.logUserAction("User favorite parks retrieved", { userId, parkCount: favorites.length });
+        res.status(200).json(favorites);
+      } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
+        return next(
+          toAppError(error, { message: "Failed to retrieve user favorite parks", code: "INTERNAL_ERROR", statusCode: 500 })
+        );
+      }
+    },
+
     addParkToUserFavorites: async (req: Request, res: Response, next: NextFunction) => {
       try {
         typeSafeLogger.logRequest("Received request to add park to user favorites", { method: req.method, path: req.path });

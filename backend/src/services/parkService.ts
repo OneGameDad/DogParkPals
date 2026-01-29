@@ -216,6 +216,26 @@ const parkService = {
       throw appError;
     }
   },
+
+  async getUserFavoriteParks(userId: number) {
+    typeSafeLogger.logUserAction('Fetching user favorite parks', { userId });
+    try {
+      const favorites = await prisma.userFavoritePark.findMany({
+        where: { userId },
+        include: { park: true },
+      });
+      const parks = favorites.map((favorite) => favorite.park);
+      typeSafeLogger.logUserAction('User favorite parks retrieved', { userId, parkCount: parks.length });
+      return parks;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to fetch user favorite parks',
+        code: 'FETCH_USER_FAVORITE_PARKS_FAILED',
+      });
+      typeSafeLogger.logError('Failed to fetch user favorite parks', appError, { userId });
+      throw appError;
+    }
+  },
   
   async removeParkFromUserFavorites(userId: number, parkId: number) {
     typeSafeLogger.logUserAction('Removing park from user favorites', { userId, parkId });

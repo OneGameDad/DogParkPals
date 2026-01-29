@@ -14,6 +14,7 @@ const mockPrisma: any = {
   userFavoritePark: {
     create: jest.fn(),
     deleteMany: jest.fn(),
+    findMany: jest.fn(),
   },
   $queryRaw: jest.fn(),
 };
@@ -415,6 +416,38 @@ describe('Park Service', () => {
       mockPrisma.userFavoritePark.create.mockRejectedValue(new Error('Unique constraint failed'));
 
       await expect(parkService.addParkToUserFavorites(1, 1)).rejects.toThrow();
+    });
+  });
+
+  describe('getUserFavoriteParks', () => {
+    test('should return favorite parks for user', async () => {
+      const favorites = [
+        { userId: 1, parkId: 1, park: mockParkData },
+        { userId: 1, parkId: 2, park: { ...mockParkData, id: 2, name: 'North Park' } },
+      ];
+      mockPrisma.userFavoritePark.findMany.mockResolvedValue(favorites);
+
+      const result = await parkService.getUserFavoriteParks(1);
+
+      expect(mockPrisma.userFavoritePark.findMany).toHaveBeenCalledWith({
+        where: { userId: 1 },
+        include: { park: true },
+      });
+      expect(result).toEqual([favorites[0].park, favorites[1].park]);
+    });
+
+    test('should return empty array when user has no favorites', async () => {
+      mockPrisma.userFavoritePark.findMany.mockResolvedValue([]);
+
+      const result = await parkService.getUserFavoriteParks(1);
+
+      expect(result).toEqual([]);
+    });
+
+    test('should throw error when query fails', async () => {
+      mockPrisma.userFavoritePark.findMany.mockRejectedValue(new Error('Database error'));
+
+      await expect(parkService.getUserFavoriteParks(1)).rejects.toThrow();
     });
   });
 

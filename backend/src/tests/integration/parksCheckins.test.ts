@@ -156,6 +156,28 @@ describe("parks and check-ins", () => {
     expect(res.status).toBe(403);
   });
 
+  test("get favorite parks succeeds for self", async () => {
+    await request(app)
+      .post(`/api/parks/favorites/${ids.users.userA}/${ids.parks.park1}`)
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    const res = await request(app)
+      .get(`/api/parks/favorites/${ids.users.userA}`)
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.some((park: { id: number }) => park.id === ids.parks.park1)).toBe(true);
+  });
+
+  test("get favorite parks forbidden for other user", async () => {
+    const res = await request(app)
+      .get(`/api/parks/favorites/${ids.users.userA}`)
+      .set("Authorization", `Bearer ${userBToken()}`);
+
+    expect(res.status).toBe(403);
+  });
+
   test("check in and out succeeds", async () => {
     const checkInRes = await request(app)
       .post(`/api/parks/${ids.parks.park1}/check-in`)

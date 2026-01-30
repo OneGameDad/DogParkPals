@@ -59,6 +59,7 @@ More to come
 More to come
 
 ## Tech Stack
+- Vite
 - React
 - NodeJS
 - Express
@@ -68,14 +69,146 @@ More to come
 
 Reasoning: All commonly used tech, requested or required in many job advertisements. They also are well documented and supported.
 
-## Databse Schema
-More to come
+## Database Schema
+
+The database is built with SQLite and managed by Prisma ORM. Below is an overview of the core models and their relationships:
+
+### Core Models
+
+**User** - User accounts with profile information, authentication, and relationships
+- Authentication: email, password_hash, username
+- Profile: first_name, last_name, profilePictureUrl, latitude, longitude
+- Roles: CLIENT, DEVELOPER, ADMIN
+- Relationships: dog ownerships, check-ins, organizations, friendships, enemies, messages, notifications, events, achievements, levels
+
+**Dog** - Dog profiles with breed, size, and play style information
+- Attributes: name, breed (extensive enum of 500+ breeds), gender, size (TOY, SMALL, MEDIUM, LARGE, GIANT, KAIJU), playstyle (SOCIAL, SHY, AGGRESSIVE, ENERGETIC, CALM)
+- Health/Care: dateOfBirth, fixed, vaccinationRecordUrl
+- Relationships: owner records, check-ins, friendships, enemies
+
+**Park** - Dog park locations with amenities and descriptions
+- Location: name, latitude, longitude
+- Features: description, separateSmallDogArea, amenities (JSON), profilePictureUrl
+- Relationships: events, comments, check-ins, users (favorites)
+
+**Event** - Park events with organizers and attendees
+- Details: title, description, date, startTime, endTime
+- Settings: privacy (PUBLIC, PRIVATE)
+- Relationships: park, organization (optional), organizer, attendees, comments
+
+**Organization** - Groups for coordinating events and managing members
+- Information: name, profilePictureUrl, websiteUrl, description
+- Membership: owner, members with roles (INVITEE, MEMBER, MODERATOR, OWNER, BANNED)
+- Relationships: events, members
+
+### Social & Interaction Models
+
+**Friendship** - Connections between users/dogs with status tracking
+- Status: PENDING, ACCEPTED, REJECTED, BLOCKED
+- Supports both user-to-user and dog-to-dog friendships
+
+**Enemies** - Blocked/avoid list for users and their dogs
+- Owner-managed list of users/dogs to avoid
+
+**Messages** - Direct messaging between users with delivery status
+- Status: SENT, DELIVERED, READ, ARCHIVED, DELETED
+- Indexed for efficient queries
+
+**CheckIn** - Track when users and dogs visit parks
+- Records: userId, dogId (optional), parkId, checkedInAt, checkedOutAt
+- Enables real-time presence tracking at parks
+
+### Gamification Models
+
+**Achievements** - Badges and trophies earned by users
+- Types: BADGE, TROPHY, CERTIFICATE
+- Linked to UserAchievement join table for tracking earned achievements
+
+**Levels** - User progression levels with points thresholds
+- Attributes: name, minPoints, maxPoints, badgeUrl
+- Users earn experience points (ExpPoints) and progress through levels
+
+**Notifications** - User alerts for various activities
+- Types: FRIENDSHIP_REQUEST, FRIENDSHIP_ACCEPTED, MESSAGE_RECEIVED, EVENT_INVITATION, EVENT_REMINDER, ACHIEVEMENT_EARNED, LEVEL_UP, COMMENT_REPLY, PARK_REVIEW, ORGANIZATION_INVITE
+
+### Supporting Models
+
+**DogOwner** - Join table linking users to their dogs
+**UserFavoritePark** - Join table for users' favorite parks
+**OrganizationMember** - Join table with membership roles
+**EventAttendance** - Join table tracking event attendees
+**Comment** - Comments on parks and events
+**UserLevel** - Join table for user progression
+**UserAchievement** - Join table for earned achievements
 
 ## Features List
-More to come
+- User Profiles
+- Dog Profiles
+- Friends List
+- Enemies List
+- Messages
+- Notifications
+- Favorite Park
+- Organizations
+- Events
+- Parks
+- Checkins
+- Achievements, Levels & Badges
+- Advanced Search
+- Localization (English, Finnish, Spanish)
+- Remote Auth (Google Login)
+- Multibrowser Support
 
 ## Modules
-More to come
+| Module                                            | Points |
+| :------------------------------------------------ | :----: |
+| Web Framework (Frontend: React, Backend: Express) | 2      |
+| User Interaction (Profile, Chat, Friends)         | 2      |
+| ORM (Prisma)                                      | 1      |
+| Notifications                                     | 1      |
+| File Upload System (jpg, png, pdf)                | 1      |
+| Custom Design System                              | 1      |
+| User Management System                            | 2      |
+| Advanced Permissions System                       | 2      |
+| Organizations System                              | 2      |
+| Achievements, Levels & Badges (Gamification)      | 1      |
+| Advanced Search                                   | 1      |
+| Localization (English, Finnish, Spanish)          | 1      |
+| Remote Auth (Google Login)                        | 1      |
+| Multibrowser Support                              | 1      |
+| Total:                                            | 19     |
 
 ## Individual Contributions
-More to come
+
+### Laura Guillen
+- Notifications
+- File Uploads
+- Localization
+- Messaging
+
+### Jules Pierce
+- Custom Design System
+- Frontend Design
+
+### Mark Byrne
+- Frontend Functionality
+- Frontend Structure
+- Advanced Search Frontend
+
+### Renator de Moraes Bonilha
+- Achivements, Levels, Badges
+- Authorization & Authentication
+- Remote Authentication
+- Users
+- Docker
+- Advanced Search Backend
+
+### Gregory Pellechi
+- Database Schema
+- Dogs
+- Parks
+- Organizations
+- Events
+- Friends
+- Enemies
+- Testing Framework

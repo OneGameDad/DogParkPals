@@ -46,17 +46,24 @@ As this is an MVP it is limited in scope to only included the public dog parks i
 - Prisma config file `prisma.config.ts` has been removed; Prisma reads `schema.prisma` and the seed hook from `package.json`.
 
 ## Resources
-More to come
+- Copilot: Code Reviews, tests
+- Youtube: ORM and database schema basics
+- Pineapple Pizza: Morale Boosting
 
 ## Team
-- Gregory Pellechi: Product Owner
-- Laura Guillen: Product Manager
-- Renator de Moraes Bonilha: Tech Lead
-- Jules Pierce: Developer & Team Mascot
-- Mark Byrne: Developer
+- [Gregory Pellechi: Product Owner](https://github.com/OneGameDad)
+- [Laura Guillen: Product Manager](https://github.com/solleksmori)
+- [Renato de Moraes Bonilha: Tech Lead](https://github.com/moraesbo)
+- [Jules Pierce: Developer & Team Mascot](https://github.com/Jules478)
+- [Mark Byrne: Developer](https://github.com/Mark-Byrne-Codes)
 
 ## Project Management
-More to come
+- Tasks: Kanban Board on Github Projects
+- Repository: Github https://github.com/OneGameDad/DogParkPals
+- Diagrams, Meeting Notes, etc: Miro
+- Discord: Communication
+- Meetings: In-person at the Hive (averaged 1 a week), online (see Discord)
+- Documentation: Markdown files, code comments
 
 ## Tech Stack
 - Vite
@@ -66,6 +73,8 @@ More to come
 - Typescript
 - SQLite(Database)
 - Prisma 6 (ORM)
+- Jest (Backend unit tests)
+- Supertest (Backend integration tests)
 
 Reasoning: All commonly used tech, requested or required in many job advertisements. They also are well documented and supported.
 
@@ -195,7 +204,7 @@ The database is built with SQLite and managed by Prisma ORM. Below is an overvie
 - Frontend Structure
 - Advanced Search Frontend
 
-### Renator de Moraes Bonilha
+### Renato de Moraes Bonilha
 - Achivements, Levels, Badges
 - Authorization & Authentication
 - Remote Authentication

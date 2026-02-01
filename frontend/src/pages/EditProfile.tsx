@@ -4,12 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { useSubmit } from '../hooks/useSubmit';
 import { api } from '../services/api';
-import Header from '../components/Header';
-import Button from '../components/Button';
-import Picture from '../components/Picture';
-import BodyText from '../components/BodyText';
-import InputText from '../components/InputText';
-import Loading from '../components/Loading';
+import { Header } from '../components/layout';
+import { Button, Picture, BodyText, InputText, Loading } from '../components/common';
 
 const EditProfile = () => {
   const { t } = useTranslation();

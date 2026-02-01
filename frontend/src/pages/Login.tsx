@@ -3,9 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import { useSubmit } from '../hooks/useSubmit';
-import Button from '../components/Button';
-import InputText from '../components/InputText';
-import Header from '../components/Header';
+import { Button, InputText } from '../components/common';
+import { Header } from '../components/layout';
 
 const Login = () => {
   const navigate = useNavigate();

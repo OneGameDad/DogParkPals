@@ -2,12 +2,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { useFetch } from '../hooks/useFetch';
-import Loading from '../components/Loading';
-import ErrorMessage from '../components/ErrorMessage';
-import Header from '../components/Header';
-import Button from '../components/Button';
-import Picture from '../components/Picture';
-import BodyText from '../components/BodyText';
+import { Loading, ErrorMessage, Button, Picture, BodyText } from '../components/common';
+import { Header } from '../components/layout';
 import type { Dog } from '../types';
 
 const Profile = () => {

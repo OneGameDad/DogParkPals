@@ -9,11 +9,10 @@ import Settings from './pages/Settings';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Profile from './pages/Profile';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
+import { Navbar, Footer } from './components/layout';
 import DogProfile from './pages/DogProfile';
 import GoogleCallback from './pages/GoogleCallback';
-import ProtectedRoute from './components/ProtectedRoute';
+import { ProtectedRoute } from './components/features';
 import EditProfile from './pages/EditProfile';
 import EditDogProfile from './pages/EditDogProfile';
 

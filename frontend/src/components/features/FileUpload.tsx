@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import uploadService from '../services/uploadService';
-import { validateFile } from '../utils/fileValidation';
+import uploadService from '../../services/uploadService';
+import { validateFile } from '../../utils/fileValidation';
 import type { UploadCategory } from '../constants';
-import Button from './Button'; // TODO: Or wherever is located
+import Button from '../common/Button'; // TODO: Or wherever is located
 
 interface FileUploadProps {
   category: UploadCategory;

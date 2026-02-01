@@ -4,12 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import { useSubmit } from '../hooks/useSubmit';
 import { api } from '../services/api';
-import Header from '../components/layout/Header';
-import Button from '../components/common/Button';
-import Picture from '../components/common/Picture';
-import InputText from '../components/common/InputText';
-import Loading from '../components/common/Loading';
-import ErrorMessage from '../components/common/ErrorMessage';
+import { Header } from '../components/layout';
+import { Button, Picture, InputText, Loading, ErrorMessage } from '../components/common';
 import { type Dog, DogBreed, DogSize, DogGender, DogPlaystyle } from '../types';
 
 const EditDogProfile = () => {

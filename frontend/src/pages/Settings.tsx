@@ -1,4 +1,4 @@
-import LanguageSwitcher from "../components/features/LanguageSwitcher";
+import { LanguageSwitcher } from "../components/features";
 
 const Settings = () => {
     return (

@@ -1,12 +1,8 @@
 import React from 'react';
-import Button from '../components/common/Button';
 import { useTranslation } from 'react-i18next';
-import Achievement from '../components/features/Achievement';
-import Header from '../components/layout/Header';
-import Picture from '../components/common/Picture';
-import BodyText from '../components/common/BodyText';
-import InputText from '../components/common/InputText';
-import NotifContainer, { type NotifContainerHandle } from '../components/features/Notif';
+import { Button, Picture, BodyText, InputText } from '../components/common';
+import { Header } from '../components/layout';
+import { Achievement, NotifContainer, type NotifContainerHandle } from '../components/features';
 import { useAuth } from '../hooks/useAuth';
 
 const Home = () => {

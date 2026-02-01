@@ -1,12 +1,12 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
-import Loading from '../components/Loading';
-import ErrorMessage from '../components/ErrorMessage';
-import Header from '../components/Header';
-import Button from '../components/Button';
-import Picture from '../components/Picture';
-import BodyText from '../components/BodyText';
+import Loading from '../components/common/Loading';
+import ErrorMessage from '../components/common/ErrorMessage';
+import Header from '../components/layout/Header';
+import Button from '../components/common/Button';
+import Picture from '../components/common/Picture';
+import BodyText from '../components/common/BodyText';
 import type { Dog } from '../types';
 
 const DogProfile = () => {

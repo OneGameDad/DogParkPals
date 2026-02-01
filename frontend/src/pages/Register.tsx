@@ -3,10 +3,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import { useSubmit } from '../hooks/useSubmit';
-import Button from '../components/Button';
-import InputText from '../components/InputText';
-import Header from '../components/Header';
-import BodyText from '../components/BodyText';
+import Button from '../components/common/Button';
+import InputText from '../components/common/InputText';
+import Header from '../components/layout/Header';
+import BodyText from '../components/common/BodyText';
 
 const Register = () => {
   const navigate = useNavigate();

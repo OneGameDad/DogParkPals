@@ -13,7 +13,7 @@ export function useParkDetails(parkId: string | undefined) {
         data: checkIns,
         loading: loadingCheckIns,
         refetch: refetchCheckIns
-    } = useFetch<CheckIn[]>(`/api/parks/${parkId}/check-ins`, { skip: !parkId });
+    } = useFetch<CheckIn[]>(`/api/parks/${parkId}/check-ins`);
 
     return {
         park,

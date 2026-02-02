@@ -18,6 +18,8 @@ export const UPLOAD_RULES = {
 export type UploadCategory = keyof typeof UPLOAD_RULES;
 
 export const DEFAULT_IMAGES = {
-    userProfile: '/images/default_user_profile.png', // TODO: or whatever the correct path is
-    dogPhoto: '/images/default_dog_photo.png',
+    userProfile: '/imgs/exampleprofilepic.jpg',
+    dogPhoto: '/imgs/exampledogpic.jpg',
+    parkCard: '/imgs/background.png',
+    parkHero: '/imgs/background.png',
 };

@@ -97,7 +97,9 @@ export const en = {
       failedToUpdate: "Failed to update profile",
       pleaseLogin: "Please log in to edit your profile",
       loading: "Loading...",
-      required: "*"
+      required: "*",
+      favoriteParks: "Favorite Parks",
+      noFavoriteParks: "No favorite parks yet."
     },
     dogProfile: {
       title: "Dog Profile",
@@ -144,8 +146,26 @@ export const en = {
       descriptionPlaceholder: "Tell us about your dog...",
       birthdate: "Birthdate",
       profilePictureUrl: "Profile Picture URL"
+    },
+    parks: {
+      explore: "Explore Parks",
+      searchPlaceholder: "Search parks...",
+      noParksFound: "No parks found matching your search.",
+      noDescription: "No description available",
+      error: "Failed to load parks"
+    },
+    parkDetails: {
+      checkedInUsers: "Who's here?",
+      noOneCheckedIn: "No one checked in right now. Be the first!",
+      amenities: "Amenities",
+      description: "Description",
+      location: "Location",
+      directions: "Get Directions",
+      checkIn: "Check In",
+      checkOut: "Check Out",
+      favorite: "Add to favorites",
+      unfavorite: "Remove from favorites",
+      visitingHelper: "Let others know you and your dog are visiting!"
     }
   }
 };
-
-

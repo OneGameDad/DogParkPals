@@ -146,6 +146,13 @@ export interface CheckIn {
   parkId: number;
   checkedInAt: string;
   checkedOutAt: string | null;
+  user?: {
+    username: string;
+    profilePictureUrl: string | null;
+  };
+  dog?: {
+    name: string;
+  };
 }
 
 export interface Enemies {
@@ -163,6 +170,7 @@ export interface Park {
   name: string;
   latitude: number;
   longitude: number;
+  address: string;
   description: string | null;
   separateSmallDogArea: boolean;
   amenities: Amenity[];

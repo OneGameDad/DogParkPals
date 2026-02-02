@@ -12,10 +12,6 @@ const ParkDetails = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  if (!id) {
-    return <ErrorMessage message={t('parks.invalidParkId', 'Invalid park ID')} />;
-  }
-
   const { park, checkIns, loading, error, refetch } = useParkDetails(id);
   const { isCheckedIn, toggleCheckIn } = useParkCheckIn(id, checkIns);
   const { isFavorite, toggleFavorite } = useParkFavorite(id);
@@ -25,6 +21,8 @@ const ParkDetails = () => {
   }, []);
 
   const handleCheckInToggle = async () => {
+    if (actionLoading) return;
+    
     setActionLoading(true);
     setActionError(null);
     
@@ -41,12 +39,13 @@ const ParkDetails = () => {
   };
 
   const handleFavoriteToggle = async () => {
+    if (actionLoading) return;
+    
     setActionLoading(true);
     setActionError(null);
     
     try {
       await toggleFavorite();
-      // Note: toggleFavorite should handle refreshing user data internally
     } catch (error) {
       if (error instanceof Error) {
         setActionError(error.message);

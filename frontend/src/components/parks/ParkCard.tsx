@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { Park } from '../../types';
 import { Picture, Badge } from '../common';
 import { DEFAULT_IMAGES } from '../../constants';
+import { formatAmenity } from '../../utils/formatters';
 
 interface ParkCardProps {
     park: Park;
@@ -42,7 +43,7 @@ const ParkCard: React.FC<ParkCardProps> = ({ park }) => {
                         {park.amenities && park.amenities.slice(0, 3).map((amenity) => (
                             <Badge
                                 key={amenity}
-                                text={amenity.replace(/_/g, ' ')}
+                                text={formatAmenity(amenity)}
                             />
                         ))}
                         {park.amenities && park.amenities.length > 3 && (

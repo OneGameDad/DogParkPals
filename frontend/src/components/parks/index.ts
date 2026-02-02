@@ -1,4 +1,4 @@
-export { default as FavoriteParks } from './FavouriteParks';
+export { default as FavoriteParks } from './FavoriteParks';
 export { default as ParkActions } from './ParkActions';
 export { default as ParkAmenities } from './ParkAmenities';
 export { default as ParkCard } from './ParkCard';

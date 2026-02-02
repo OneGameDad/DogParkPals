@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDebounce } from '../../hooks';
 import InputText from '../common/InputText';
 
@@ -11,10 +11,15 @@ interface SearchBarProps {
 const SearchBar = ({ onSearch, placeholder = "Search...", delay = 500 }: SearchBarProps) => {
     const [inputValue, setInputValue] = useState('');
     const debouncedValue = useDebounce(inputValue, delay);
+    const onSearchRef = useRef(onSearch);
 
     useEffect(() => {
-        onSearch(debouncedValue);
-    }, [debouncedValue, onSearch]);
+        onSearchRef.current = onSearch;
+    }, [onSearch]);
+
+    useEffect(() => {
+        onSearchRef.current(debouncedValue);
+    }, [debouncedValue]);
 
     return (
         <div className="w-full">

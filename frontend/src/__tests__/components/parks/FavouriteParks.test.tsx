@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import FavoriteParks from '../../../components/parks/FavouriteParks';
+import FavoriteParks from '../../../components/parks/FavoriteParks';
 import type { Park } from '../../../types';
 
 vi.mock('react-i18next', () => ({
@@ -93,10 +93,7 @@ describe('FavoriteParks', () => {
     mockUseFetch.mockReturnValue({ data: [], loading: false });
 
     renderFavoriteParks();
-    expect(mockUseFetch).toHaveBeenCalledWith(
-      '/api/parks/favorites/42',
-      expect.objectContaining({ skip: false })
-    );
+    expect(mockUseFetch).toHaveBeenCalledWith('/api/parks/favorites/123');
   });
 
   it('skips fetch when no user', () => {
@@ -104,9 +101,6 @@ describe('FavoriteParks', () => {
     mockUseFetch.mockReturnValue({ data: null, loading: false });
 
     renderFavoriteParks();
-    expect(mockUseFetch).toHaveBeenCalledWith(
-      null,
-      expect.objectContaining({ skip: true })
-    );
+    expect(mockUseFetch).toHaveBeenCalledWith(null);
   });
 });

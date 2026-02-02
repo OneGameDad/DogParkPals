@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth, useFetch } from '../../hooks';
 import { Header } from '../layout';
 import { BodyText } from '../common';
-import { ParkCard } from './';
+import { ParkCard } from '.';
 import type { Park } from '../../types';
 
 const FavoriteParks = () => {

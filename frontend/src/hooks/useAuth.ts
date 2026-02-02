@@ -45,5 +45,17 @@ export function useAuth() {
         };
     }, []);
 
-    return { isAuthenticated, user, loading };
+    const refreshUser = async () => {
+        if (DEV_FORCE_LOGIN) return;
+        try {
+            const user = await api.get<User>('/auth/me');
+            setIsAuthenticated(true);
+            setUser(user);
+        } catch {
+            setIsAuthenticated(false);
+            setUser(null);
+        }
+    };
+
+    return { isAuthenticated, user, loading, refreshUser };
 }

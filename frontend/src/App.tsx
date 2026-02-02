@@ -15,6 +15,7 @@ import GoogleCallback from './pages/GoogleCallback';
 import { ProtectedRoute } from './components/features';
 import EditProfile from './pages/EditProfile';
 import EditDogProfile from './pages/EditDogProfile';
+import ParkDetails from './pages/ParkDetails';
 
 
 
@@ -76,6 +77,11 @@ function App() {
             <Route path="/dog/:id/edit" element={
               <ProtectedRoute>
                 <EditDogProfile />
+              </ProtectedRoute>
+            } />
+            <Route path="/parks/:id" element={
+              <ProtectedRoute>
+                <ParkDetails />
               </ProtectedRoute>
             } />
           </Routes>

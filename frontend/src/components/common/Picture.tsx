@@ -2,19 +2,21 @@ import React from 'react';
 
 interface PicProps {
   location: string;
-  size: string | number;
-  shape?: 'square' | 'circle';
+  size?: string | number;
+  shape?: 'square' | 'circle' | 'rect';
   alt?: string;
+  className?: string;
 }
 
 const Picture: React.FC<PicProps> = ({ 
   location,
   size,
   shape = 'square',
-  alt
+  alt,
+  className
 }) => {
-  const sizeValue = typeof size === 'number' ? `${size}px` : size;
-  const shapeClass = shape === 'circle' ? 'rounded-full' : 'rounded-lg';
+  const sizeValue = size ? (typeof size === 'number' ? `${size}px` : size) : undefined;
+  const shapeClass = shape === 'circle' ? 'rounded-full' : shape === 'rect' ? '' : 'rounded-lg';
   const resolvedAlt =
     typeof alt === 'string' && alt.trim().length > 0 ? alt : '';
 
@@ -25,15 +27,17 @@ const Picture: React.FC<PicProps> = ({
     );
   }
 
+  const styleProps = size ? {
+    width: sizeValue,
+    height: sizeValue,
+  } : undefined;
+
   return (
     <img
       src={location}
       alt={resolvedAlt}
-      style={{
-        width: sizeValue,
-        height: sizeValue,
-      }}
-      className={`${shapeClass} object-cover`}
+      style={styleProps}
+      className={`${shapeClass} object-cover ${className || ''}`}
     />
   );
 };

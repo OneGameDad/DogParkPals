@@ -161,9 +161,8 @@ describe('Profile Component', () => {
     renderProfile();
     
     expect(screen.getByText('Buddy')).toBeInTheDocument();
-    expect(screen.getByText('Golden Retriever')).toBeInTheDocument();
     expect(screen.getByText('Max')).toBeInTheDocument();
-    expect(screen.getByText('Labrador')).toBeInTheDocument();
+    // Note: Profile page no longer displays breed information
   });
 
   it('should render Add Dog button', () => {

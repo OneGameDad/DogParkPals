@@ -98,14 +98,20 @@ describe('EditDogProfile Component', () => {
 
         renderEditDogProfile();
 
-        // Fill form
-        fireEvent.change(screen.getByLabelText(/dogProfile.profilePictureUrl/), { target: { value: 'https://example.com/dog.jpg' } });
-        fireEvent.change(screen.getByLabelText(/dogProfile.name/), { target: { value: 'New Dog' } });
-        fireEvent.change(screen.getByLabelText(/dogProfile.breed/), { target: { value: 'GOLDEN_RETRIEVER' } });
-        fireEvent.change(screen.getByLabelText(/dogProfile.gender/), { target: { value: 'FEMALE' } });
-        fireEvent.change(screen.getByLabelText(/dogProfile.size/), { target: { value: 'SMALL' } });
-        fireEvent.change(screen.getByLabelText(/dogProfile.playstyle/), { target: { value: 'SOCIAL' } });
-        fireEvent.change(screen.getByLabelText(/dogProfile.birthdate/), { target: { value: '2023-01-01' } });
+        // Fill form - get all text inputs (not textareas)
+        const textInputs = document.querySelectorAll('input[type="text"]');
+        const profilePictureInput = screen.getByPlaceholderText('https://...');
+        const nameInput = textInputs[1] as HTMLInputElement; // Second text input is name
+        const selects = screen.getAllByRole('combobox');
+        const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+        
+        fireEvent.change(profilePictureInput, { target: { value: 'https://example.com/dog.jpg' } });
+        fireEvent.change(nameInput, { target: { value: 'New Dog' } });
+        fireEvent.change(selects[0], { target: { value: 'GOLDEN_RETRIEVER' } }); // breed
+        fireEvent.change(selects[1], { target: { value: 'FEMALE' } }); // gender
+        fireEvent.change(selects[2], { target: { value: 'SMALL' } }); // size
+        fireEvent.change(selects[3], { target: { value: 'SOCIAL' } }); // playstyle
+        fireEvent.change(dateInput, { target: { value: '2023-01-01' } }); // birthdate
 
         // Submit
         const submitButton = screen.getByText('dogProfile.createDog');
@@ -161,8 +167,8 @@ describe('EditDogProfile Component', () => {
 
         renderEditDogProfile();
 
-        const cancelButton = screen.getByText('dogProfile.cancel');
-        fireEvent.click(cancelButton);
+        const cancelButtons = screen.getAllByText('dogProfile.cancel');
+        fireEvent.click(cancelButtons[0]); // Click the first cancel button (in header)
 
         expect(mockNavigate).toHaveBeenCalledWith('/dog/1');
     });

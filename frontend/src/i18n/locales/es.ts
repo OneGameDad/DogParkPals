@@ -98,7 +98,9 @@ export const es = {
       failedToUpdate: "Spanish Failed to update profile",
       pleaseLogin: "Spanish Please log in to edit your profile",
       loading: "Spanish Loading...",
-      required: "Spanish *"
+      required: "Spanish *",
+      favoriteParks: "Spanish Favorite Parks",
+      noFavoriteParks: "Spanish No Favourite Parks."
     },
     dogProfile: {
       title: "Spanish Dog Profile",
@@ -134,6 +136,26 @@ export const es = {
       yearsOld: "Spanish {{years}} years old",
       monthsOld: "Spanish {{months}} months old",
       required: "Spanish *"
+    },
+    parks: {
+      explore: "Explorar Parques",
+      searchPlaceholder: "Buscar parques...",
+      noParksFound: "No se encontraron parques que coincidan con tu búsqueda.",
+      noDescription: "No hay descripción disponible",
+      error: "Error al cargar los parques"
+    },
+    parkDetails: {
+      checkedInUsers: "¿Quién está aquí?",
+      noOneCheckedIn: "Nadie registrado en este momento. ¡Sé el primero!",
+      amenities: "Comodidades",
+      description: "Descripción",
+      location: "Ubicación",
+      directions: "Obtener Direcciones",
+      checkIn: "Registrarse",
+      checkOut: "Salir",
+      favorite: "Añadir a favoritos",
+      unfavorite: "Quitar de favoritos",
+      visitingHelper: "¡Avisa a otros que tú y tu perro están de visita!"
     }
   }
 };

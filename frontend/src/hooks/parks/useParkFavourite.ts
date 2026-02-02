@@ -40,6 +40,3 @@ export function useParkFavorite(parkId: string | undefined) {
         loading: loadingFavorites
     };
 }
-        error: errorAction
-    };
-}

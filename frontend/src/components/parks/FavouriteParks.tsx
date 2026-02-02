@@ -10,8 +10,7 @@ const FavoriteParks = () => {
     const { user } = useAuth();
 
     const { data: favoriteParks, loading: loadingFavorites } = useFetch<Park[]>(
-        user ? `/api/parks/favorites/${user.id}` : null,
-        { skip: !user }
+        user ? `/api/parks/favorites/${user.id}` : null
     );
 
     if (!user) return null;

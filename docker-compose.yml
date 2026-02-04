@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build:
@@ -17,7 +15,8 @@ services:
       - ./backend/uploads:/app/uploads
       - backend-db:/app/prisma
     depends_on:
-      - db-init
+      db-init:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   frontend:

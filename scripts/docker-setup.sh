@@ -29,11 +29,11 @@ fi
 # Build and start containers
 echo ""
 echo "🔨 Building Docker images..."
-docker-compose build
+docker compose build
 
 echo ""
 echo "🚀 Starting containers..."
-docker-compose up -d
+docker compose up -d
 
 echo ""
 echo "⏳ Waiting for services to be ready..."
@@ -47,8 +47,8 @@ echo "  - Backend:  http://localhost:3000"
 echo "  - Frontend: http://localhost:5173"
 echo ""
 echo "Useful commands:"
-echo "  - View logs:     docker-compose logs -f"
-echo "  - Stop:          docker-compose down"
-echo "  - Restart:       docker-compose restart"
+echo "  - View logs:     docker compose logs -f"
+echo "  - Stop:          docker compose down"
+echo "  - Restart:       docker compose restart"
 echo "  - Shell access:  docker exec -it dogparkpals-backend sh"
 echo ""

@@ -16,11 +16,11 @@ fi
 
 echo ""
 echo "🛑 Stopping containers..."
-docker-compose down -v
+docker compose down -v
 
 echo ""
 echo "🗑️  Removing images..."
-docker-compose rm -f
+docker compose rm -f
 
 echo ""
 echo "✅ Docker environment reset complete!"

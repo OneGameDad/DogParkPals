@@ -43,16 +43,16 @@ As this is an MVP it is limited in scope to only included the public dog parks i
 
 ```bash
 # Start services
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Stop services
-docker-compose down
+docker compose down
 
 # Restart a service
-docker-compose restart backend
+docker compose restart backend
 
 # Seed database
 chmod +x scripts/docker-seed.sh

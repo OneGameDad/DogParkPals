@@ -17,8 +17,6 @@ The application is split into three Docker containers:
 ### Docker Compose Configuration
 
 ```yaml
-version: '3.8'
-
 services:
   backend:
     - Built from backend/Dockerfile

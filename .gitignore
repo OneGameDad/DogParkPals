@@ -4,6 +4,10 @@
 .env
 backend/.env
 
+# Docker secrets
+docker-secrets
+docker-compose.override.yml
+
 # Docker Compose local volumes (named volumes are not tracked)
 docker-data/
 
@@ -31,6 +35,9 @@ backend/dist/
 # Local SQLite databases
 backend/dev.db
 backend/prisma/dev.db
+*.db
+*.db-shm
+*.db-wal
 
 # Coverage outputs
 backend/coverage/

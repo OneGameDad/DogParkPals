@@ -6,7 +6,74 @@ Find local dog parks, make friends with the other dogs and their owners, and let
 
 As this is an MVP it is limited in scope to only included the public dog parks in Helsinki, and currently has no geolocation functionality.
 
-## Instructions
+## Quick Start with Docker (Recommended)
+
+### Prerequisites
+- Docker
+- Docker Compose
+
+### Setup
+
+1. **Copy environment configuration**
+   ```bash
+   cp docker-secrets-example docker-secrets
+   ```
+
+2. **Edit docker-secrets with your credentials**
+   ```bash
+   nano docker-secrets
+   ```
+   
+   Required:
+   - `JWT_SECRET`: Generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+   - `GOOGLE_CLIENT_ID`: (Optional) Get from Google Cloud Console
+   - `GOOGLE_CLIENT_SECRET`: (Optional) Get from Google Cloud Console
+
+3. **Run the setup script**
+   ```bash
+   chmod +x scripts/docker-setup.sh
+   ./scripts/docker-setup.sh
+   ```
+
+4. **Access the application**
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:3000
+
+### Docker Commands
+
+```bash
+# Start services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+
+# Restart a service
+docker-compose restart backend
+
+# Seed database
+chmod +x scripts/docker-seed.sh
+./scripts/docker-seed.sh
+
+# Reset everything (WARNING: deletes all data)
+chmod +x scripts/docker-reset.sh
+./scripts/docker-reset.sh
+
+# Access backend shell
+docker exec -it dogparkpals-backend sh
+
+# Run migrations
+docker exec -it dogparkpals-backend npx prisma migrate deploy
+
+# Open Prisma Studio
+docker exec -it dogparkpals-backend npx prisma studio
+```
+
+## Local Development Setup (Without Docker)
+
 ### Backend Setup (Local SQLite)
 - Ensure Node 20+ is installed: `node --version`
 - Backend uses local SQLite database at `backend/dev.db` (created automatically).
@@ -41,6 +108,7 @@ As this is an MVP it is limited in scope to only included the public dog parks i
 ### Notes
 - Do not commit `backend/prisma/generated/client/` (generated Prisma client; run `npx prisma generate` after pulling).
 - Do not commit `backend/dev.db` (local SQLite database).
+- Do not commit `docker-secrets` (Docker environment variables).
 - Prisma migrations in `backend/prisma/migrations` are versioned; run `npx prisma migrate deploy` after pulling to sync.
 - Environment: `DATABASE_URL=file:./dev.db` is set in `backend/.env` for local SQLite development.
 - Prisma config file `prisma.config.ts` has been removed; Prisma reads `schema.prisma` and the seed hook from `package.json`.

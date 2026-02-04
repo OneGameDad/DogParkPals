@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dogparkpals-backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    env_file:
+      - ./docker-secrets
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - backend-db:/app/prisma
+    depends_on:
+      - db-init
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=http://localhost:3000
+    container_name: dogparkpals-frontend
+    ports:
+      - "5173:80"
+    restart: unless-stopped
+
+  db-init:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.db-init
+    container_name: dogparkpals-db-init
+    env_file:
+      - ./docker-secrets
+    volumes:
+      - backend-db:/app/prisma
+    command: sh -c "npx prisma migrate deploy && npx prisma generate"
+
+volumes:
+  backend-db:
+    driver: local
+
+networks:
+  default:
+    name: dogparkpals-network

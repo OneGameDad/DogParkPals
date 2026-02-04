@@ -1,0 +1,13 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files and prisma schema
+COPY package*.json ./
+COPY prisma ./prisma/
+
+# Install dependencies (including devDependencies for migrations)
+RUN npm ci
+
+# This container will run migrations and exit
+# The actual command is specified in docker-compose.yml

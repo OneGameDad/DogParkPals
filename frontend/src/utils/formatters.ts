@@ -9,24 +9,32 @@ export const formatAmenity = (amenity: string) => {
 
 export const getUserInitials = (userOrName: User | string) => {
     if (typeof userOrName === 'string') {
-        return userOrName?.substring(0, 2).toUpperCase() || '??';
+        const trimmedName = userOrName?.trim() ?? '';
+        if (!trimmedName) {
+            return '??';
+        }
+        return trimmedName.substring(0, 2).toUpperCase();
     }
     const user = userOrName;
-    if (user.first_name && user.last_name) {
-        return `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
+    const firstName = user.first_name?.trim() || '';
+    const lastName = user.last_name?.trim() || '';
+    if (firstName && lastName) {
+        return `${firstName[0]}${lastName[0]}`.toUpperCase();
     }
-    if (user.first_name) {
-        return user.first_name.slice(0, 2).toUpperCase();
+    if (firstName) {
+        return firstName.slice(0, 2).toUpperCase();
     }
     return user.username.slice(0, 2).toUpperCase();
 };
 
 export const getUserDisplayName = (user: User): string => {
-    if (user.first_name && user.last_name) {
-        return `${user.first_name} ${user.last_name}`;
+    const firstName = user.first_name?.trim() || '';
+    const lastName = user.last_name?.trim() || '';
+    if (firstName && lastName) {
+        return `${firstName} ${lastName}`;
     }
-    if (user.first_name) {
-        return user.first_name;
+    if (firstName) {
+        return firstName;
     }
     return user.username;
 };

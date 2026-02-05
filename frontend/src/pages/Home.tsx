@@ -15,7 +15,6 @@ const Home = () => {
 
   return (
     <div>
-      <h1>Home</h1>
       <NotifContainer ref={notifRef} />
       <Header text="Home" />
       <Header text="Welcome to ParkPals" level="h2" colour="text-pink-500" />

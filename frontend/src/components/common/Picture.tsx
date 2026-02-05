@@ -28,9 +28,7 @@ const Picture: React.FC<PicProps> = ({
   }, [location]);
 
   if (resolvedAlt === '') {
-    // console.warn(
-    //   '[Picture] The `alt` prop is missing or empty. '
-    // );
+    console.warn('[Picture] The `alt` prop is missing or empty.');
   }
 
   const styleProps: React.CSSProperties = {

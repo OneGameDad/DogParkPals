@@ -11,6 +11,13 @@ interface EnemyRelationship {
 }
 
 export const useEnemies = (userId?: number) => {
+    // If no userId is provided, explicitly return an error state and a no-op removeEnemy.
+    if (!userId) {
+        const removeEnemy = async (_enemyId: number) => {
+            return false;
+        };
+        return { enemies: [], loading: false, error: new Error('userId is required for useEnemies'), removeEnemy };
+    }
     // Backend endpoint is /api/enemies for current user context if used with session, 
     // but controller getEnemy uses /api/enemies/:userId
     const { data: relationships, loading, error, refetch } = useFetch<EnemyRelationship[]>(userId ? `/api/enemies/${userId}` : '');

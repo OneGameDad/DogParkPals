@@ -10,6 +10,7 @@ router.post("/decline", friendController.declineFriendRequest);
 router.post("/", friendController.addFriend);
 router.delete("/", friendController.removeFriend);
 // GET /?userId=1 or GET /?dogId=1
+router.get("/requests", friendController.getFriendRequests);
 router.get("/", friendController.getFriendsList);
 
 export default router;

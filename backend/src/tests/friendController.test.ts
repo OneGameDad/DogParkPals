@@ -9,6 +9,7 @@ const mockDeclineFriendRequest = jest.fn<any>();
 const mockRemoveFriend = jest.fn<any>();
 const mockGetFriendsList = jest.fn<any>();
 const mockGetFriend = jest.fn<any>();
+const mockGetFriendRequests = jest.fn<any>();
 const mockIsEnemy = jest.fn<any>();
 const mockRemoveEnemy = jest.fn<any>();
 const mockAwardExperience = jest.fn<any>();
@@ -26,6 +27,7 @@ jest.mock('../services/friendService', () => ({
 		removeFriend: mockRemoveFriend,
 		getFriendsList: mockGetFriendsList,
 		getFriend: mockGetFriend,
+		getFriendRequests: mockGetFriendRequests,
 	},
 }));
 
@@ -318,6 +320,38 @@ describe('friendController', () => {
 			});
 
 			await friendController.getFriend(mockReq as Request, mockRes as Response, mockNext);
+
+			expect(mockStatus).not.toHaveBeenCalled();
+			expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+		});
+	});
+
+	describe('getFriendRequests', () => {
+		test('returns friend requests', async () => {
+			const userId = 1;
+			const requests = [{ id: 1 }, { id: 2 }];
+
+			mockReq.query = { userId: '1' };
+			mockParseValidation.mockReturnValue({ userId });
+			mockGetFriendRequests.mockResolvedValue(requests);
+
+			await friendController.getFriendRequests(mockReq as Request, mockRes as Response, mockNext);
+
+			expect(mockGetFriendRequests).toHaveBeenCalledWith(userId);
+			expect(mockStatus).toHaveBeenCalledWith(200);
+			expect(mockJson).toHaveBeenCalledWith(requests);
+		});
+
+		test('forwards validation error', async () => {
+			const validationError = new AppError('Validation failed', {
+				code: 'VALIDATION_ERROR',
+				statusCode: 400,
+			});
+			mockParseValidation.mockImplementation(() => {
+				throw validationError;
+			});
+
+			await friendController.getFriendRequests(mockReq as Request, mockRes as Response, mockNext);
 
 			expect(mockStatus).not.toHaveBeenCalled();
 			expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));

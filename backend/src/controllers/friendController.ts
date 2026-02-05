@@ -161,6 +161,25 @@ const friendController = {
             );
         }
     },
+
+    getFriendRequests: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            typeSafeLogger.logRequest("Received request to get friend requests", { method: req.method, path: req.path });
+            const userId = req.query.userId ? Number(req.query.userId) : undefined;
+            const validatedParams = parseValidation(getUserIdSchema, { userId });
+
+            const friendRequests = await friendService.getFriendRequests(validatedParams.userId);
+            typeSafeLogger.logUserAction("Friend requests retrieved", { userId: validatedParams.userId, requestCount: friendRequests.length });
+            res.status(200).json(friendRequests);
+        } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
+            return next(
+                toAppError(error, { message: "Failed to get friend requests", code: "INTERNAL_ERROR", statusCode: 500 })
+            );
+        }
+    }
 };
 
 export default friendController;

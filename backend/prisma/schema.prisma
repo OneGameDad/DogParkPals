@@ -350,6 +350,7 @@ enum Amenity {
   WASTE_BAGS
   OBSTACLES
   AGILITY_EQUIPMENT
+  BEACH_ACCESS
 }
 
 enum EventPrivacy {

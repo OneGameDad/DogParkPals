@@ -350,7 +350,24 @@ describe('Friend Service', () => {
 
       expect(result).toEqual(mockDeleteResult);
       expect(result.count).toBe(1);
-      expect(mockDeleteMany).toHaveBeenCalled();
+      expect(mockDeleteMany).toHaveBeenCalledWith({
+        where: {
+          OR: [
+            {
+              requesterId: mockUserId,
+              addresseeId: mockFriendId,
+              requesterDogId: null,
+              addresseeDogId: null,
+            },
+            {
+              requesterId: mockFriendId,
+              addresseeId: mockUserId,
+              requesterDogId: null,
+              addresseeDogId: null,
+            },
+          ],
+        },
+      });
 
       jest.dontMock('@prisma/client');
     });
@@ -373,7 +390,24 @@ describe('Friend Service', () => {
       const result = await friendService.default.removeFriend(mockFriendId, mockUserId);
 
       expect(result).toEqual(mockDeleteResult);
-      expect(mockDeleteMany).toHaveBeenCalled();
+      expect(mockDeleteMany).toHaveBeenCalledWith({
+        where: {
+          OR: [
+            {
+              requesterId: mockFriendId,
+              addresseeId: mockUserId,
+              requesterDogId: null,
+              addresseeDogId: null,
+            },
+            {
+              requesterId: mockUserId,
+              addresseeId: mockFriendId,
+              requesterDogId: null,
+              addresseeDogId: null,
+            },
+          ],
+        },
+      });
 
       jest.dontMock('@prisma/client');
     });
@@ -396,6 +430,24 @@ describe('Friend Service', () => {
       const result = await friendService.default.removeFriend(mockUserId, mockFriendId);
 
       expect(result.count).toBe(0);
+      expect(mockDeleteMany).toHaveBeenCalledWith({
+        where: {
+          OR: [
+            {
+              requesterId: mockUserId,
+              addresseeId: mockFriendId,
+              requesterDogId: null,
+              addresseeDogId: null,
+            },
+            {
+              requesterId: mockFriendId,
+              addresseeId: mockUserId,
+              requesterDogId: null,
+              addresseeDogId: null,
+            },
+          ],
+        },
+      });
 
       jest.dontMock('@prisma/client');
     });
@@ -439,6 +491,43 @@ describe('Friend Service', () => {
       await expect(
         friendService.default.removeFriend(mockUserId, mockFriendId)
       ).rejects.toThrow();
+
+      jest.dontMock('@prisma/client');
+    });
+
+    test('should remove a user-to-dog friendship with scoped filter', async () => {
+      const mockDeleteResult = { count: 1 };
+      const mockFriendDogId = 7;
+
+      const mockDeleteMany = jest.fn<() => Promise<{ count: number }>>().mockResolvedValue(mockDeleteResult);
+
+      jest.doMock('@prisma/client', () => ({
+        PrismaClient: jest.fn(() => ({
+          friendship: {
+            deleteMany: mockDeleteMany,
+          },
+        })),
+      }));
+
+      const friendService = await import('../services/friendService');
+
+      const result = await friendService.default.removeFriend(mockUserId, undefined, undefined, mockFriendDogId);
+
+      expect(result).toEqual(mockDeleteResult);
+      expect(mockDeleteMany).toHaveBeenCalledWith({
+        where: {
+          OR: [
+            {
+              requesterId: mockUserId,
+              addresseeDogId: mockFriendDogId,
+            },
+            {
+              addresseeId: mockUserId,
+              requesterDogId: mockFriendDogId,
+            },
+          ],
+        },
+      });
 
       jest.dontMock('@prisma/client');
     });

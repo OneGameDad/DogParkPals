@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
 import { createFriendRequestSchema, removeFriendSchema, friendshipIdSchema, getFriendsSchema } from '../utils/validationSchemas';
@@ -111,50 +111,71 @@ const friendService = {
       // Validate input data
       const validatedData = removeFriendSchema.parse({ userId, friendId, dogId, friendDogId });
 
+      const orFilters: Prisma.FriendshipWhereInput[] = [];
+
+      // User to User
+      if (validatedData.userId && validatedData.friendId) {
+        orFilters.push(
+          {
+            requesterId: validatedData.userId,
+            addresseeId: validatedData.friendId,
+            requesterDogId: null,
+            addresseeDogId: null,
+          },
+          {
+            requesterId: validatedData.friendId,
+            addresseeId: validatedData.userId,
+            requesterDogId: null,
+            addresseeDogId: null,
+          }
+        );
+      }
+
+      // User to Dog
+      if (validatedData.userId && validatedData.friendDogId) {
+        orFilters.push(
+          {
+            requesterId: validatedData.userId,
+            addresseeDogId: validatedData.friendDogId,
+          },
+          {
+            addresseeId: validatedData.userId,
+            requesterDogId: validatedData.friendDogId,
+          }
+        );
+      }
+
+      // Dog to User
+      if (validatedData.dogId && validatedData.friendId) {
+        orFilters.push(
+          {
+            requesterDogId: validatedData.dogId,
+            addresseeId: validatedData.friendId,
+          },
+          {
+            addresseeDogId: validatedData.dogId,
+            requesterId: validatedData.friendId,
+          }
+        );
+      }
+
+      // Dog to Dog
+      if (validatedData.dogId && validatedData.friendDogId) {
+        orFilters.push(
+          {
+            requesterDogId: validatedData.dogId,
+            addresseeDogId: validatedData.friendDogId,
+          },
+          {
+            requesterDogId: validatedData.friendDogId,
+            addresseeDogId: validatedData.dogId,
+          }
+        );
+      }
+
       const deletedFriendship = await prisma.friendship.deleteMany({
         where: {
-          OR: [
-            // User to User
-            { 
-              requesterId: validatedData.userId || undefined, 
-              addresseeId: validatedData.friendId || undefined,
-              requesterDogId: null,
-              addresseeDogId: null
-            },
-            { 
-              requesterId: validatedData.friendId || undefined, 
-              addresseeId: validatedData.userId || undefined,
-              requesterDogId: null,
-              addresseeDogId: null
-            },
-            // User to Dog
-            { 
-              requesterId: validatedData.userId || undefined, 
-              addresseeDogId: validatedData.friendDogId || undefined 
-            },
-            { 
-              addresseeId: validatedData.userId || undefined, 
-              requesterDogId: validatedData.friendDogId || undefined 
-            },
-            // Dog to User
-            { 
-              requesterDogId: validatedData.dogId || undefined, 
-              addresseeId: validatedData.friendId || undefined 
-            },
-            { 
-              addresseeDogId: validatedData.dogId || undefined, 
-              requesterId: validatedData.friendId || undefined 
-            },
-            // Dog to Dog
-            { 
-              requesterDogId: validatedData.dogId || undefined, 
-              addresseeDogId: validatedData.friendDogId || undefined 
-            },
-            { 
-              requesterDogId: validatedData.friendDogId || undefined, 
-              addresseeDogId: validatedData.dogId || undefined 
-            },
-          ],
+          OR: orFilters,
         },
       });
       typeSafeLogger.logUserAction('Friend removed successfully', { userId, friendId, dogId, friendDogId });

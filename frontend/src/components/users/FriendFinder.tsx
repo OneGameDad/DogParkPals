@@ -100,7 +100,7 @@ const FriendFinder = () => {
             <UserProfileModal
                 user={selectedUser}
                 onClose={handleCloseModal}
-                onAddFriend={!isFriend && !isEnemy ? handleAddFriend : undefined}
+                onAddFriend={!isFriend ? handleAddFriend : undefined}
                 onAddEnemy={!isEnemy ? handleAddEnemy : undefined}
                 onRemoveFriend={isFriend ? handleRemoveFriend : undefined}
                 onRemoveEnemy={isEnemy ? handleRemoveEnemy : undefined}

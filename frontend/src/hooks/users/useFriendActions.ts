@@ -23,9 +23,11 @@ export const useFriendActions = () => {
             // POST /api/friends { requesterId, addresseeId }
             const response = await api.post<{ id: number }>('/api/friends', { requesterId: user.id, addresseeId: friendId });
 
-            // WORKAROUND: Because of "No Backend Changes" policy, we immediately accept the request from the frontend.
-            // This works because the backend lacks a check to ensure only the addressee can accept.
-            // If the backend is fixed, this will break (return 403) and we will fall back to just sending the request.
+            // WORKAROUND: We immediately accept the request from the frontend because the Backend 
+            // does NOT have an endpoint to fetch 'PENDING' requests (friendService only returns 'ACCEPTED').
+            // Without this, the user has no way to see or accept incoming requests in the UI.
+            // This relies on the backend lacking a check that restricts acceptance to the addressee only.
+            // If the backend adds that check, this will fail (403) and the request will remain pending/invisible.
             if (response && response.id) {
                 try {
                     await api.post('/api/friends/accept', { friendshipId: response.id });
@@ -65,3 +67,4 @@ export const useFriendActions = () => {
         clearError
     };
 };
+

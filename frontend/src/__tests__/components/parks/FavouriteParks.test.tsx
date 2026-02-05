@@ -89,11 +89,11 @@ describe('FavoriteParks', () => {
   });
 
   it('fetches favorites with correct user ID', () => {
-    mockUseAuth.mockReturnValue({ user: { id: 42, username: 'testuser' } });
+    mockUseAuth.mockReturnValue({ user: { id: 123, username: 'testuser' } });
     mockUseFetch.mockReturnValue({ data: [], loading: false });
 
     renderFavoriteParks();
-    expect(mockUseFetch).toHaveBeenCalledWith('/api/parks/favorites/123');
+    expect(mockUseFetch).toHaveBeenCalledWith('/api/parks/favorites/123', undefined);
   });
 
   it('skips fetch when no user', () => {
@@ -101,6 +101,6 @@ describe('FavoriteParks', () => {
     mockUseFetch.mockReturnValue({ data: null, loading: false });
 
     renderFavoriteParks();
-    expect(mockUseFetch).toHaveBeenCalledWith(null);
+    expect(mockUseFetch).toHaveBeenCalledWith(null, undefined);
   });
 });

@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Logout from './pages/Logout';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import Social from './pages/Social';
 import Settings from './pages/Settings';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
@@ -16,8 +17,6 @@ import { ProtectedRoute } from './components/features';
 import EditProfile from './pages/EditProfile';
 import EditDogProfile from './pages/EditDogProfile';
 import ParkDetails from './pages/ParkDetails';
-
-
 
 function App() {
   return (
@@ -42,6 +41,11 @@ function App() {
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/social" element={
+              <ProtectedRoute>
+                <Social />
               </ProtectedRoute>
             } />
             <Route path="/settings" element={

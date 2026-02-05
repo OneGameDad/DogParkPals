@@ -166,6 +166,37 @@ export const en = {
       favorite: "Add to favorites",
       unfavorite: "Remove from favorites",
       visitingHelper: "Let others know you and your dog are visiting!"
+    },
+    findFriends: {
+      title: "Find Users",
+      searchLabel: "Search Users",
+      searchPlaceholder: "Search by username...",
+      noUsersFound: "No users found.",
+      failedToLoad: "Failed to load users",
+      userProfile: "User Profile",
+      requestSentButton: "Request Sent",
+      addFriend: "Add Friend",
+      addEnemy: "Add Enemy",
+      processing: "Processing...",
+      selectAction: "Select an action"
+    },
+    enemies: {
+      title: "My Enemies",
+      noEnemies: "You have no enemies... yet.",
+      remove: "Remove Enemy",
+      removing: "Removing...",
+      confirmRemove: "Are you sure you want to remove this enemy?",
+      searchLabel: "Search Enemies",
+      searchPlaceholder: "Search enemies..."
+    },
+    friends: {
+      title: "My Friends",
+      noFriends: "You have no friends yet.",
+      remove: "Unfriend",
+      removing: "Unfriending...",
+      loading: "Loading friends...",
+      searchLabel: "Search Friends",
+      searchPlaceholder: "Search friends..."
     }
   }
 };

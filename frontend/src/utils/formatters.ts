@@ -1,3 +1,5 @@
+import type { User } from '../types';
+
 export const formatAmenity = (amenity: string) => {
     return amenity
         .split('_')
@@ -5,8 +7,28 @@ export const formatAmenity = (amenity: string) => {
         .join(' ');
 };
 
-export const getUserInitials = (username: string) => {
-    return username?.substring(0, 2).toUpperCase() || '??';
+export const getUserInitials = (userOrName: User | string) => {
+    if (typeof userOrName === 'string') {
+        return userOrName?.substring(0, 2).toUpperCase() || '??';
+    }
+    const user = userOrName;
+    if (user.first_name && user.last_name) {
+        return `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
+    }
+    if (user.first_name) {
+        return user.first_name.slice(0, 2).toUpperCase();
+    }
+    return user.username.slice(0, 2).toUpperCase();
+};
+
+export const getUserDisplayName = (user: User): string => {
+    if (user.first_name && user.last_name) {
+        return `${user.first_name} ${user.last_name}`;
+    }
+    if (user.first_name) {
+        return user.first_name;
+    }
+    return user.username;
 };
 
 export const formatTime = (dateString: string) => {

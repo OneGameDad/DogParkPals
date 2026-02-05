@@ -17,7 +17,7 @@ class ApiService {
     options?: RequestInit
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options?.headers as Record<string, string>),
@@ -42,7 +42,7 @@ class ApiService {
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status} error`;
       let errorData: any = {};
-      
+
       try {
         errorData = await response.json();
         errorMessage = errorData.message || errorData.error || errorMessage;
@@ -56,7 +56,7 @@ class ApiService {
           // No body to parse
         }
       }
-      
+
       throw new Error(errorMessage);
     }
 
@@ -68,7 +68,7 @@ class ApiService {
     if (contentType && contentType.includes('application/json')) {
       return response.json();
     }
-    
+
     return response.text() as T;
   }
 
@@ -90,8 +90,11 @@ class ApiService {
     });
   }
 
-  async delete<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint, { method: 'DELETE' });
+  async delete<T>(endpoint: string, data?: unknown): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: 'DELETE',
+      body: data ? JSON.stringify(data) : undefined,
+    });
   }
 
   async patch<T>(endpoint: string, data?: unknown): Promise<T> {

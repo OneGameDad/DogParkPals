@@ -15,10 +15,11 @@ const Home = () => {
 
   return (
     <div>
+      <h1>Home</h1>
       <NotifContainer ref={notifRef} />
       <Header text="Home" />
       <Header text="Welcome to ParkPals" level="h2" colour="text-pink-500" />
-      
+
       {loading ? (
         <BodyText text="Checking authentication..." />
       ) : isAuthenticated ? (
@@ -26,25 +27,25 @@ const Home = () => {
       ) : (
         <BodyText text="Not logged in" colour="text-gray-600" />
       )}
-      
-      <Button 
+
+      <Button
         text={t('buttons.cancel')}
         onClick={() => notifRef.current?.addNotification('messageReceived', { name: 'Mark' })}
       />
-      <Button 
+      <Button
         text={t('buttons.submit')}
         onClick={() => notifRef.current?.addNotification('friendRequest', { name: 'Greg' })}
       />
       <Button text={t('buttons.disabled')} disabled={true} />
 
-      <Achievement 
+      <Achievement
         title="Best Friend"
         description="Made your first friend"
         image="imgs/exampledogpic.jpg"
         imageAlt="Best Friend Badge"
       />
 
-      <Achievement 
+      <Achievement
         title="Explorer"
         image="imgs/exampledogpic.jpg"
         imageAlt="Explorer badge with a dog illustration"

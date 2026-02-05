@@ -49,9 +49,9 @@ describe('ParkCard', () => {
 
   it('renders up to 3 amenity badges', () => {
     renderParkCard(mockPark);
-    expect(screen.getByText('WATER FOUNTAIN')).toBeInTheDocument();
-    expect(screen.getByText('SHADE')).toBeInTheDocument();
-    expect(screen.getByText('BENCHES')).toBeInTheDocument();
+    expect(screen.getByText('Water Fountain')).toBeInTheDocument();
+    expect(screen.getByText('Shade')).toBeInTheDocument();
+    expect(screen.getByText('Benches')).toBeInTheDocument();
   });
 
   it('shows +N badge when more than 3 amenities', () => {

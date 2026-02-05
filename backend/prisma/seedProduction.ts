@@ -119,6 +119,15 @@ function validateArrayLengths(
     );
   }
 
+  dogs.forEach((dog, index) => {
+    if (dog.ownerIndex < 0 || dog.ownerIndex >= users.length) {
+      errors.push(
+        `Dog #${index + 1} (${dog.name}) ownerIndex (${dog.ownerIndex}) is out of bounds. ` +
+        `Valid range: 0-${users.length - 1}`
+      );
+    }
+  });
+
   for (const org of orgs) {
     if (org.ownerIndex < 0 || org.ownerIndex >= users.length) {
       errors.push(
@@ -168,6 +177,7 @@ interface DogData {
   playstyle?: DogPlaystyle;
   fixed?: boolean;
   description?: string;
+  ownerIndex: number; // Index of user in USERS array who owns this dog
 }
 
 // ============================================================================
@@ -192,44 +202,44 @@ interface DogData {
 
 const PARKS: ParkData[] = [
   {
-    name: "Central Dog Park",
-    latitude: 40.7829,
-    longitude: -73.9654,
-    description: "A large dog park in the heart of the city",
-    separateSmallDogArea: true,
-    amenities: ["WATER_FOUNTAIN", "BENCHES", "WASTE_BAGS", "SHADE"],
-  },
-  {
-    name: "Riverside Dog Park",
-    latitude: 40.8015,
-    longitude: -73.9776,
-    description: "Scenic dog park along the river",
+    name: "Råholmens/Rajasaaren Dog Park",
+    latitude: 60.18259,
+    longitude: 24.90736,
+    description: "An island oasis for dogs in the heart of the city",
     separateSmallDogArea: false,
-    amenities: ["WATER_FOUNTAIN", "SHADE", "AGILITY_EQUIPMENT"],
+    amenities: ["BENCHES", "SHADE", "BEACH_ACCESS"],
   },
   {
-    name: "Forest Grove Dog Park",
-    latitude: 40.7614,
-    longitude: -73.9776,
+    name: "Lassas/Lassilan Dog Park",
+    latitude: 60.23339,
+    longitude: 24.87399,
+    description: "A spacious dog park with plenty of room to run and play",
+    separateSmallDogArea: false,
+    amenities: ["WATER_FOUNTAIN", "SHADE", "BENCHES"],
+  },
+  {
+    name: "Nybondas/Kanavan Dog Park",
+    latitude: 60.20896,
+    longitude: 25.16210,
     description: "Wooded dog park with natural terrain",
     separateSmallDogArea: true,
-    amenities: ["SHADE", "OBSTACLES", "WASTE_BAGS"],
+    amenities: ["SHADE", "WASTE_BAGS", "BENCHES"],
   },
   {
-    name: "Sunset Park Dog Area",
-    latitude: 40.6432,
-    longitude: -74.0314,
+    name: "Drumsö/Lauttasaari Dog Park",
+    latitude: 60.14696,
+    longitude: 24.89234,
     description: "Beautiful dog park with sunset views",
     separateSmallDogArea: false,
-    amenities: ["BENCHES", "WATER_FOUNTAIN", "SHADE"],
+    amenities: ["BENCHES", "WATER_FOUNTAIN", "BEACH_ACCESS", "SHADE"],
   },
   {
-    name: "Meadow Dog Park",
-    latitude: 40.7505,
-    longitude: -73.9972,
-    description: "Open meadow perfect for running dogs",
+    name: "Blåbärslandet/Mustikkamaa Dog Park",
+    latitude: 60.18402,
+    longitude: 24.98426,
+    description: "Lots of blueberries (when in season) and a separate small dog area",
     separateSmallDogArea: true,
-    amenities: ["WATER_FOUNTAIN", "AGILITY_EQUIPMENT", "OBSTACLES"],
+    amenities: ["WATER_FOUNTAIN", "AGILITY_EQUIPMENT", "OBSTACLES", "SHADE"],
   },
 ];
 
@@ -255,50 +265,40 @@ const USERS: UserData[] = [
     email: "admin1@dogparkpals.com",
     username: "admin_user1",
     password_hash: "$2b$10$hashedpassword1", // ⚠️ REPLACE WITH ACTUAL HASHED PASSWORD
-    first_name: "Admin",
-    last_name: "User One",
-    latitude: 40.7829,
-    longitude: -73.9654,
+    first_name: "Greg",
+    last_name: "Pellechi",
     role: UserRole.ADMIN,
   },
   {
     email: "admin2@dogparkpals.com",
     username: "admin_user2",
     password_hash: "$2b$10$hashedpassword2", // ⚠️ REPLACE WITH ACTUAL HASHED PASSWORD
-    first_name: "Admin",
-    last_name: "User Two",
-    latitude: 40.8015,
-    longitude: -73.9776,
+    first_name: "Renato",
+    last_name: "de Moraes Bonilha",
     role: UserRole.ADMIN,
   },
   {
     email: "dev1@dogparkpals.com",
     username: "dev_user1",
     password_hash: "$2b$10$hashedpassword3", // ⚠️ REPLACE WITH ACTUAL HASHED PASSWORD
-    first_name: "Developer",
-    last_name: "One",
-    latitude: 40.7614,
-    longitude: -73.9776,
+    first_name: "Laura",
+    last_name: "Guillen",
     role: UserRole.DEVELOPER,
   },
   {
     email: "dev2@dogparkpals.com",
     username: "dev_user2",
     password_hash: "$2b$10$hashedpassword4", // ⚠️ REPLACE WITH ACTUAL HASHED PASSWORD
-    first_name: "Developer",
-    last_name: "Two",
-    latitude: 40.6432,
-    longitude: -74.0314,
+    first_name: "Jules",
+    last_name: "Pierce",
     role: UserRole.DEVELOPER,
   },
   {
     email: "dev3@dogparkpals.com",
     username: "dev_user3",
     password_hash: "$2b$10$hashedpassword5", // ⚠️ REPLACE WITH ACTUAL HASHED PASSWORD
-    first_name: "Developer",
-    last_name: "Three",
-    latitude: 40.7505,
-    longitude: -73.9972,
+    first_name: "Mark",
+    last_name: "Byrne",
     role: UserRole.DEVELOPER,
   },
 ];
@@ -321,15 +321,15 @@ const USERS: UserData[] = [
 
 const ORGANIZATIONS: OrganizationData[] = [
   {
-    name: "Friends of Central Dog Park",
-    description: "Community group dedicated to improving and maintaining Central Dog Park",
+    name: "Doggis",
+    description: "Dog Daycare and Training Center in Swedish (Finland)",
     websiteUrl: "https://friends-central-dogpark.example.com",
     profilePictureUrl: "https://example.com/org1-logo.png",
     ownerIndex: 0, // Owned by admin_user1
   },
   {
-    name: "City Dog Parks Alliance",
-    description: "City-wide organization promoting responsible dog ownership and park access",
+    name: "Beagle Brigade",
+    description: "Helsinki's Premier Beagle Meetup Group",
     websiteUrl: "https://city-dog-parks.example.com",
     profilePictureUrl: "https://example.com/org2-logo.png",
     ownerIndex: 1, // Owned by admin_user2
@@ -355,24 +355,26 @@ const ORGANIZATIONS: OrganizationData[] = [
 
 const DOGS: DogData[] = [
   {
-    name: "Max",
-    breed: DogBreed.GOLDEN_RETRIEVER,
-    gender: "MALE",
+    name: "Helga",
+    breed: DogBreed.BARBET,
+    gender: "FEMALE",
     dateOfBirth: new Date("2022-03-15"),
-    size: DogSize.LARGE,
+    size: DogSize.MEDIUM,
     playstyle: DogPlaystyle.SOCIAL,
     fixed: true,
-    description: "Friendly Golden Retriever who loves playing fetch",
+    description: "Friendly Barbet who loves playing with other dogs",
+    ownerIndex: 0,
   },
   {
     name: "Luna",
-    breed: DogBreed.LABRADOR_RETRIEVER,
+    breed: DogBreed.BASSET_HOUND,
     gender: "FEMALE",
     dateOfBirth: new Date("2021-07-22"),
-    size: DogSize.LARGE,
-    playstyle: DogPlaystyle.ENERGETIC,
+    size: DogSize.MEDIUM,
+    playstyle: DogPlaystyle.CALM,
     fixed: true,
-    description: "Energetic Lab who is always ready for action",
+    description: "Calm Basset Hound who enjoys lounging in the shade",
+    ownerIndex: 1,
   },
   {
     name: "Charlie",
@@ -383,6 +385,7 @@ const DOGS: DogData[] = [
     playstyle: DogPlaystyle.SHY,
     fixed: false,
     description: "Small French Bulldog, a bit shy but very sweet",
+    ownerIndex: 2,
   },
   {
     name: "Bella",
@@ -393,16 +396,18 @@ const DOGS: DogData[] = [
     playstyle: DogPlaystyle.CALM,
     fixed: true,
     description: "Calm and well-trained German Shepherd",
+    ownerIndex: 3,
   },
   {
     name: "Cooper",
-    breed: DogBreed.BEAGLE,
+    breed: DogBreed.FINNISH_LAPPHUND,
     gender: "MALE",
     dateOfBirth: new Date("2022-05-18"),
     size: DogSize.MEDIUM,
     playstyle: DogPlaystyle.SOCIAL,
     fixed: true,
-    description: "Friendly Beagle with a nose for adventure",
+    description: "Friendly Finnish Lapphund with a nose for adventure",
+    ownerIndex: 4,
   },
 ];
 
@@ -479,10 +484,11 @@ async function seedProduction() {
     console.log("\n🐕 Creating dogs and assigning to users...");
     for (let i = 0; i < DOGS.length; i++) {
       const dogData = DOGS[i];
-      const owner = createdUsers[i];
+      const owner = createdUsers[dogData.ownerIndex];
+      const { ownerIndex, ...dogCreateData } = dogData;
 
       const dog = await prisma.dog.create({
-        data: dogData,
+        data: dogCreateData,
       });
 
       // Create dog ownership record (upsert by composite key)

@@ -378,13 +378,13 @@ const DOGS: DogData[] = [
   },
   {
     name: "Charlie",
-    breed: DogBreed.FRENCH_BULLDOG,
+    breed: DogBreed.CIRNECO_DELL_ETNA,
     gender: "MALE",
     dateOfBirth: new Date("2023-01-10"),
     size: DogSize.SMALL,
     playstyle: DogPlaystyle.SHY,
     fixed: false,
-    description: "Small French Bulldog, a bit shy but very sweet",
+    description: "Small Cirneco dell'Etna, a bit shy but very sweet",
     ownerIndex: 2,
   },
   {

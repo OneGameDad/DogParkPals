@@ -60,6 +60,8 @@ const Picture: React.FC<PicProps> = ({
       style={styleProps}
       className={`${shapeClass} flex items-center justify-center bg-blue-100 text-blue-600 font-bold text-lg border border-blue-200 ${className || ''}`}
       title={resolvedAlt}
+      role="img"
+      aria-label={resolvedAlt || initials || '?'}
     >
       {initials || '?'}
     </div>

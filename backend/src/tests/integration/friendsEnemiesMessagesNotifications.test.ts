@@ -120,6 +120,18 @@ describe("Friend Flows", () => {
     expect(res.body.message).toBe("Friend removed successfully");
   });
 
+  test("get friend requests by userId succeeds", async () => {
+    const res = await request(app)
+      .get(`/api/friends/requests?userId=${ids.users.userC}`)
+      .set("Authorization", `Bearer ${userCToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
+    expect(res.body[0].addresseeId).toBe(ids.users.userC);
+    expect(res.body[0].status).toBe("PENDING");
+  });
+
   test("get friends list by userId succeeds", async () => {
     const res = await request(app)
       .get(`/api/friends?userId=${ids.users.userA}`)
@@ -145,6 +157,14 @@ describe("Friend Flows", () => {
   test("get friends list requires auth", async () => {
     const res = await request(app)
       .get(`/api/friends?userId=${ids.users.userA}`);
+
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe("AUTH_ERROR");
+  });
+
+  test("get friend requests requires auth", async () => {
+    const res = await request(app)
+      .get(`/api/friends/requests?userId=${ids.users.userC}`);
 
     expect(res.status).toBe(401);
     expect(res.body.code).toBe("AUTH_ERROR");

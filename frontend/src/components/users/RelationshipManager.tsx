@@ -33,8 +33,8 @@ const RelationshipManager = ({
 
     const filteredUsers = users.filter((user: User) =>
         user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (user.first_name && user.first_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (user.last_name && user.last_name.toLowerCase().includes(searchTerm.toLowerCase()))
+        (user.first_name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     const handleUserClick = (user: User) => {

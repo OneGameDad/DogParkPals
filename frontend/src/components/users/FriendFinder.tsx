@@ -80,7 +80,6 @@ const FriendFinder = () => {
                     onChange={setSearchQuery}
                     placeholder={t('findFriends.searchPlaceholder')}
                     label={t('findFriends.searchLabel')}
-                    name="search"
                 />
             </div>
 

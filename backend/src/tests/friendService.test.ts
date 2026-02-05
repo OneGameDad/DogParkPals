@@ -1149,4 +1149,213 @@ describe('Friend Service', () => {
       jest.dontMock('@prisma/client');
     });
   });
+
+  describe('getFriendRequests', () => {
+    test('should successfully retrieve friend requests for user', async () => {
+      const mockFriendRequests = [
+        {
+          id: 1,
+          requesterId: 2,
+          addresseeId: mockUserId,
+          requesterDogId: null,
+          addresseeDogId: null,
+          status: 'PENDING',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          requester: {
+            id: 2,
+            email: 'requester@example.com',
+            password_hash: 'hash',
+            username: 'requester',
+            first_name: 'Request',
+            last_name: 'User',
+            profilePictureUrl: null,
+            latitude: null,
+            longitude: null,
+            role: 'CLIENT',
+            ExpPoints: 0,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          addressee: {
+            id: mockUserId,
+            email: 'addressee@example.com',
+            password_hash: 'hash',
+            username: 'addressee',
+            first_name: 'Addressee',
+            last_name: 'User',
+            profilePictureUrl: null,
+            latitude: null,
+            longitude: null,
+            role: 'CLIENT',
+            ExpPoints: 0,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          requesterDog: null,
+          addresseeDog: null,
+        },
+      ];
+
+      const mockFindMany = jest.fn().mockResolvedValue(mockFriendRequests);
+
+      jest.doMock('@prisma/client', () => ({
+        PrismaClient: jest.fn(() => ({
+          friendship: {
+            findMany: mockFindMany,
+          },
+        })),
+      }));
+
+      const friendService = await import('../services/friendService');
+
+      const result = await friendService.default.getFriendRequests(mockUserId);
+
+      expect(result).toEqual(mockFriendRequests);
+      expect(mockFindMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            AND: [
+              {
+                OR: expect.arrayContaining([
+                  { addresseeId: mockUserId },
+                  { addresseeDogId: undefined },
+                ]),
+              },
+              { status: 'PENDING' },
+            ],
+          },
+          include: expect.objectContaining({
+            requester: true,
+            addressee: true,
+            requesterDog: true,
+            addresseeDog: true,
+          }),
+        })
+      );
+
+      jest.dontMock('@prisma/client');
+    });
+
+    test('should successfully retrieve friend requests for dog', async () => {
+      const mockDogId = 9;
+      const mockFriendRequests = [
+        {
+          id: 2,
+          requesterId: null,
+          addresseeId: null,
+          requesterDogId: 4,
+          addresseeDogId: mockDogId,
+          status: 'PENDING',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          requester: null,
+          addressee: null,
+          requesterDog: {
+            id: 4,
+            name: 'Rex',
+            breed: 'LABRADOR_RETRIEVER',
+            gender: 'MALE',
+            age: 3,
+            bio: null,
+            profilePictureUrl: null,
+            ownerId: 2,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          addresseeDog: {
+            id: mockDogId,
+            name: 'Luna',
+            breed: 'GOLDEN_RETRIEVER',
+            gender: 'FEMALE',
+            age: 2,
+            bio: null,
+            profilePictureUrl: null,
+            ownerId: mockUserId,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        },
+      ];
+
+      const mockFindMany = jest.fn().mockResolvedValue(mockFriendRequests);
+
+      jest.doMock('@prisma/client', () => ({
+        PrismaClient: jest.fn(() => ({
+          friendship: {
+            findMany: mockFindMany,
+          },
+        })),
+      }));
+
+      const friendService = await import('../services/friendService');
+
+      const result = await friendService.default.getFriendRequests(undefined, mockDogId);
+
+      expect(result).toEqual(mockFriendRequests);
+      expect(mockFindMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            AND: [
+              {
+                OR: expect.arrayContaining([
+                  { addresseeId: undefined },
+                  { addresseeDogId: mockDogId },
+                ]),
+              },
+              { status: 'PENDING' },
+            ],
+          },
+          include: expect.objectContaining({
+            requester: true,
+            addressee: true,
+            requesterDog: true,
+            addresseeDog: true,
+          }),
+        })
+      );
+
+      jest.dontMock('@prisma/client');
+    });
+
+    test('should return empty array when no friend requests exist', async () => {
+      const mockFindMany = jest.fn().mockResolvedValue([]);
+
+      jest.doMock('@prisma/client', () => ({
+        PrismaClient: jest.fn(() => ({
+          friendship: {
+            findMany: mockFindMany,
+          },
+        })),
+      }));
+
+      const friendService = await import('../services/friendService');
+
+      const result = await friendService.default.getFriendRequests(mockUserId);
+
+      expect(result).toEqual([]);
+
+      jest.dontMock('@prisma/client');
+    });
+
+    test('should throw error when database operation fails', async () => {
+      const mockFindMany = jest.fn().mockRejectedValue(new Error('Database error'));
+
+      jest.doMock('@prisma/client', () => ({
+        PrismaClient: jest.fn(() => ({
+          friendship: {
+            findMany: mockFindMany,
+          },
+        })),
+      }));
+
+      const friendService = await import('../services/friendService');
+
+      await expect(
+        friendService.default.getFriendRequests(mockUserId)
+      ).rejects.toThrow();
+
+      jest.dontMock('@prisma/client');
+    });
+  });
 });

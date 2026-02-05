@@ -313,6 +313,40 @@ const friendService = {
       throw appError;
     }
   },
+
+  async getFriendRequests(userId?: number, dogId?: number) {
+    typeSafeLogger.logUserAction('Fetching friend requests', { userId, dogId });
+    try {
+      const friendRequests = await prisma.friendship.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { addresseeId: userId || undefined },
+                { addresseeDogId: dogId || undefined },
+              ],
+            },
+            { status: 'PENDING' },
+          ],
+        },
+        include: {
+          requester: true,
+          addressee: true,
+          requesterDog: true,
+          addresseeDog: true,
+        },
+      });
+      typeSafeLogger.logUserAction('Friend requests fetched successfully', { userId, dogId, requestsCount: friendRequests.length });
+      return friendRequests;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to fetch friend requests',
+        code: 'FETCH_FRIEND_REQUESTS_FAILED',
+      });
+      typeSafeLogger.logError('Failed to fetch friend requests', appError, { userId, dogId });
+      throw appError;
+    }
+  },
 };
 
 export default friendService;

@@ -89,11 +89,18 @@ const FriendFinder = () => {
                 ) : showError ? (
                     <ErrorMessage message={t('findFriends.failedToLoad')} />
                 ) : (
-                    <UserList
-                        users={users}
-                        currentUserId={currentUser?.id}
-                        onUserClick={handleUserClick}
-                    />
+                    <>
+                        {loading && (
+                            <div className="mb-4">
+                                <Loading message={t('findFriends.loading')} />
+                            </div>
+                        )}
+                        <UserList
+                            users={users}
+                            currentUserId={currentUser?.id}
+                            onUserClick={handleUserClick}
+                        />
+                    </>
                 )
             }
 

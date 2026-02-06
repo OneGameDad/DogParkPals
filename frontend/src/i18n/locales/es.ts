@@ -18,10 +18,10 @@ export const es = {
       rightsReserved: "Spanish rights."
     },
     buttons: {
-    submit: "Spanish Submit",
-    cancel: "Spanish Cancel",
-    delete: "Spanish Delete",
-    disabled: "Spanish Disabled"
+      submit: "Spanish Submit",
+      cancel: "Spanish Cancel",
+      delete: "Spanish Delete",
+      disabled: "Spanish Disabled"
     },
     notifications: { // don't change the {name} bits, it's part of the code
       friendRequest: '{name} wants to be friends in Spanish',

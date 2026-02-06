@@ -6,3 +6,4 @@ export { default as InputText } from './InputText';
 export { default as Loading } from './Loading';
 export { default as Picture } from './Picture';
 export { default as Badge } from './Badge';
+export { default as Modal } from './Modal';

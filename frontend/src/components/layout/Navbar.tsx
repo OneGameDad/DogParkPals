@@ -17,10 +17,11 @@ const Navbar = () => {
     return (
         <nav className="p-4 border-b border-gray-200 flex items-center gap-4 bg-white">
             <Link to="/" className="text-gray-600 hover:underline font-medium">{t('home')}</Link>
-            
+
             {isAuthenticated ? (
                 <>
                     <Link to="/dashboard" className="text-gray-600 hover:underline font-medium">{t('dashboard')}</Link>
+                    <Link to="/social" className="text-gray-600 hover:underline font-medium">{t('social', 'Social')}</Link>
                     <Link to="/profile" className="text-gray-600 hover:underline font-medium">{t('profile.title')}</Link>
                     <Link to="/settings" className="text-gray-600 hover:underline font-medium">{t('settings')}</Link>
                     <Link to="/logout" className="text-gray-600 hover:underline font-medium">{t('logout')}</Link>

@@ -32,7 +32,7 @@ export default function CheckInList({ checkIns, loading }: CheckInListProps) {
                     {checkIns.map((checkIn) => {
                         const username = checkIn.user?.username || 'Unknown';
                         const profilePicture = checkIn.user?.profilePictureUrl;
-                        
+
                         return (
                             <div
                                 key={checkIn.id}

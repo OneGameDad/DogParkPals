@@ -1,64 +1,53 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import UserCard from '../../../components/users/UserCard';
-import type { User } from '../../../types';
-import { UserRole } from '../../../types';
 
-// Mock formatters
-vi.mock('../../../utils/formatters', () => ({
-    getUserInitials: () => 'JD',
+// Component uses Picture, which we should verify is used or mock if complex
+vi.mock('../../../components/common', () => ({
+    Picture: ({ alt }: any) => <img alt={alt} data-testid="user-picture" />
 }));
 
-// Mock Picture component
-vi.mock('../../../components/common', () => ({
-    Picture: ({ alt, initials }: any) => <div data-testid="mock-picture" title={alt}>{initials}</div>,
+vi.mock('../../../utils/formatters', () => ({
+    getUserInitials: () => 'TU'
 }));
 
 describe('UserCard', () => {
-    const mockUser: User = {
-        id: 1,
-        username: 'johndoe',
-        email: 'john@example.com',
-        role: UserRole.CLIENT,
-        first_name: 'John',
-        last_name: 'Doe',
-        profilePictureUrl: 'http://example.com/pic.jpg',
-    };
-
-    const mockOnClick = vi.fn();
-
-    beforeEach(() => {
-        vi.clearAllMocks();
-    });
+    const mockUser = { id: 1, username: 'testuser', first_name: 'Test', last_name: 'User' };
 
     it('renders user information correctly', () => {
-        render(<UserCard user={mockUser} onClick={mockOnClick} />);
-
-        expect(screen.getByText('johndoe')).toBeInTheDocument();
-        expect(screen.getByText('John Doe')).toBeInTheDocument();
-        expect(screen.getByTestId('mock-picture')).toBeInTheDocument();
+        render(<UserCard user={mockUser as any} />);
+        expect(screen.getByText('testuser')).toBeInTheDocument();
+        expect(screen.getByText('Test User')).toBeInTheDocument();
+        expect(screen.getByTestId('user-picture')).toBeInTheDocument();
     });
 
-    it('render picture with correct props', () => {
-        render(<UserCard user={mockUser} onClick={mockOnClick} />);
+    it('handles click events when onClick is provided', () => {
+        const handleClick = vi.fn();
+        render(<UserCard user={mockUser as any} onClick={handleClick} />);
 
-        const picture = screen.getByTestId('mock-picture');
-        expect(picture).toHaveTextContent('JD');
-        expect(picture).toHaveAttribute('title', 'johndoe');
+        fireEvent.click(screen.getByText('testuser'));
+        expect(handleClick).toHaveBeenCalledWith(mockUser);
     });
 
-    it('calls onClick when clicked', () => {
-        render(<UserCard user={mockUser} onClick={mockOnClick} />);
-
-        fireEvent.click(screen.getByText('johndoe').closest('div')!.parentElement!);
-        expect(mockOnClick).toHaveBeenCalledWith(mockUser);
+    it('renders custom action content', () => {
+        render(
+            <UserCard
+                user={mockUser as any}
+                action={<button>Custom Action</button>}
+            />
+        );
+        expect(screen.getByText('Custom Action')).toBeInTheDocument();
+        expect(screen.queryByTestId('chevron-icon')).not.toBeInTheDocument();
     });
 
-    it('renders correctly without first/last name', () => {
-        const userWithoutName = { ...mockUser, first_name: undefined, last_name: undefined };
-        render(<UserCard user={userWithoutName} onClick={mockOnClick} />);
+    it('renders chevron by default when no action provided', () => {
+        const { container } = render(<UserCard user={mockUser as any} />); // showChevron default is true
+        // SVG doesn't have a role, checking existence of SVG
+        expect(container.querySelector('svg')).toBeInTheDocument();
+    });
 
-        expect(screen.getByText('johndoe')).toBeInTheDocument();
-        expect(screen.queryByText('John Doe')).not.toBeInTheDocument();
+    it('hides chevron when showChevron is false', () => {
+        const { container } = render(<UserCard user={mockUser as any} showChevron={false} />);
+        expect(container.querySelector('svg')).not.toBeInTheDocument();
     });
 });

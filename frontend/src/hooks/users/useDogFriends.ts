@@ -10,7 +10,7 @@ interface DogFriendResponse {
 
 export const useDogFriends = (dogId?: number) => {
     const { data, loading, error, refetch } = useFetch<DogFriendResponse>(
-        dogId ? `/api/friends?dogId=${dogId}` : null
+        dogId ? `/api/friends?dogId=${dogId}` : ''
     );
 
     const friends = data?.dogs || [];

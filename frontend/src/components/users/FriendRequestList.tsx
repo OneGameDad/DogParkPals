@@ -1,10 +1,8 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../../hooks/useFetch';
 import { useFriendActions } from '../../hooks/users/useFriendActions';
 import { Loading, ErrorMessage, Button, Picture } from '../common';
 import type { User, Dog } from '../../types';
-import api from '../../services/api';
 
 interface FriendRequestListProps {
     userId?: number;

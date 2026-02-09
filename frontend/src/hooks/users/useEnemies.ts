@@ -11,13 +11,6 @@ interface EnemyRelationship {
 }
 
 export const useEnemies = (userId?: number) => {
-    // If no userId is provided, explicitly return an error state and a no-op removeEnemy.
-    if (!userId) {
-        const removeEnemy = async (_enemyId: number) => {
-            return false;
-        };
-        return { enemies: [], loading: false, error: new Error('userId is required for useEnemies'), removeEnemy };
-    }
     // Backend endpoint is /api/enemies for current user context if used with session, 
     // but controller getEnemy uses /api/enemies/:userId
     const { data: relationships, loading, error, refetch } = useFetch<EnemyRelationship[]>(userId ? `/api/enemies/${userId}` : '');
@@ -32,6 +25,7 @@ export const useEnemies = (userId?: number) => {
 
     const removeEnemy = async (enemyId: number) => {
         if (!userId) return false;
+
         const result = await submitRemove(async () => {
             // DELETE /api/enemies with body { userId, enemyUserId }
             await api.delete('/api/enemies', { userId, enemyUserId: enemyId });

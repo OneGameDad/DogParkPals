@@ -10,7 +10,13 @@ export const es = {
     exampleDate: "Spanish January 2026",
     owner: "Spanish Owner",
     common: {
-      goBack: "Spanish Go Back"
+      goBack: "Spanish Go Back",
+      loading: "Spanish Loading...",
+      error: "Spanish An error occurred",
+      accept: "Spanish Accept",
+      decline: "Spanish Decline",
+      processing: "Spanish Processing...",
+      checking: "Spanish Checking..."
     },
     footer: {
       privacy: "Spanish Privacy Policy",
@@ -29,8 +35,7 @@ export const es = {
       eventCreated: '{name} created a new event in Spanish',
       parkAdded: 'Park "{parkName}" was added in Spanish',
       friendAccepted: 'You and {name} are now friends in Spanish'
-    }
-    ,
+    },
     auth: {
       login: {
         title: "Spanish Sign in to DogParkPals",
@@ -135,7 +140,13 @@ export const es = {
       loading: "Spanish Loading...",
       yearsOld: "Spanish {{years}} years old",
       monthsOld: "Spanish {{months}} months old",
-      required: "Spanish *"
+      required: "Spanish *",
+      friends: "Spanish Friends",
+      noFriends: "Spanish No friends yet.",
+      findDogs: "Spanish Find Dogs",
+      searchPlaceholder: "Spanish Search dogs by name or breed...",
+      searchLabel: "Spanish Search Dogs",
+      noDogsFound: "Spanish No dogs found."
     },
     parks: {
       explore: "Explorar Parques",
@@ -156,6 +167,14 @@ export const es = {
       favorite: "Añadir a favoritos",
       unfavorite: "Quitar de favoritos",
       visitingHelper: "¡Avisa a otros que tú y tu perro están de visita!"
+    },
+    social: {
+      title: "Spanish Social",
+      people: "Spanish People",
+      dogs: "Spanish Dogs"
+    },
+    friends: {
+      alreadyFriends: "Spanish Already Friends"
     }
   }
 };

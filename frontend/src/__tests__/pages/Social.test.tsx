@@ -20,6 +20,7 @@ vi.mock('../../hooks/users/useEnemies');
 // Mock child components to simplify testing
 vi.mock('../../components/users', () => ({
     FriendFinder: () => <div data-testid="friend-finder">Friend Finder Component</div>,
+    FriendRequestList: () => <div data-testid="friend-request-list">Friend Request List Component</div>,
     RelationshipManager: ({ title, users, type, onRemove }: any) => (
         <div data-testid={`relationship-manager-${type}`}>
             <h2>{title}</h2>

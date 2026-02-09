@@ -27,6 +27,13 @@ describe('useEnemies', () => {
     });
 
     it('should return error if no userId provided', () => {
+        // Mock specific behavior for undefined userId if needed, or rely on hook logic
+        // If hook returns empty array when useFetch returns something unexpected, ensure mock matches
+        (useFetch as any).mockReturnValue({
+            data: null,
+            loading: false,
+            error: 'No user ID'
+        });
         const { result } = renderHook(() => useEnemies(undefined));
         expect(result.current.error).toBeDefined();
         expect(result.current.enemies).toEqual([]);

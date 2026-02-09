@@ -4,6 +4,8 @@ import UserProfileModal from './UserProfileModal';
 import FriendFinder from './FriendFinder';
 import RelationshipManager from './RelationshipManager';
 import UserDogsList from './UserDogsList';
+import DogFinder from './DogFinder';
+import FriendRequestList from './FriendRequestList';
 
 export {
     UserList,
@@ -11,5 +13,7 @@ export {
     UserProfileModal,
     FriendFinder,
     UserDogsList,
-    RelationshipManager
+    RelationshipManager,
+    DogFinder,
+    FriendRequestList
 };

@@ -28,7 +28,22 @@ vi.mock('react-router-dom', async () => {
 // Mock useFetch hook
 const mockUseFetch = vi.fn();
 vi.mock('../../hooks/useFetch', () => ({
-    useFetch: () => mockUseFetch(),
+    useFetch: (...args: any[]) => mockUseFetch(...args),
+}));
+
+// Mock useDogFriends hook
+vi.mock('../../hooks/users/useDogFriends', () => ({
+    useDogFriends: () => ({
+        friends: [],
+        loading: false,
+    }),
+}));
+
+// Mock useAuth hook
+vi.mock('../../hooks/useAuth', () => ({
+    useAuth: () => ({
+        user: { id: 1 },
+    }),
 }));
 
 describe('DogProfile Component', () => {
@@ -36,6 +51,18 @@ describe('DogProfile Component', () => {
         vi.clearAllMocks();
         mockNavigate.mockClear();
         mockUseParams.mockReturnValue({ id: '1' });
+
+        // Default behavior: return mockDog for the first call (dog profile), 
+        // and an empty array for the second call (user dogs)
+        mockUseFetch.mockImplementation((url) => {
+            if (url && url.includes('/api/dogs/owner/')) {
+                return { data: [], loading: false };
+            }
+            if (url && url.includes('/api/dogs/')) {
+                return { data: mockDog, loading: false };
+            }
+            return { data: null, loading: false };
+        });
     });
 
     const renderDogProfile = () => {
@@ -60,6 +87,7 @@ describe('DogProfile Component', () => {
     };
 
     it('should show loading state while fetching dog data', () => {
+        // Reset and specific mock for this test
         mockUseFetch.mockReturnValue({ data: null, loading: true });
 
         renderDogProfile();
@@ -75,12 +103,11 @@ describe('DogProfile Component', () => {
         expect(screen.getByText('dogProfile.failedToLoad')).toBeInTheDocument();
     });
 
-    it('should render dog profile information', () => {
-        mockUseFetch.mockReturnValue({ data: mockDog, loading: false });
-
+    it('should render dog profile information', async () => {
+        // Mocks set in beforeEach are sufficient for this one
         renderDogProfile();
 
-        expect(screen.getByText('Buddy')).toBeInTheDocument();
+        expect(await screen.findByText('Buddy')).toBeInTheDocument();
         expect(screen.getByText('Golden Retriever')).toBeInTheDocument();
         expect(screen.getByText('MALE')).toBeInTheDocument();
         expect(screen.getByText('LARGE')).toBeInTheDocument();
@@ -89,23 +116,40 @@ describe('DogProfile Component', () => {
         expect(screen.getByText('A good boy')).toBeInTheDocument();
     });
 
-    it('should navigate to edit page when Edit Profile button is clicked', () => {
-        mockUseFetch.mockReturnValue({ data: mockDog, loading: false });
+    it('should navigate to edit page when Edit Profile button is clicked', async () => {
+        // We need to make sure isOwner is true for the button to show up
+        mockUseFetch.mockImplementation((url) => {
+            if (url && url.includes('/api/dogs/owner/')) {
+                return { data: [mockDog], loading: false }; // User owns this dog
+            }
+            if (url && url.includes('/api/dogs/')) {
+                return { data: mockDog, loading: false };
+            }
+            return { data: null, loading: false };
+        });
 
         renderDogProfile();
 
-        const editButton = screen.getByText('dogProfile.editProfile');
+        const editButton = await screen.findByText('dogProfile.editProfile');
         fireEvent.click(editButton);
 
         expect(mockNavigate).toHaveBeenCalledWith('/dog/1/edit');
     });
 
-    it('should display "No" for fixed status if false', () => {
+    it('should display "No" for fixed status if false', async () => {
         const dogNotFixed = { ...mockDog, fixed: false };
-        mockUseFetch.mockReturnValue({ data: dogNotFixed, loading: false });
+        mockUseFetch.mockImplementation((url) => {
+            if (url && url.includes('/api/dogs/owner/')) {
+                return { data: [], loading: false };
+            }
+            if (url && url.includes('/api/dogs/')) {
+                return { data: dogNotFixed, loading: false };
+            }
+            return { data: null, loading: false };
+        });
 
         renderDogProfile();
 
-        expect(screen.getByText('dogProfile.no')).toBeInTheDocument();
+        expect(await screen.findByText('dogProfile.no')).toBeInTheDocument();
     });
 });

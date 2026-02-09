@@ -37,8 +37,6 @@ describe('useFriendActions', () => {
 
         expect(success).toBe(true);
         expect(api.post).toHaveBeenCalledWith('/api/friends', { requesterId: 1, addresseeId: 2 });
-        expect(success).toBe(true);
-        expect(api.post).toHaveBeenCalledWith('/api/friends', { requesterId: 1, addresseeId: 2 });
         expect(result.current.isRequestSent(2)).toBe(true);
     });
 

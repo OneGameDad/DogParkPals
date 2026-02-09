@@ -43,7 +43,7 @@ const CreateOrganization = () => {
     return (
         <div className="max-w-2xl mx-auto p-6">
             <h1 className="text-3xl font-bold mb-6 text-white drop-shadow-md">
-                Create Organization
+                {t('organizations.form.title', 'Create Organization')}
             </h1>
 
             <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl p-8">
@@ -51,33 +51,33 @@ const CreateOrganization = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <InputText
-                        label="Organization Name"
+                        label={t('organizations.form.nameLabel', 'Organization Name')}
                         value={name}
                         onChange={setName}
-                        placeholder="Enter organization name"
+                        placeholder={t('organizations.form.namePlaceholder', 'Enter organization name')}
                         required
                     />
 
                     <InputText
-                        label="Website URL"
+                        label={t('organizations.form.websiteLabel', 'Website URL')}
                         value={websiteUrl}
                         onChange={setWebsiteUrl}
-                        placeholder="https://example.com"
+                        placeholder={t('organizations.form.websitePlaceholder', 'https://example.com')}
                         type="text"
                     />
 
                     {/* reusing InputText for description for now, although a textarea would be better if available. 
                         Since InputText is what we have, we'll use it. */}
                     <InputText
-                        label="Description"
+                        label={t('organizations.form.descriptionLabel', 'Description')}
                         value={description}
                         onChange={setDescription}
-                        placeholder="Brief description of your organization"
+                        placeholder={t('organizations.form.descriptionPlaceholder', 'Brief description of your organization')}
                     />
 
                     <div className="flex justify-end pt-4">
                         <Button
-                            text={loading ? 'Creating...' : 'Create Organization'}
+                            text={loading ? t('organizations.form.submitting', 'Creating...') : t('organizations.form.submit', 'Create Organization')}
                             type="submit"
                             disabled={loading}
                             className="w-full sm:w-auto"

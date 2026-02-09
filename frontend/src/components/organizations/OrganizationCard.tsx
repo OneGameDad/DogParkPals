@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Organization } from '../../types';
 import { Picture } from '../common';
 import { useTranslation } from 'react-i18next';
@@ -11,11 +11,27 @@ interface OrganizationCardProps {
 
 const OrganizationCard: React.FC<OrganizationCardProps> = ({ organization }) => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
+
+    const handleCardClick = () => {
+        navigate(`/organizations/${organization.id}`);
+    };
+
+    const handleWebsiteClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+    };
 
     return (
-        <Link
-            to={`/organizations/${organization.id}`}
-            className="block bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden border border-gray-100"
+        <div
+            onClick={handleCardClick}
+            className="block bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden border border-gray-100 cursor-pointer"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    handleCardClick();
+                }
+            }}
         >
             <div className="flex p-4 gap-4">
                 <div className="flex-shrink-0">
@@ -39,7 +55,7 @@ const OrganizationCard: React.FC<OrganizationCardProps> = ({ organization }) => 
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-blue-500 hover:underline text-sm mb-2 truncate block"
-                                onClick={(e) => e.stopPropagation()}
+                                onClick={handleWebsiteClick}
                             >
                                 {organization.websiteUrl}
                             </a>
@@ -51,7 +67,7 @@ const OrganizationCard: React.FC<OrganizationCardProps> = ({ organization }) => 
                     </div>
                 </div>
             </div>
-        </Link>
+        </div>
     );
 };
 

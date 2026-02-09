@@ -37,7 +37,7 @@ const DogFinder = () => {
                 />
             </div>
 
-            {loading && !dogs ? (
+            {loading ? (
                 <Loading message={t('common.loading') || 'Loading...'} />
             ) : error ? (
                 <ErrorMessage message={t('common.error') || 'Failed to load dogs'} />
@@ -58,3 +58,4 @@ const DogFinder = () => {
 };
 
 export default DogFinder;
+

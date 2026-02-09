@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 import { useDogFriends } from '../../../hooks/users/useDogFriends';
 import { useFetch } from '../../../hooks/useFetch';
 import { useSubmit } from '../../../hooks/useSubmit';

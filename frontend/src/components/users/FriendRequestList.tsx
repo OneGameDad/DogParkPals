@@ -26,7 +26,7 @@ const FriendRequestList = ({ userId, dogId }: FriendRequestListProps) => {
         ? `/api/friends/requests?userId=${userId}`
         : dogId
             ? `/api/friends/requests?dogId=${dogId}`
-            : null;
+            : '';
 
     const { data: requests, loading, error, refetch } = useFetch<FriendshipRequest[]>(endpoint);
     const { acceptRequest, declineRequest, actionLoading } = useFriendActions();

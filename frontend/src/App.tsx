@@ -17,6 +17,8 @@ import { ProtectedRoute } from './components/features';
 import EditProfile from './pages/EditProfile';
 import EditDogProfile from './pages/EditDogProfile';
 import ParkDetails from './pages/ParkDetails';
+import CreateOrganization from './pages/CreateOrganization';
+import OrganizationList from './components/organizations/OrganizationList';
 
 function App() {
   return (
@@ -86,6 +88,16 @@ function App() {
             <Route path="/parks/:id" element={
               <ProtectedRoute>
                 <ParkDetails />
+              </ProtectedRoute>
+            } />
+            <Route path="/organizations" element={
+              <ProtectedRoute>
+                <OrganizationList />
+              </ProtectedRoute>
+            } />
+            <Route path="/organizations/create" element={
+              <ProtectedRoute>
+                <CreateOrganization />
               </ProtectedRoute>
             } />
           </Routes>

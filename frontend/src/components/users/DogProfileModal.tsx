@@ -6,7 +6,6 @@ import { useFetch } from '../../hooks/useFetch';
 import { useFriendActions } from '../../hooks/users/useFriendActions';
 import { useDogFriends } from '../../hooks/users/useDogFriends';
 import type { Dog } from '../../types';
-import { getUserInitials } from '../../utils/formatters';
 
 interface DogProfileModalProps {
     dog: Dog | null;

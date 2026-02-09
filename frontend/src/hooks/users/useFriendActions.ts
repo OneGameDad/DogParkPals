@@ -56,7 +56,7 @@ export const useFriendActions = () => {
         return !!result;
     };
 
-    const addEnemy = async (targetId: number, isDog: boolean = false, requesterDogId?: number) => {
+    const addEnemy = async (targetId: number) => {
         if (!user) return false;
         const result = await submitAddEnemy(async () => {
             const payload: any = { userId: user.id, enemyUserId: targetId };
@@ -100,4 +100,5 @@ export const useFriendActions = () => {
         clearError
     };
 };
+
 

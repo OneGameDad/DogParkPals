@@ -10,19 +10,27 @@ export const en = {
     exampleDate: "January 2026",
     owner: "Owner",
     common: {
-      goBack: "Go Back"
+      goBack: "Go Back",
+      loading: "Loading...",
+      error: "An error occurred",
+      accept: "Accept",
+      decline: "Decline",
+      processing: "Processing...",
+      checking: "Checking..."
     },
     footer: {
       privacy: "Privacy Policy",
       terms: "Terms of Service",
       rightsReserved: "All rights reserved."
     },
+    // ... existing buttons ...
     buttons: {
       submit: "Submit",
       cancel: "Cancel",
       delete: "Delete",
       disabled: "Disabled"
     },
+    // ... existing notifications ...
     notifications: {
       friendRequest: '{name} wants to be friends',
       messageReceived: 'You received a message from {name}',
@@ -30,6 +38,7 @@ export const en = {
       parkAdded: 'Park "{parkName}" was added',
       friendAccepted: 'You and {name} are now friends'
     },
+    // ... existing auth ...
     auth: {
       login: {
         title: "Sign in to DogParkPals",
@@ -73,6 +82,7 @@ export const en = {
         error: "Error logging out"
       }
     },
+    // ... existing profile ...
     profile: {
       title: "Profile",
       editProfile: "Edit Profile",
@@ -145,8 +155,19 @@ export const en = {
       selectOption: "Select an option",
       descriptionPlaceholder: "Tell us about your dog...",
       birthdate: "Birthdate",
-      profilePictureUrl: "Profile Picture URL"
+      profilePictureUrl: "Profile Picture URL",
+      deleteDog: "Delete Dog",
+      deleteConfirmation: "Are you sure you want to delete this dog? This action cannot be undone.",
+      deleting: "Deleting...",
+      deleteFailed: "Failed to delete dog. Please try again.",
+      friends: "Friends",
+      noFriends: "No friends yet.",
+      findDogs: "Find Dogs",
+      searchPlaceholder: "Search dogs by name or breed...",
+      searchLabel: "Search Dogs",
+      noDogsFound: "No dogs found."
     },
+    // ... existing parks ...
     parks: {
       explore: "Explore Parks",
       searchPlaceholder: "Search parks...",
@@ -154,6 +175,7 @@ export const en = {
       noDescription: "No description available",
       error: "Failed to load parks"
     },
+    // ... existing parkDetails ...
     parkDetails: {
       checkedInUsers: "Who's here?",
       noOneCheckedIn: "No one checked in right now. Be the first!",
@@ -196,7 +218,19 @@ export const en = {
       removing: "Unfriending...",
       loading: "Loading friends...",
       searchLabel: "Search Friends",
-      searchPlaceholder: "Search friends..."
+      searchPlaceholder: "Search friends...",
+      pendingRequests: "Pending Requests",
+      alreadyFriends: "Already Friends",
+      unfriend: "Unfriend",
+      unfriendConfirm: "Are you sure you want to unfriend this dog?"
+    },
+    dogList: {
+      noDogs: "No dogs added yet"
+    },
+    social: {
+      title: "Social",
+      people: "People",
+      dogs: "Dogs"
     }
   }
 };

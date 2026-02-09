@@ -26,9 +26,15 @@ describe('useEnemies', () => {
         });
     });
 
-    it('should return error if no userId provided', () => {
+    it('should return empty enemies and no error if no userId provided', () => {
+        // For undefined userId, useEnemies calls useFetch with a falsy endpoint, which short-circuits with error: null
+        (useFetch as any).mockReturnValue({
+            data: null,
+            loading: false,
+            error: null
+        });
         const { result } = renderHook(() => useEnemies(undefined));
-        expect(result.current.error).toBeDefined();
+        expect(result.current.error).toBeNull();
         expect(result.current.enemies).toEqual([]);
     });
 

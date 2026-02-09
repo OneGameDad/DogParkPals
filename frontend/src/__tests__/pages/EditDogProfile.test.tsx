@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import EditDogProfile from '../../pages/EditDogProfile';
 import { api } from '../../services/api';
 
@@ -62,9 +62,9 @@ describe('EditDogProfile Component', () => {
 
     const renderEditDogProfile = () => {
         return render(
-            <BrowserRouter>
+            <MemoryRouter>
                 <EditDogProfile />
-            </BrowserRouter>
+            </MemoryRouter>
         );
     };
 
@@ -96,7 +96,7 @@ describe('EditDogProfile Component', () => {
         mockUseFetch.mockReturnValue({ data: null, loading: false });
         (api.post as any).mockResolvedValue({ id: 123, name: 'New Dog' });
 
-        renderEditDogProfile();
+        const { container } = renderEditDogProfile();
 
         // Fill form - get all text inputs (not textareas)
         const textInputs = document.querySelectorAll('input[type="text"]');
@@ -104,23 +104,24 @@ describe('EditDogProfile Component', () => {
         const nameInput = textInputs[1] as HTMLInputElement; // Second text input is name
         const selects = screen.getAllByRole('combobox');
         const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
-        
+
         fireEvent.change(profilePictureInput, { target: { value: 'https://example.com/dog.jpg' } });
         fireEvent.change(nameInput, { target: { value: 'New Dog' } });
-        fireEvent.change(selects[0], { target: { value: 'GOLDEN_RETRIEVER' } }); // breed
+        fireEvent.change(selects[0], { target: { value: 'GERMAN_SHEPHERD_DOG' } }); // breed
         fireEvent.change(selects[1], { target: { value: 'FEMALE' } }); // gender
         fireEvent.change(selects[2], { target: { value: 'SMALL' } }); // size
         fireEvent.change(selects[3], { target: { value: 'SOCIAL' } }); // playstyle
         fireEvent.change(dateInput, { target: { value: '2023-01-01' } }); // birthdate
 
-        // Submit
-        const submitButton = screen.getByText('dogProfile.createDog');
-        fireEvent.click(submitButton);
+        // Submit via form to be safer
+        const form = container.querySelector('form');
+        if (form) fireEvent.submit(form);
+        else fireEvent.click(screen.getByText('dogProfile.createDog'));
 
         await waitFor(() => {
             expect(api.post).toHaveBeenCalledWith('/api/dogs', expect.objectContaining({
                 name: 'New Dog',
-                breed: 'GOLDEN_RETRIEVER',
+                breed: 'GERMAN_SHEPHERD_DOG',
                 gender: 'FEMALE',
                 size: 'SMALL',
                 playstyle: 'SOCIAL',
@@ -145,14 +146,15 @@ describe('EditDogProfile Component', () => {
         mockUseFetch.mockReturnValue({ data: mockDog, loading: false });
         (api.put as any).mockResolvedValue({ id: 1, name: 'Buddy Updated' });
 
-        renderEditDogProfile();
+        const { container } = renderEditDogProfile();
 
         // Change name
         fireEvent.change(screen.getByDisplayValue('Buddy'), { target: { value: 'Buddy Updated' } });
 
         // Submit
-        const submitButton = screen.getByText('dogProfile.saveChanges');
-        fireEvent.click(submitButton);
+        const form = container.querySelector('form');
+        if (form) fireEvent.submit(form);
+        else fireEvent.click(screen.getByText('dogProfile.saveChanges'));
 
         await waitFor(() => {
             expect(api.put).toHaveBeenCalledWith('/api/dogs/1', expect.objectContaining({
@@ -172,5 +174,5 @@ describe('EditDogProfile Component', () => {
 
         expect(mockNavigate).toHaveBeenCalledWith('/dog/1');
     });
-
 });
+

@@ -17,26 +17,40 @@ export const useFriendActions = () => {
         errorMessage: 'Failed to add enemy'
     });
 
-    const addFriend = async (friendId: number) => {
-        if (!user) return false;
-        const result = await submitAddFriend(async () => {
-            // POST /api/friends { requesterId, addresseeId }
-            const response = await api.post<{ id: number }>('/api/friends', { requesterId: user.id, addresseeId: friendId });
+    const { submit: submitAccept, isSubmitting: acceptLoading } = useSubmit({
+        successMessage: 'Friend request accepted!',
+        errorMessage: 'Failed to accept request'
+    });
 
-            // WORKAROUND: We immediately accept the request from the frontend because the Backend 
-            // does NOT have an endpoint to fetch 'PENDING' requests (friendService only returns 'ACCEPTED').
-            // Without this, the user has no way to see or accept incoming requests in the UI.
-            // This relies on the backend lacking a check that restricts acceptance to the addressee only.
-            // If the backend adds that check, this will fail (403) and the request will remain pending/invisible.
-            if (response && response.id) {
-                try {
-                    await api.post('/api/friends/accept', { friendshipId: response.id });
-                } catch (e) {
-                    console.warn('Auto-accept failed (likely backend fixed), but request was sent.');
+    const { submit: submitDecline, isSubmitting: declineLoading } = useSubmit({
+        successMessage: 'Friend request declined',
+        errorMessage: 'Failed to decline request'
+    });
+
+    const addFriend = async (targetId: number, isDog: boolean = false, requesterDogId?: number) => {
+        if (!user) return false;
+
+        const result = await submitAddFriend(async () => {
+            const payload: any = {};
+
+            if (isDog) {
+                // Dog-to-Dog friendship
+                if (!requesterDogId) {
+                    console.error('Requester Dog ID is required for dog friendships');
+                    return false;
                 }
+                payload.requesterDogId = requesterDogId;
+                payload.addresseeDogId = targetId;
+            } else {
+                // User-to-User friendship
+                payload.requesterId = user.id;
+                payload.addresseeId = targetId;
             }
 
-            setSentRequests(prev => [...prev, friendId]);
+            // POST /api/friends
+            await api.post<{ id: number }>('/api/friends', payload);
+
+            setSentRequests(prev => [...prev, targetId]);
             return true;
         });
         return !!result;
@@ -45,8 +59,25 @@ export const useFriendActions = () => {
     const addEnemy = async (targetId: number) => {
         if (!user) return false;
         const result = await submitAddEnemy(async () => {
-            // POST /api/enemies { userId, enemyUserId }
-            await api.post('/api/enemies', { userId: user.id, enemyUserId: targetId });
+            const payload: any = { userId: user.id, enemyUserId: targetId };
+
+            await api.post('/api/enemies', payload);
+            return true;
+        });
+        return !!result;
+    };
+
+    const acceptRequest = async (requestId: number) => {
+        const result = await submitAccept(async () => {
+            await api.post('/api/friends/accept', { friendshipId: requestId });
+            return true;
+        });
+        return !!result;
+    };
+
+    const declineRequest = async (requestId: number) => {
+        const result = await submitDecline(async () => {
+            await api.post('/api/friends/decline', { friendshipId: requestId });
             return true;
         });
         return !!result;
@@ -61,10 +92,13 @@ export const useFriendActions = () => {
     return {
         addFriend,
         addEnemy,
+        acceptRequest,
+        declineRequest,
         isRequestSent,
-        actionLoading: addFriendLoading || addEnemyLoading,
+        actionLoading: addFriendLoading || addEnemyLoading || acceptLoading || declineLoading,
         actionError: addFriendError || addEnemyError,
         clearError
     };
 };
+
 

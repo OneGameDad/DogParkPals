@@ -37,27 +37,10 @@ describe('useFriendActions', () => {
 
         expect(success).toBe(true);
         expect(api.post).toHaveBeenCalledWith('/api/friends', { requesterId: 1, addresseeId: 2 });
-        // Check for workaround auto-accept
-        expect(api.post).toHaveBeenCalledWith('/api/friends/accept', { friendshipId: 100 });
         expect(result.current.isRequestSent(2)).toBe(true);
     });
 
-    it('should handle auto-accept failure gracefully', async () => {
-        (api.post as any).mockResolvedValueOnce({ id: 100 });
-        (api.post as any).mockRejectedValueOnce(new Error('Auth failed')); // Accept fails
 
-        const { result } = renderHook(() => useFriendActions());
-        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
-
-        let success;
-        await act(async () => {
-            success = await result.current.addFriend(2);
-        });
-
-        expect(success).toBe(true); // Still true because request was sent
-        expect(consoleSpy).toHaveBeenCalled();
-        expect(result.current.isRequestSent(2)).toBe(true);
-    });
 
     it('should return false if user is not logged in', async () => {
         (useAuth as any).mockReturnValue({ user: null });

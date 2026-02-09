@@ -165,7 +165,7 @@ const DogProfile = () => {
                 emptyMessage={t('dogProfile.noFriends') || 'No friends yet.'}
                 onDogClick={(friendDog) => navigate(`/dog/${friendDog.id}`)}
                 onRemove={isOwner ? async (friendDog) => {
-                  if (window.confirm(t('dogProfile.removeFriendConfirm') || 'Remove this friend?')) {
+                  if (window.confirm(t('dogProfile.removeFriendConfirm', 'Remove this friend?'))) {
                     await removeFriend(friendDog.id);
                   }
                 } : undefined}

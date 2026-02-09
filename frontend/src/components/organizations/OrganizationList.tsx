@@ -20,8 +20,14 @@ const OrganizationList = () => {
             try {
                 const data = await api.get<Organization[]>('/api/organizations');
                 setOrganizations(data);
-            } catch (err: any) {
-                setError(err.message || 'Failed to fetch organizations');
+            } catch (err: unknown) {
+                let message: string;
+                if (err && typeof err === 'object' && 'message' in err && typeof (err as any).message === 'string') {
+                    message = (err as { message: string }).message;
+                } else {
+                    message = t('organizations.fetchError', 'Failed to fetch organizations');
+                }
+                setError(message);
             } finally {
                 setLoading(false);
             }

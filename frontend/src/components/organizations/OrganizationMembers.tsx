@@ -33,8 +33,7 @@ const OrganizationMembers: React.FC<OrganizationMembersProps> = ({
         searchQuery,
         setSearchQuery,
         users: searchResults,
-        loading: searchLoading,
-        error: searchError
+        loading: searchLoading
     } = useUserSearch();
 
     // Filter out existing members from search results

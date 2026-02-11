@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import { useAuth } from './useAuth';
-import { Organization, OrganizationMember, Event, OrgRole } from '../types';
+import { Organization, OrganizationMember, Event } from '../types';
 
 interface OrganizationDetails extends Organization {
   members: OrganizationMember[];

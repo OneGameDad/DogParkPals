@@ -70,7 +70,7 @@ const OrganizationMembers: React.FC<OrganizationMembersProps> = ({
     };
 
     const handleAddMember = async (user: User) => {
-        if (!window.confirm(t('organizations.confirmAddMember', `Add ${user.username} to organization?`))) {
+        if (!window.confirm(t('organizations.confirmAddMember', 'Add {{username}} to organization?', { username: user.username }))) {
             return;
         }
 

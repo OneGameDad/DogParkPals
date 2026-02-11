@@ -119,21 +119,19 @@ const OrganizationMembers: React.FC<OrganizationMembersProps> = ({
                     />
 
                     <div className="mt-4">
-                        <div className="mt-4">
-                            {searchLoading && (!searchResults || searchResults.length === 0) ? (
-                                <div className="text-gray-500 text-sm text-center py-2">{t('common.loading', 'Loading...')}</div>
-                            ) : searchQuery && filteredSearchResults.length === 0 ? (
-                                <div className="text-gray-500 text-sm text-center py-2">
-                                    {t('organizations.noUserFound', 'No user found with that name.')}
-                                </div>
-                            ) : (
-                                <UserList
-                                    users={filteredSearchResults}
-                                    onUserClick={handleAddMember}
-                                    showChevron={false}
-                                />
-                            )}
-                        </div>
+                        {searchLoading && (!searchResults || searchResults.length === 0) ? (
+                            <div className="text-gray-500 text-sm text-center py-2">{t('common.loading', 'Loading...')}</div>
+                        ) : searchQuery && filteredSearchResults.length === 0 ? (
+                            <div className="text-gray-500 text-sm text-center py-2">
+                                {t('organizations.noUserFound', 'No user found with that name.')}
+                            </div>
+                        ) : (
+                            <UserList
+                                users={filteredSearchResults}
+                                onUserClick={handleAddMember}
+                                showChevron={false}
+                            />
+                        )}
                     </div>
                 </div>
             )}

@@ -28,7 +28,8 @@ const OrganizationProfile = () => {
     if (error) return <ErrorMessage message={error} />;
     if (!organization) return <ErrorMessage message={t('organizations.notFound', 'Organization not found')} />;
 
-    const tabs = [
+    type TabId = 'about' | 'members' | 'events';
+    const tabs: { id: TabId; label: string }[] = [
         { id: 'about', label: t('organizations.tabs.about', 'About') },
         { id: 'members', label: t('organizations.tabs.members', 'Members') },
         { id: 'events', label: t('organizations.tabs.events', 'Events') },
@@ -52,7 +53,7 @@ const OrganizationProfile = () => {
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id as any)}
+                        onClick={() => setActiveTab(tab.id)}
                         className={`
               py-4 px-6 text-sm font-medium focus:outline-none transition-colors duration-200
               ${activeTab === tab.id

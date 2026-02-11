@@ -231,6 +231,28 @@ export const en = {
       title: "Social",
       people: "People",
       dogs: "Dogs"
+    },
+    organizations: {
+      title: "Organizations",
+      create: "Create Organization",
+      searchPlaceholder: "Search organizations...",
+      noResults: "No organizations found matching your search.",
+      noOrganizations: "No organizations found.",
+      createFirst: "Create the first one!",
+      fetchError: "Failed to fetch organizations",
+      viewDetails: "View Details",
+      noDescription: "No description available",
+      form: {
+        title: "Create Organization",
+        nameLabel: "Organization Name",
+        namePlaceholder: "Enter organization name",
+        websiteLabel: "Website URL",
+        websitePlaceholder: "https://example.com",
+        descriptionLabel: "Description",
+        descriptionPlaceholder: "Brief description of your organization",
+        submit: "Create Organization",
+        submitting: "Creating..."
+      }
     }
   }
 };

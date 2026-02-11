@@ -168,13 +168,27 @@ export const es = {
       unfavorite: "Quitar de favoritos",
       visitingHelper: "¡Avisa a otros que tú y tu perro están de visita!"
     },
-    social: {
-      title: "Spanish Social",
-      people: "Spanish People",
-      dogs: "Spanish Dogs"
-    },
-    friends: {
-      alreadyFriends: "Spanish Already Friends"
+    organizations: {
+      title: "Organizaciones",
+      create: "Crear Organización",
+      searchPlaceholder: "Buscar organizaciones...",
+      noResults: "No se encontraron organizaciones que coincidan con tu búsqueda.",
+      noOrganizations: "No se encontraron organizaciones.",
+      createFirst: "¡Crea la primera!",
+      fetchError: "Error al obtener las organizaciones",
+      viewDetails: "Ver Detalles",
+      noDescription: "No hay descripción disponible",
+      form: {
+        title: "Crear Organización",
+        nameLabel: "Nombre de la Organización",
+        namePlaceholder: "Ingresa el nombre de la organización",
+        websiteLabel: "URL del sitio web",
+        websitePlaceholder: "https://ejemplo.com",
+        descriptionLabel: "Descripción",
+        descriptionPlaceholder: "Breve descripción de tu organización",
+        submit: "Crear Organización",
+        submitting: "Creando..."
+      }
     }
   }
 };

@@ -21,10 +21,6 @@ const OrganizationEvents: React.FC<OrganizationEventsProps> = ({ events, canCrea
                 {canCreateEvent && (
                     <Button
                         text={t('organizations.createEvent', 'Create Event')}
-                        onClick={() => {
-                            // TODO: Navigate to create event page
-                            console.log('Navigate to create event');
-                        }}
                         size="sm"
                     />
                 )}

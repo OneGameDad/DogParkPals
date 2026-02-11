@@ -64,6 +64,7 @@ describe('DogProfileModal Component', () => {
             friends: [],
             loading: false,
             removeFriend: mockRemoveFriend,
+            refetch: vi.fn(),
         });
     });
 
@@ -129,6 +130,7 @@ describe('DogProfileModal Component', () => {
             friends: [mockDog], // Already friends with this dog
             loading: false,
             removeFriend: mockRemoveFriend,
+            refetch: vi.fn(),
         });
 
         render(<DogProfileModal dog={mockDog} onClose={mockOnClose} />);
@@ -143,6 +145,7 @@ describe('DogProfileModal Component', () => {
             friends: [mockDog],
             loading: false,
             removeFriend: mockRemoveFriend,
+            refetch: vi.fn(),
         });
 
         vi.spyOn(window, 'confirm').mockReturnValue(true);

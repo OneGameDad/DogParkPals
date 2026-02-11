@@ -53,7 +53,7 @@ describe('useDogFriends Hook', () => {
 
     it('should not fetch if dogId is undefined', () => {
         renderHook(() => useDogFriends(undefined));
-        expect(useFetch).toHaveBeenCalledWith(null);
+        expect(useFetch).toHaveBeenCalledWith('');
     });
 
     it('should return empty array if data is null', () => {

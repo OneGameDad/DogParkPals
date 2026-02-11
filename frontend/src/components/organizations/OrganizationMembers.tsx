@@ -25,9 +25,6 @@ const OrganizationMembers: React.FC<OrganizationMembersProps> = ({
     const { t } = useTranslation();
     const [isAddingMember, setIsAddingMember] = useState(false);
 
-    // Search state
-
-
     // Use the shared user search hook
     const {
         searchQuery,

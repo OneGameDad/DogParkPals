@@ -206,6 +206,13 @@ export interface OrganizationMember {
   organizationId: number;
   role: OrgRole;
   joinedAt: string;
+  user?: {
+    id: number;
+    username: string;
+    first_name: string | null;
+    last_name: string | null;
+    profilePictureUrl: string | null;
+  };
 }
 
 export interface Event {

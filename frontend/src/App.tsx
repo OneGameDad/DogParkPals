@@ -19,6 +19,8 @@ import EditDogProfile from './pages/EditDogProfile';
 import ParkDetails from './pages/ParkDetails';
 import CreateOrganization from './pages/CreateOrganization';
 import OrganizationList from './components/organizations/OrganizationList';
+import OrganizationProfile from './pages/OrganizationProfile';
+import OrganizationUpdate from './pages/OrganizationUpdate';
 
 function App() {
   return (
@@ -98,6 +100,16 @@ function App() {
             <Route path="/organizations/create" element={
               <ProtectedRoute>
                 <CreateOrganization />
+              </ProtectedRoute>
+            } />
+            <Route path="/organizations/:id" element={
+              <ProtectedRoute>
+                <OrganizationProfile />
+              </ProtectedRoute>
+            } />
+            <Route path="/organizations/:id/edit" element={
+              <ProtectedRoute>
+                <OrganizationUpdate />
               </ProtectedRoute>
             } />
           </Routes>

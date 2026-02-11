@@ -38,8 +38,10 @@ const uploadService = {
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             const data = JSON.parse(xhr.responseText);
-            if (!data.url) reject(new Error('Upload succeeded but no URL returned'));
-            else resolve(data as UploadResponse);
+            // Handle different response formats from backend
+            const url = data.url || data.profilePictureUrl || data.dogPhotoUrl || data.documentUrl;
+            if (!url) reject(new Error('Upload succeeded but no URL returned'));
+            else resolve({ url } as UploadResponse);
           } catch {
             reject(new Error('Invalid JSON response from server'));
           }
@@ -61,7 +63,7 @@ const uploadService = {
   },
 
   async deleteUserProfilePicture(): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/users/profile-picture`, {
+    const response = await fetch(`${API_BASE_URL}/users/profile-picture`, {
       method: 'DELETE',
       credentials: 'include',
     });
@@ -112,7 +114,7 @@ const uploadService = {
     file: File,
     onProgress?: (percent: number) => void
   ): Promise<UploadResponse> {
-    return this.uploadFile(file, 'userProfile', '/api/users/profile-picture', onProgress);
+    return this.uploadFile(file, 'userProfile', '/users/profile-picture', onProgress);
   },
 
   async uploadDogPhoto(dogId: number, file: File, onProgress?: (percent: number) => void): Promise<UploadResponse> {

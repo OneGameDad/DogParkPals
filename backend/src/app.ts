@@ -19,6 +19,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import path from "path";
 import passport from "./services/googleAuthService";
 import userRouter from "./routes/userRouter";
 import authRouter from "./routes/authRouter";
@@ -47,6 +48,7 @@ app.use(cors({
   credentials: true,
 }));
 
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use(requestIdMiddleware);
 app.use(cookieParser());
 app.use(express.json());

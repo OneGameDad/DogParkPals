@@ -1,4 +1,5 @@
 import type { User } from '../types';
+import { API_BASE_URL } from '../constants';
 
 export const formatAmenity = (amenity: string) => {
     return amenity
@@ -41,4 +42,14 @@ export const getUserDisplayName = (user: User): string => {
 
 export const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
+export const getImageUrl = (url: string | null | undefined, fallback: string): string => {
+  if (!url) return fallback;
+  
+  let cleanUrl = url.replace(/^.*[\/\\]uploads[\/\\]/, '/uploads/');
+  
+  if (cleanUrl.startsWith('/')) return `${API_BASE_URL}${cleanUrl}`;
+  
+  return cleanUrl;
 };

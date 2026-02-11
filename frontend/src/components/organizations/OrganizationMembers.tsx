@@ -24,7 +24,6 @@ const OrganizationMembers: React.FC<OrganizationMembersProps> = ({
 }) => {
     const { t } = useTranslation();
     const [isAddingMember, setIsAddingMember] = useState(false);
-    const [loading, setLoading] = useState(false);
 
     // Search state
 

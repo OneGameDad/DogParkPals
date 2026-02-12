@@ -8,6 +8,7 @@ import { loginSchema } from '../utils/validationSchemas';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { sanitizeUser } from '../utils/userSanitizer';
 import { blacklistToken } from '../utils/tokenBlacklist';
+import { awardExperience, XP_REWARDS } from '../services/xpService';
 
 const authController = {
   login: async (req: Request, res: Response, next: NextFunction) => {
@@ -32,6 +33,7 @@ const authController = {
 
       const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, secret, { expiresIn: '7d' });
       typeSafeLogger.logUserAction('User logged in', { userId: user.id, email: user.email });
+      await awardExperience(user.id, XP_REWARDS.LOGIN, 'login');
 
       // Set httpOnly cookie
       res.cookie('authToken', token, {
@@ -100,6 +102,7 @@ const authController = {
       );
 
       typeSafeLogger.logUserAction('User logged in via Google', { userId: user.id, email: user.email });
+      await awardExperience(user.id, XP_REWARDS.LOGIN, 'login');
 
       // Set httpOnly cookie
       res.cookie('authToken', token, {

@@ -5,6 +5,13 @@ import { toAppError } from '../utils/errors';
 const prisma = new PrismaClient();
 
 export const XP_REWARDS = {
+  LOGIN: 5,
+  ADD_DOG: 50,
+  ADD_OWNER_TO_DOG: 20,
+  JOIN_EVENT: 5,
+  CREATE_EVENT: 15,
+  MESSAGE_FRIEND: 1,
+  ADD_ENEMY: 25,
   JOIN_ORGANIZATION: 40,
   ADD_FRIEND: 25,
   PARK_VISIT: 10,

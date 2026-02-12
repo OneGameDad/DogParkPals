@@ -5,6 +5,7 @@ import { parseValidation } from "../utils/validator";
 import dogService from "../services/dogService";
 import friendService from "../services/friendService";
 import { addDogSchema, addOwnerToDogSchema, removeOwnerFromDogSchema } from "../utils/validationSchemas";
+import { awardExperience, XP_REWARDS } from "../services/xpService";
 
 /**
  * Check if user is authorized to modify a dog (owner, admin, or developer)
@@ -73,6 +74,9 @@ const dogController = {
       }
 
       typeSafeLogger.logUserAction("Dog added", { dogId: newDog.id, name: newDog.name });
+      if (req.userId) {
+        await awardExperience(req.userId, XP_REWARDS.ADD_DOG, 'add_dog');
+      }
       res.status(201).json(newDog);
     } catch (error) {
       if (isAppError(error)) {
@@ -210,6 +214,9 @@ const dogController = {
     }
     
     await dogService.addOwnerToDog(dogId, newOwnerId);
+    if (userId) {
+      await awardExperience(userId, XP_REWARDS.ADD_OWNER_TO_DOG, 'add_owner_to_dog');
+    }
     res.status(204).send();
     } catch (error) {      
       if (isAppError(error)) {

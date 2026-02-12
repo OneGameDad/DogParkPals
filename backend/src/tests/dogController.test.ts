@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 import type { Request, Response, NextFunction } from 'express';
 import { AppError, NotFoundError, ForbiddenError } from '../utils/errors';
-import { awardExperience, XP_REWARDS } from '../services/xpService';
+import { awardAchievement, awardExperience, XP_REWARDS } from '../services/xpService';
 
 // Create mock functions
 const mockAddDog = jest.fn<any>();
@@ -44,6 +44,7 @@ jest.mock('../services/dogService', () => ({
 
 jest.mock('../services/xpService', () => ({
   awardExperience: jest.fn(),
+  awardAchievement: jest.fn(),
   XP_REWARDS: {
     ADD_DOG: 5,
     ADD_OWNER_TO_DOG: 5,
@@ -122,6 +123,7 @@ describe('Dog Controller', () => {
       expect(mockJson).toHaveBeenCalledWith(mockDog);
       expect(mockAddOwnerToDog).not.toHaveBeenCalled();
       expect(awardExperience).not.toHaveBeenCalled();
+      expect(awardAchievement).not.toHaveBeenCalled();
       expect(mockNext).not.toHaveBeenCalled();
     });
 
@@ -143,6 +145,7 @@ describe('Dog Controller', () => {
       expect(mockAddDog).toHaveBeenCalled();
       expect(mockAddOwnerToDog).toHaveBeenCalledWith(mockDog.id, 42);
       expect(awardExperience).toHaveBeenCalledWith(42, XP_REWARDS.ADD_DOG, 'add_dog');
+      expect(awardAchievement).toHaveBeenCalledWith(42, 'Best Friend', expect.any(String));
       expect(mockStatus).toHaveBeenCalledWith(201);
       expect(mockJson).toHaveBeenCalledWith(mockDog);
     });
@@ -399,6 +402,7 @@ describe('Dog Controller', () => {
 
       expect(mockAddOwnerToDog).toHaveBeenCalledWith(1, 2);
       expect(awardExperience).toHaveBeenCalledWith(1, XP_REWARDS.ADD_OWNER_TO_DOG, 'add_owner_to_dog');
+      expect(awardAchievement).toHaveBeenCalledWith(2, 'Family Dog', expect.any(String));
       expect(mockStatus).toHaveBeenCalledWith(204);
     });
 

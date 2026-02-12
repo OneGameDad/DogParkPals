@@ -64,7 +64,10 @@ const userController = {
     getUserById: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             typeSafeLogger.logRequest("Received request to fetch user by id", { method: req.method, path: req.path });
-            const id = req.params.id && req.params.id.trim() ? parseValidation(getUserByIdSchema, req.params).id : req.userId;
+            const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+            const id = rawId && rawId.trim()
+                ? parseValidation(getUserByIdSchema, { id: rawId }).id
+                : req.userId;
 
             if (!id) {
                 throw NotFoundError("User not found");
@@ -201,6 +204,47 @@ const userController = {
             }
             return next(
                 toAppError(error, { message: "Failed to reset password", code: "INTERNAL_ERROR", statusCode: 500 })
+            );
+        }
+    },
+
+    recordHeartbeat: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            if (!req.userId) {
+                throw ForbiddenError("Authentication required");
+            }
+
+            const presence = await userService.recordHeartbeat(req.userId);
+            res.status(200).json(presence);
+        } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
+            return next(
+                toAppError(error, { message: "Failed to record heartbeat", code: "INTERNAL_ERROR", statusCode: 500 })
+            );
+        }
+    },
+
+    getUserPresence: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            if (!req.userId) {
+                throw ForbiddenError("Authentication required");
+            }
+
+            const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+            const id = rawId && rawId.trim()
+                ? parseValidation(getUserByIdSchema, { id: rawId }).id
+                : req.userId;
+
+            const presence = await userService.getUserPresence(id);
+            res.status(200).json(presence);
+        } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
+            return next(
+                toAppError(error, { message: "Failed to fetch user presence", code: "INTERNAL_ERROR", statusCode: 500 })
             );
         }
     },

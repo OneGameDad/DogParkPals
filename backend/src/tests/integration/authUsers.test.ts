@@ -93,6 +93,47 @@ describe("user flows", () => {
     expect(res.body[0]).not.toHaveProperty("password_hash");
   });
 
+  test("presence endpoints require auth", async () => {
+    const heartbeatRes = await request(app).post("/users/presence/heartbeat");
+    const presenceRes = await request(app).get("/users/presence");
+
+    expect(heartbeatRes.status).toBe(401);
+    expect(heartbeatRes.body.code).toBe("AUTH_ERROR");
+    expect(presenceRes.status).toBe(401);
+    expect(presenceRes.body.code).toBe("AUTH_ERROR");
+  });
+
+  test("heartbeat updates presence for current user", async () => {
+    const res = await request(app)
+      .post("/users/presence/heartbeat")
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.userId).toBe(ids.users.userA);
+    expect(res.body.lastSeenAt).toBeTruthy();
+    expect(typeof res.body.isOnline).toBe("boolean");
+    expect(res.body.heartbeatIntervalSeconds).toBe(150);
+    expect(res.body.offlineTimeoutSeconds).toBe(300);
+  });
+
+  test("get presence returns data for current and specified users", async () => {
+    const currentRes = await request(app)
+      .get("/users/presence")
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    expect(currentRes.status).toBe(200);
+    expect(currentRes.body.userId).toBe(ids.users.userA);
+    expect(currentRes.body.lastSeenAt).toBeTruthy();
+
+    const specificRes = await request(app)
+      .get(`/users/presence/${ids.users.userB}`)
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    expect(specificRes.status).toBe(200);
+    expect(specificRes.body.userId).toBe(ids.users.userB);
+    expect(specificRes.body.lastSeenAt).toBeTruthy();
+  });
+
   test("delete self succeeds", async () => {
     const created = await request(app)
       .post("/users")

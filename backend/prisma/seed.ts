@@ -4,6 +4,10 @@ import { PrismaClient, DogBreed, DogPlaystyle, DogSize, EventPrivacy, OrgRole } 
 const prisma = new PrismaClient();
 
 async function main() {
+  const now = new Date();
+  const twoMinutesAgo = new Date(now.getTime() - 2 * 60 * 1000);
+  const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+
   // Seed minimal data
   const user = await prisma.user.upsert({
     where: { email: "alice@example.com" },
@@ -13,6 +17,7 @@ async function main() {
       password_hash: "dev",
       username: "alice",
       first_name: "Alice",
+      lastSeenAt: twoMinutesAgo,
     },
   });
 
@@ -24,6 +29,7 @@ async function main() {
       password_hash: "dev",
       username: "bob",
       first_name: "Bob",
+      lastSeenAt: tenMinutesAgo,
     },
   });
 
@@ -183,7 +189,6 @@ async function main() {
   });
 
   // Check-ins at parks
-  const now = new Date();
   const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
   const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 

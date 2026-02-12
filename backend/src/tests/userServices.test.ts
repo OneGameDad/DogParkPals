@@ -25,6 +25,7 @@ describe('User Services', () => {
       last_name: testLastName,
       password_hash: 'hashed_password',
       profilePictureUrl: testProfilePictureUrl,
+      lastSeenAt: new Date(),
       role: 'CLIENT',
       ExpPoints: 0,
       createdAt: new Date(),
@@ -79,6 +80,7 @@ describe('User Services', () => {
       last_name: testLastName,
       password_hash: 'hashed_password',
       profilePictureUrl: testProfilePictureUrl,
+      lastSeenAt: new Date(),
       role: 'CLIENT',
       ExpPoints: 0,
       createdAt: new Date(),
@@ -144,6 +146,7 @@ describe('User Services', () => {
       username: testUsername,
       email: testEmail,
       password_hash: 'hashed_password',
+      lastSeenAt: new Date(),
     } as User;
 
     const mockFindUnique = jest.fn<() => Promise<typeof mockUserData | null>>().mockResolvedValue(mockUserData);
@@ -224,6 +227,7 @@ describe('User Services', () => {
       profilePictureUrl: 'http://example.com/updated.jpg',
       latitude: 40.7,
       longitude: -73.9,
+      lastSeenAt: new Date(),
       role: 'CLIENT',
       ExpPoints: 0,
       createdAt: new Date(),
@@ -272,6 +276,7 @@ describe('User Services', () => {
       profilePictureUrl: null,
       latitude: null,
       longitude: null,
+      lastSeenAt: new Date(),
     });
 
     jest.doMock('@prisma/client', () => ({
@@ -443,6 +448,69 @@ describe('User Services', () => {
       code: 'DELETE_PROFILE_PICTURE_FAILED',
     });
 
+    jest.dontMock('@prisma/client');
+  });
+
+  test('recordHeartbeat updates lastSeenAt and returns presence', async () => {
+    const now = new Date();
+    const mockUpdate = jest.fn<any>().mockResolvedValue({
+      id: 5,
+      lastSeenAt: now,
+    });
+
+    jest.doMock('@prisma/client', () => ({
+      PrismaClient: jest.fn(() => ({
+        user: {
+          update: mockUpdate,
+        },
+      })),
+    }));
+
+    const userService = await import('../services/userServices');
+    const result = await userService.default.recordHeartbeat(5);
+
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: 5 },
+      data: { lastSeenAt: expect.any(Date) },
+      select: { id: true, lastSeenAt: true },
+    });
+    expect(result.userId).toBe(5);
+    expect(result.lastSeenAt).toBe(now);
+    expect(result.isOnline).toBe(true);
+    expect(result.heartbeatIntervalSeconds).toBe(150);
+    expect(result.offlineTimeoutSeconds).toBe(300);
+
+    jest.dontMock('@prisma/client');
+  });
+
+  test('getUserPresence returns offline status when lastSeenAt is stale', async () => {
+    const lastSeenAt = new Date('2020-01-01T00:00:00.000Z');
+    const mockFindUnique = jest.fn<any>().mockResolvedValue({
+      id: 6,
+      lastSeenAt,
+    });
+
+    jest.doMock('@prisma/client', () => ({
+      PrismaClient: jest.fn(() => ({
+        user: {
+          findUnique: mockFindUnique,
+        },
+      })),
+    }));
+
+    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(new Date('2020-01-01T00:10:00.000Z').getTime());
+    const userService = await import('../services/userServices');
+    const result = await userService.default.getUserPresence(6);
+
+    expect(mockFindUnique).toHaveBeenCalledWith({
+      where: { id: 6 },
+      select: { id: true, lastSeenAt: true },
+    });
+    expect(result.isOnline).toBe(false);
+    expect(result.heartbeatIntervalSeconds).toBe(150);
+    expect(result.offlineTimeoutSeconds).toBe(300);
+
+    nowSpy.mockRestore();
     jest.dontMock('@prisma/client');
   });
 });

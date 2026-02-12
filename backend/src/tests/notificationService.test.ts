@@ -130,6 +130,23 @@ describe('notificationService', () => {
       });
     });
 
+    test('uses transaction client when provided', async () => {
+      const fakeNotification = { id: 2, userId: 1, type: 'MESSAGE_RECEIVED', payload: {} };
+      const tx = {
+        notification: {
+          create: jest.fn().mockResolvedValue(fakeNotification),
+        },
+      };
+
+      const result = await notificationService.createNotification(1, 'MESSAGE_RECEIVED', {}, tx as any);
+
+      expect(result).toEqual(fakeNotification);
+      expect(tx.notification.create).toHaveBeenCalledWith({
+        data: { userId: 1, type: 'MESSAGE_RECEIVED', payload: {} },
+      });
+      expect(prisma.notification.create).not.toHaveBeenCalled();
+    });
+
     test('throws app error if create fails', async () => {
       prisma.notification.create.mockRejectedValue(new Error('DB error'));
       await expect(notificationService.createNotification(1, 'MESSAGE_RECEIVED', {})).rejects.toThrow();

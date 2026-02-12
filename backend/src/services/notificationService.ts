@@ -1,8 +1,14 @@
-import { PrismaClient, NotificationType } from "@prisma/client";
+import { PrismaClient, Prisma, NotificationType } from "@prisma/client";
 import typeSafeLogger from "../utils/typeSafeLogger";
 import { toAppError } from "../utils/errors";
 
 const prisma = new PrismaClient();
+
+type PrismaClientOrTx = PrismaClient | Prisma.TransactionClient;
+
+function getClient(tx?: PrismaClientOrTx) {
+  return tx ?? prisma;
+}
 
 const notificationService = {
     async getNotifications(
@@ -93,10 +99,12 @@ const notificationService = {
       async createNotification(
         userId: number,
         type: NotificationType,
-        payload: object
+        payload: object,
+        tx?: PrismaClientOrTx
       ) {
         try {
-            return await prisma.notification.create({
+            const client = getClient(tx);
+            return await client.notification.create({
                 data: {
                     userId,
                     type,

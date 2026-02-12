@@ -19,6 +19,9 @@ const mockPrisma: any = {
     findMany: jest.fn(),
     delete: jest.fn(),
   },
+  notification: {
+    create: jest.fn(),
+  },
 };
 
 const mockAchievementData = {
@@ -50,6 +53,9 @@ jest.mock('@prisma/client', () => {
       BADGE: 'BADGE',
       TROPHY: 'TROPHY',
       CERTIFICATE: 'CERTIFICATE',
+    },
+    NotificationType: {
+      ACHIEVEMENT_EARNED: 'ACHIEVEMENT_EARNED',
     },
   };
 });
@@ -344,6 +350,17 @@ describe('Achievement Service', () => {
             }
           }
         }
+      });
+      expect(mockPrisma.notification.create).toHaveBeenCalledWith({
+        data: {
+          userId: 1,
+          type: 'ACHIEVEMENT_EARNED',
+          payload: {
+            achievementId: mockAchievementData.id,
+            name: mockAchievementData.name,
+            type: mockAchievementData.type,
+          },
+        },
       });
     });
 

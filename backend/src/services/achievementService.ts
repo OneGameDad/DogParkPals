@@ -1,6 +1,7 @@
-import { PrismaClient, Prisma, AchievementType } from '@prisma/client';
+import { PrismaClient, Prisma, AchievementType, NotificationType } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { NotFoundError, toAppError, ConflictError } from '../utils/errors';
+import notificationService from './notificationService';
 
 const prisma = new PrismaClient();
 
@@ -256,6 +257,17 @@ const achievementService = {
           }
         }
       });
+
+      await notificationService.createNotification(
+        userId,
+        NotificationType.ACHIEVEMENT_EARNED,
+        {
+          achievementId: achievement.id,
+          name: achievement.name,
+          type: achievement.type,
+        },
+        client
+      );
       
       typeSafeLogger.logUserAction('Achievement awarded to user successfully', { 
         userId, 

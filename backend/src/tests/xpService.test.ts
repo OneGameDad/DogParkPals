@@ -94,6 +94,80 @@ describe('XP Service', () => {
       jest.dontMock('@prisma/client');
     });
 
+    test('should award XP achievements when thresholds are met', async () => {
+      const mockUpdatedUser = {
+        id: mockUserId,
+        email: 'test@example.com',
+        username: 'testuser',
+        password_hash: 'hash',
+        first_name: 'Test',
+        last_name: 'User',
+        profilePictureUrl: 'http://example.com/pic.jpg',
+        latitude: 40.7,
+        longitude: -73.9,
+        role: 'CLIENT',
+        ExpPoints: 300,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as unknown as User;
+
+      const mockAchievement = { id: 10, name: 'Level 2', type: 'TROPHY' };
+      const mockFindFirst = jest.fn().mockResolvedValue(null);
+      const mockUpdate = jest.fn().mockResolvedValue(mockUpdatedUser);
+      const mockDeleteMany = jest.fn().mockResolvedValue({});
+      const mockUpsert = jest.fn().mockResolvedValue({});
+      const mockFindMany = jest.fn().mockResolvedValue([mockAchievement]);
+      const mockAwardAchievementToUser = jest.fn().mockResolvedValue({});
+
+      const mockTx = {
+        user: { update: mockUpdate },
+        levels: { findFirst: mockFindFirst },
+        userLevel: { deleteMany: mockDeleteMany, upsert: mockUpsert },
+        achievements: { findMany: mockFindMany },
+      };
+
+      jest.doMock('../services/achievementService', () => ({
+        __esModule: true,
+        default: {
+          awardAchievementToUser: mockAwardAchievementToUser,
+        },
+      }));
+
+      jest.doMock('@prisma/client', () => ({
+        PrismaClient: jest.fn(() => ({
+          user: {
+            update: mockUpdate,
+          },
+          levels: {
+            findFirst: mockFindFirst,
+          },
+          userLevel: {
+            deleteMany: mockDeleteMany,
+            upsert: mockUpsert,
+          },
+          achievements: {
+            findMany: mockFindMany,
+          },
+          $transaction: jest.fn((callback) => callback(mockTx)),
+        })),
+        AchievementType: {
+          BADGE: 'BADGE',
+          TROPHY: 'TROPHY',
+          CERTIFICATE: 'CERTIFICATE',
+        },
+      }));
+
+      const xpService = await import('../services/xpService');
+
+      await xpService.awardExperience(mockUserId, 300, 'test_action');
+
+      expect(mockFindMany).toHaveBeenCalled();
+      expect(mockAwardAchievementToUser).toHaveBeenCalledWith(mockUserId, mockAchievement.id, mockTx);
+
+      jest.dontMock('@prisma/client');
+      jest.dontMock('../services/achievementService');
+    });
+
     test('should return zero experience when amount is zero or negative', async () => {
       const mockTransaction = jest.fn().mockImplementation((callback) =>
         callback({

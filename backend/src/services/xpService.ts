@@ -71,19 +71,14 @@ async function awardXpAchievements(client: PrismaClientOrTx, userId: number, tot
   });
 
   for (const achievement of achievements) {
-    await client.userAchievement.upsert({
-      where: {
-        userId_achievementId: {
-          userId,
-          achievementId: achievement.id,
-        },
-      },
-      update: {},
-      create: {
-        userId,
-        achievementId: achievement.id,
-      },
-    });
+    try {
+      await achievementService.awardAchievementToUser(userId, achievement.id, client);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'User already has this achievement') {
+        continue;
+      }
+      throw error;
+    }
   }
 }
 

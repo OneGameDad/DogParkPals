@@ -377,9 +377,9 @@ const DOGS: DogData[] = [
     ownerIndex: 1,
   },
   {
-    name: "Charlie",
+    name: "Meri",
     breed: DogBreed.CIRNECO_DELL_ETNA,
-    gender: "MALE",
+    gender: "FEMALE",
     dateOfBirth: new Date("2023-01-10"),
     size: DogSize.SMALL,
     playstyle: DogPlaystyle.SHY,

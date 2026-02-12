@@ -8,6 +8,13 @@ import userService from "../services/userServices";
 
 const router = express.Router();
 
+const resolveStoredPath = (storedPath: string) => {
+  if (path.isAbsolute(storedPath)) {
+    return storedPath;
+  }
+  return path.join(__dirname, "../../", storedPath);
+};
+
 router.get("/dogs/:dogId/photo", async (req, res, next) => {
   try {
     const dogId = parseInt(req.params.dogId, 10);
@@ -23,9 +30,12 @@ router.get("/dogs/:dogId/photo", async (req, res, next) => {
       return res.status(404).json({ message: "Dog photo not found" });
     }
 
-    const url = `/api/files/dogs/${dogId}/photo`;
+    const resolvedPath = resolveStoredPath(dog.profilePictureUrl);
+    if (!fs.existsSync(resolvedPath)) {
+      return res.status(404).json({ message: "Dog photo not found" });
+    }
 
-    res.status(200).json({ url });
+    res.sendFile(resolvedPath);
   } catch (err) {
     next(toAppError(err, { message: "Failed to fetch dog photo", code: "FILE_ACCESS_DENIED" }));
   }
@@ -44,8 +54,12 @@ router.get("/dogs/:dogId/document", async (req, res, next) => {
       return res.status(404).json({ message: "Document not found" });
     }
 
-    const url = `/api/files/dogs/${dogId}/document`;
-    res.status(200).json({ url });
+    const resolvedPath = resolveStoredPath(dog.vaccinationRecordUrl);
+    if (!fs.existsSync(resolvedPath)) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+
+    res.sendFile(resolvedPath);
   } catch (err) {
     next(
       toAppError(err, {
@@ -71,8 +85,12 @@ router.get("/users/:userId/profile-picture", async (req, res, next) => {
       return res.status(404).json({ message: "Profile picture not found" });
     }
 
-    const url = `/api/files/users/${requestedUserId}/profile-picture`;
-    res.status(200).json({ url });
+    const resolvedPath = resolveStoredPath(user.profilePictureUrl);
+    if (!fs.existsSync(resolvedPath)) {
+      return res.status(404).json({ message: "Profile picture not found" });
+    }
+
+    res.sendFile(resolvedPath);
   } catch (err) {
     next(
       toAppError(err, {

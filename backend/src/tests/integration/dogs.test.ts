@@ -345,7 +345,7 @@ describe("dog photo upload", () => {
     expect(res.status).toBe(401);
   });
 
-  test("authorized user can get dog photo URL", async () => {
+  test("authorized user can get dog photo", async () => {
     // Upload first
     const fixturePath = path.join(__dirname, "../fixtures/Helga.jpg");
     const uploadRes = await request(app)
@@ -355,14 +355,14 @@ describe("dog photo upload", () => {
 
     expect(uploadRes.status).toBe(200);
 
-    // Get the URL
+    // Get the file
     const res = await request(app)
       .get(`/api/files/dogs/${ids.dogs.dogA}/photo`)
       .set("Authorization", `Bearer ${userAToken()}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.url).toBeDefined();
-    expect(res.body.url).toMatch(/\/api\/files\/dogs\//);
+    expect(res.headers["content-type"]).toMatch(/image\//);
+    expect(res.body.length).toBeGreaterThan(0);
   });
 
   test("dog without photo returns 404 for owner", async () => {

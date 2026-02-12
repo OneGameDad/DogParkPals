@@ -8,6 +8,15 @@ import fs from "fs";
 
 const prisma = new PrismaClient();
 
+const HEARTBEAT_INTERVAL_SECONDS = 150;
+const OFFLINE_TIMEOUT_SECONDS = 300;
+
+const isOnlineFromLastSeen = (lastSeenAt: Date | null) => {
+  if (!lastSeenAt) return false;
+  const lastSeenMs = lastSeenAt.getTime();
+  return Date.now() - lastSeenMs <= OFFLINE_TIMEOUT_SECONDS * 1000;
+};
+
 //TODO userServices.ts
 // Implement user-related services such as registration, authentication, profile management, etc.
 const userService = {
@@ -112,6 +121,61 @@ const userService = {
         code: 'FETCH_USER_FAILED',
       });
       typeSafeLogger.logError('Failed to fetch user by id', appError, { id });
+      throw appError;
+    }
+  },
+
+  async recordHeartbeat(userId: number) {
+    typeSafeLogger.logUserAction('Recording heartbeat', { userId });
+    try {
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { lastSeenAt: new Date() },
+        select: { id: true, lastSeenAt: true },
+      });
+
+      return {
+        userId: updatedUser.id,
+        lastSeenAt: updatedUser.lastSeenAt,
+        isOnline: isOnlineFromLastSeen(updatedUser.lastSeenAt),
+        heartbeatIntervalSeconds: HEARTBEAT_INTERVAL_SECONDS,
+        offlineTimeoutSeconds: OFFLINE_TIMEOUT_SECONDS,
+      };
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to record heartbeat',
+        code: 'RECORD_HEARTBEAT_FAILED',
+      });
+      typeSafeLogger.logError('Failed to record heartbeat', appError, { userId });
+      throw appError;
+    }
+  },
+
+  async getUserPresence(userId: number) {
+    typeSafeLogger.logUserAction('Fetching user presence', { userId });
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, lastSeenAt: true },
+      });
+
+      if (!user) {
+        throw NotFoundError('User not found');
+      }
+
+      return {
+        userId: user.id,
+        lastSeenAt: user.lastSeenAt,
+        isOnline: isOnlineFromLastSeen(user.lastSeenAt),
+        heartbeatIntervalSeconds: HEARTBEAT_INTERVAL_SECONDS,
+        offlineTimeoutSeconds: OFFLINE_TIMEOUT_SECONDS,
+      };
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to fetch user presence',
+        code: 'FETCH_PRESENCE_FAILED',
+      });
+      typeSafeLogger.logError('Failed to fetch user presence', appError, { userId });
       throw appError;
     }
   },

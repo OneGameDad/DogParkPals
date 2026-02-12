@@ -366,7 +366,7 @@ describe("user profile picture upload", () => {
     expect(res.status).toBe(401);
   });
 
-  test("user can access own profile picture URL", async () => {
+  test("user can access own profile picture", async () => {
     // Upload first
     const fixturePath = path.join(__dirname, "../fixtures/Greg.png");
     const uploadRes = await request(app)
@@ -376,17 +376,17 @@ describe("user profile picture upload", () => {
 
     expect(uploadRes.status).toBe(200);
 
-    // Retrieve the URL
+    // Retrieve the file
     const res = await request(app)
       .get(`/api/files/users/${ids.users.userA}/profile-picture`)
       .set("Authorization", `Bearer ${userAToken()}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.url).toBeDefined();
-    expect(res.body.url).toMatch(/\/api\/files\/users\//);
+    expect(res.headers["content-type"]).toMatch(/image\//);
+    expect(res.body.length).toBeGreaterThan(0);
   });
 
-  test("admin can access any user's profile picture URL", async () => {
+  test("admin can access any user's profile picture", async () => {
     // Upload first as userA
     const fixturePath = path.join(__dirname, "../fixtures/Greg.png");
     const uploadRes = await request(app)
@@ -402,7 +402,8 @@ describe("user profile picture upload", () => {
       .set("Authorization", `Bearer ${adminToken()}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.url).toBeDefined();
+    expect(res.headers["content-type"]).toMatch(/image\//);
+    expect(res.body.length).toBeGreaterThan(0);
   });
 
   test("non-owner cannot access another user's profile picture URL", async () => {

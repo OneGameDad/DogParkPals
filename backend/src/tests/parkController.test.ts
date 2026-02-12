@@ -21,6 +21,7 @@ const mockGetActiveCheckInsForPark = jest.fn<any>();
 const mockParkExists = jest.fn<any>();
 const mockAwardExperience = jest.fn<any>();
 const mockHasVisitedParkBefore = jest.fn<any>();
+const mockAwardParkPatrolIfEligible = jest.fn<any>();
 
 jest.mock('../services/parkService', () => ({
   __esModule: true,
@@ -46,6 +47,7 @@ jest.mock('../services/parkService', () => ({
 jest.mock('../services/xpService', () => ({
   __esModule: true,
   awardExperience: mockAwardExperience,
+  awardParkPatrolIfEligible: mockAwardParkPatrolIfEligible,
   hasVisitedParkBefore: mockHasVisitedParkBefore,
   XP_REWARDS: { PARK_VISIT: 10, NEW_PARK_BONUS: 30 },
 }));
@@ -667,6 +669,7 @@ describe('Park Controller', () => {
   
       expect(mockParkExists).toHaveBeenCalledWith(1);
       expect(mockCheckIn).toHaveBeenCalledWith(1, 1, 123);
+      expect(mockAwardParkPatrolIfEligible).toHaveBeenCalledWith(1, 1);
       expect(mockStatus).toHaveBeenCalledWith(201);
       expect(mockJson).toHaveBeenCalledWith(checkInData);
     });
@@ -788,6 +791,7 @@ describe('Park Controller', () => {
       await parkController.checkInAtPark(mockReq as Request, mockRes as Response, mockNext as any);
 
       expect(mockCheckIn).toHaveBeenCalledWith(1, 1, undefined);
+      expect(mockAwardParkPatrolIfEligible).toHaveBeenCalledWith(1, 1);
       expect(mockStatus).toHaveBeenCalledWith(201);
       expect(mockJson).toHaveBeenCalledWith(checkInData);
     });

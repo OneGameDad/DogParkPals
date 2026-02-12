@@ -5,7 +5,7 @@ import typeSafeLogger from "../utils/typeSafeLogger";
 import { toAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import { createParkSchema, updateParkSchema, getParksNearLocationSchema } from "../utils/validationSchemas";
-import { awardExperience, hasVisitedParkBefore, XP_REWARDS } from "../services/xpService";
+import { awardParkPatrolIfEligible, awardExperience, hasVisitedParkBefore, XP_REWARDS } from "../services/xpService";
 
 /**
  * Check if user is authorized to modify a park (admin, or developer)
@@ -301,6 +301,7 @@ const parkController = {
         if (!visitedBefore) {
           await awardExperience(userId, XP_REWARDS.NEW_PARK_BONUS, 'new_park_visit');
         }
+        await awardParkPatrolIfEligible(userId, parkId);
         res.status(201).json(checkIn);
       } catch (error) {
         if (isAppError(error)) {

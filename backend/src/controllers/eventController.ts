@@ -5,6 +5,7 @@ import { toAppError, ConflictError, NotFoundError, ForbiddenError, isAppError } 
 import { parseValidation } from "../utils/validator";
 import organizationService from "../services/organizationService";
 import type { Event } from "@prisma/client";
+import { awardExperience, XP_REWARDS } from "../services/xpService";
 import {
   createEventSchema,
   updateEventSchema,
@@ -81,6 +82,7 @@ const eventController = {
       );
 
       typeSafeLogger.logUserAction("Event created", { eventId: newEvent.id, title });
+      await awardExperience(organizerId, XP_REWARDS.CREATE_EVENT, 'create_event');
       res.status(201).json(newEvent);
     } catch (error) {
       if (isAppError(error)) {
@@ -292,6 +294,7 @@ const eventController = {
         await eventService.attendEvent(eventId, userId);
 
         typeSafeLogger.logUserAction("User attended event", { eventId, userId });
+        await awardExperience(userId, XP_REWARDS.JOIN_EVENT, 'join_event');
         res.status(200).json({ message: "Attended event successfully" });
         return;
       }
@@ -307,6 +310,7 @@ const eventController = {
       await eventService.attendEvent(eventId, userId);
 
       typeSafeLogger.logUserAction("User attended event", { eventId, userId });
+      await awardExperience(userId, XP_REWARDS.JOIN_EVENT, 'join_event');
       res.status(200).json({ message: "Attended event successfully" });
     } catch (error) {
       if (isAppError(error)) {

@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 import type { Request, Response, NextFunction } from 'express';
 import type { Event } from '@prisma/client';
+import { awardExperience, XP_REWARDS } from '../services/xpService';
 
 // Mocks
 const mockEventService = {
@@ -74,6 +75,14 @@ jest.mock('../utils/validator', () => ({
   parseValidation: mockParseValidation,
 }));
 
+jest.mock('../services/xpService', () => ({
+  awardExperience: jest.fn(),
+  XP_REWARDS: {
+    CREATE_EVENT: 5,
+    JOIN_EVENT: 5,
+  },
+}));
+
 // Use real toAppError helpers
 import eventController from '../controllers/eventController';
 
@@ -142,6 +151,7 @@ describe('Event Controller', () => {
         123,
         false,
       );
+      expect(awardExperience).toHaveBeenCalledWith(123, XP_REWARDS.CREATE_EVENT, 'create_event');
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith(sampleEvent);
       expect(next).not.toHaveBeenCalled();
@@ -179,6 +189,7 @@ describe('Event Controller', () => {
         123,
         true,
       );
+      expect(awardExperience).toHaveBeenCalledWith(123, XP_REWARDS.CREATE_EVENT, 'create_event');
       expect(res.status).toHaveBeenCalledWith(201);
       expect(next).not.toHaveBeenCalled();
     });
@@ -636,6 +647,7 @@ describe('Event Controller', () => {
       await eventController.attendEvent(req, res, next);
 
       expect(mockEventService.attendEvent).toHaveBeenCalledWith(1, 123);
+      expect(awardExperience).toHaveBeenCalledWith(123, XP_REWARDS.JOIN_EVENT, 'join_event');
       expect(res.status).toHaveBeenCalledWith(200);
       expect(next).not.toHaveBeenCalled();
     });
@@ -651,6 +663,7 @@ describe('Event Controller', () => {
       await eventController.attendEvent(req, res, next);
 
       expect(mockEventService.attendEvent).toHaveBeenCalledWith(1, 123);
+      expect(awardExperience).toHaveBeenCalledWith(123, XP_REWARDS.JOIN_EVENT, 'join_event');
       expect(res.status).toHaveBeenCalledWith(200);
       expect(next).not.toHaveBeenCalled();
     });

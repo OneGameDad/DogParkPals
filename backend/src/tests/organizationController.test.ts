@@ -20,6 +20,7 @@ const mockGetOrganizationWithDetails = jest.fn<any>();
 
 // Mock xpService
 const mockAwardExperience = jest.fn<any>();
+const mockAwardAchievement = jest.fn<any>();
 
 jest.mock('../services/organizationService', () => ({
   __esModule: true,
@@ -43,6 +44,7 @@ jest.mock('../services/organizationService', () => ({
 jest.mock('../services/xpService', () => ({
   __esModule: true,
   awardExperience: mockAwardExperience,
+  awardAchievement: mockAwardAchievement,
   XP_REWARDS: {
     JOIN_ORGANIZATION: 40,
     ADD_FRIEND: 25,
@@ -157,6 +159,7 @@ describe('Organization Controller', () => {
 
       expect(mockCreateOrganization).toHaveBeenCalledWith('Dog Lovers Club', 'A club', 'https://example.com');
       expect(mockAddMember).toHaveBeenCalledWith(1, 1, 'OWNER');
+      expect(mockAwardAchievement).toHaveBeenCalledWith(1, 'Pack Leader', expect.any(String));
       expect(mockSanitizeOrganization).toHaveBeenCalledWith(mockOrgData, true, 'OWNER');
       expect(mockStatus).toHaveBeenCalledWith(201);
       expect(mockJson).toHaveBeenCalledWith(mockSanitizedOrgData);
@@ -666,6 +669,7 @@ describe('Organization Controller', () => {
 
       expect(mockAddMember).toHaveBeenCalledWith(1, 2, 'MEMBER');
       expect(mockAwardExperience).toHaveBeenCalledWith(2, 40, 'join_organization');
+      expect(mockAwardAchievement).toHaveBeenCalledWith(2, 'Pack Member', expect.any(String));
       expect(mockStatus).toHaveBeenCalledWith(201);
     });
 

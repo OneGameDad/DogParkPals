@@ -1,5 +1,13 @@
 import "dotenv/config";
-import { PrismaClient, DogBreed, DogPlaystyle, DogSize, EventPrivacy, OrgRole } from "@prisma/client";
+import {
+  PrismaClient,
+  DogBreed,
+  DogPlaystyle,
+  DogSize,
+  EventPrivacy,
+  OrgRole,
+  AchievementType,
+} from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -221,6 +229,87 @@ async function main() {
       checkedOutAt: new Date(now.getTime() - 4 * 60 * 60 * 1000),
     },
   });
+
+  const achievements = [
+    {
+      name: "Level 2",
+      type: AchievementType.TROPHY,
+      badgeUrl: "https://example.com/achievements/level-2.png",
+    },
+    {
+      name: "Level 3",
+      type: AchievementType.TROPHY,
+      badgeUrl: "https://example.com/achievements/level-3.png",
+    },
+    {
+      name: "Level 4",
+      type: AchievementType.TROPHY,
+      badgeUrl: "https://example.com/achievements/level-4.png",
+    },
+    {
+      name: "Level 5",
+      type: AchievementType.TROPHY,
+      badgeUrl: "https://example.com/achievements/level-5.png",
+    },
+    {
+      name: "Best Friend",
+      type: AchievementType.BADGE,
+      badgeUrl: "https://example.com/achievements/best-friend.png",
+    },
+    {
+      name: "Okay Friend",
+      type: AchievementType.BADGE,
+      badgeUrl: "https://example.com/achievements/okay-friend.png",
+    },
+    {
+      name: "Pack Leader",
+      type: AchievementType.BADGE,
+      badgeUrl: "https://example.com/achievements/pack-leader.png",
+    },
+    {
+      name: "Pack Member",
+      type: AchievementType.BADGE,
+      badgeUrl: "https://example.com/achievements/pack-member.png",
+    },
+    {
+      name: "Pup Pal",
+      type: AchievementType.BADGE,
+      badgeUrl: "https://example.com/achievements/pup-pal.png",
+    },
+    {
+      name: "Park Patrol",
+      type: AchievementType.BADGE,
+      badgeUrl: "https://example.com/achievements/park-patrol.png",
+    },
+    {
+      name: "Family Dog",
+      type: AchievementType.BADGE,
+      badgeUrl: "https://example.com/achievements/family-dog.png",
+    },
+    {
+      name: "Sir Barks-A-Lot",
+      type: AchievementType.BADGE,
+      badgeUrl: "https://example.com/achievements/sir-barks-a-lot.png",
+    },
+    {
+      name: "Fought The Post Man",
+      type: AchievementType.BADGE,
+      badgeUrl: "https://example.com/achievements/fought-the-post-man.png",
+    },
+  ];
+
+  for (const achievement of achievements) {
+    const existingAchievement = await prisma.achievements.findFirst({
+      where: {
+        name: achievement.name,
+        type: achievement.type,
+      },
+    });
+
+    if (!existingAchievement) {
+      await prisma.achievements.create({ data: achievement });
+    }
+  }
 
   console.log("Seed completed");
 }

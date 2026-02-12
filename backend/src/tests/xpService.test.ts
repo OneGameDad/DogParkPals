@@ -57,12 +57,25 @@ describe('XP Service', () => {
             deleteMany: mockDeleteMany,
             upsert: mockUpsert,
           },
+          achievements: {
+            findMany: jest.fn(),
+          },
+          userAchievement: {
+            upsert: jest.fn(),
+          },
           $transaction: jest.fn((callback) => callback({
             user: { update: mockUpdate },
             levels: { findFirst: mockFindFirst },
             userLevel: { deleteMany: mockDeleteMany, upsert: mockUpsert },
+            achievements: { findMany: jest.fn() },
+            userAchievement: { upsert: jest.fn() },
           })),
         })),
+        AchievementType: {
+          BADGE: 'BADGE',
+          TROPHY: 'TROPHY',
+          CERTIFICATE: 'CERTIFICATE',
+        },
       }));
 
       const xpService = await import('../services/xpService');
@@ -81,6 +94,80 @@ describe('XP Service', () => {
       jest.dontMock('@prisma/client');
     });
 
+    test('should award XP achievements when thresholds are met', async () => {
+      const mockUpdatedUser = {
+        id: mockUserId,
+        email: 'test@example.com',
+        username: 'testuser',
+        password_hash: 'hash',
+        first_name: 'Test',
+        last_name: 'User',
+        profilePictureUrl: 'http://example.com/pic.jpg',
+        latitude: 40.7,
+        longitude: -73.9,
+        role: 'CLIENT',
+        ExpPoints: 300,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as unknown as User;
+
+      const mockAchievement = { id: 10, name: 'Level 2', type: 'TROPHY' };
+      const mockFindFirst = jest.fn().mockResolvedValue(null);
+      const mockUpdate = jest.fn().mockResolvedValue(mockUpdatedUser);
+      const mockDeleteMany = jest.fn().mockResolvedValue({});
+      const mockUpsert = jest.fn().mockResolvedValue({});
+      const mockFindMany = jest.fn().mockResolvedValue([mockAchievement]);
+      const mockAwardAchievementToUser = jest.fn().mockResolvedValue({});
+
+      const mockTx = {
+        user: { update: mockUpdate },
+        levels: { findFirst: mockFindFirst },
+        userLevel: { deleteMany: mockDeleteMany, upsert: mockUpsert },
+        achievements: { findMany: mockFindMany },
+      };
+
+      jest.doMock('../services/achievementService', () => ({
+        __esModule: true,
+        default: {
+          awardAchievementToUser: mockAwardAchievementToUser,
+        },
+      }));
+
+      jest.doMock('@prisma/client', () => ({
+        PrismaClient: jest.fn(() => ({
+          user: {
+            update: mockUpdate,
+          },
+          levels: {
+            findFirst: mockFindFirst,
+          },
+          userLevel: {
+            deleteMany: mockDeleteMany,
+            upsert: mockUpsert,
+          },
+          achievements: {
+            findMany: mockFindMany,
+          },
+          $transaction: jest.fn((callback) => callback(mockTx)),
+        })),
+        AchievementType: {
+          BADGE: 'BADGE',
+          TROPHY: 'TROPHY',
+          CERTIFICATE: 'CERTIFICATE',
+        },
+      }));
+
+      const xpService = await import('../services/xpService');
+
+      await xpService.awardExperience(mockUserId, 300, 'test_action');
+
+      expect(mockFindMany).toHaveBeenCalled();
+      expect(mockAwardAchievementToUser).toHaveBeenCalledWith(mockUserId, mockAchievement.id, mockTx);
+
+      jest.dontMock('@prisma/client');
+      jest.dontMock('../services/achievementService');
+    });
+
     test('should return zero experience when amount is zero or negative', async () => {
       const mockTransaction = jest.fn().mockImplementation((callback) =>
         callback({
@@ -94,6 +181,11 @@ describe('XP Service', () => {
         PrismaClient: jest.fn(() => ({
           $transaction: mockTransaction,
         })),
+        AchievementType: {
+          BADGE: 'BADGE',
+          TROPHY: 'TROPHY',
+          CERTIFICATE: 'CERTIFICATE',
+        },
       }));
 
       const xpService = await import('../services/xpService');
@@ -113,6 +205,11 @@ describe('XP Service', () => {
         PrismaClient: jest.fn(() => ({
           $transaction: mockTransaction,
         })),
+        AchievementType: {
+          BADGE: 'BADGE',
+          TROPHY: 'TROPHY',
+          CERTIFICATE: 'CERTIFICATE',
+        },
       }));
 
       const xpService = await import('../services/xpService');
@@ -137,6 +234,11 @@ describe('XP Service', () => {
             count: mockCount,
           },
         })),
+        AchievementType: {
+          BADGE: 'BADGE',
+          TROPHY: 'TROPHY',
+          CERTIFICATE: 'CERTIFICATE',
+        },
       }));
 
       const xpService = await import('../services/xpService');
@@ -167,6 +269,11 @@ describe('XP Service', () => {
             count: mockCount,
           },
         })),
+        AchievementType: {
+          BADGE: 'BADGE',
+          TROPHY: 'TROPHY',
+          CERTIFICATE: 'CERTIFICATE',
+        },
       }));
 
       const xpService = await import('../services/xpService');
@@ -191,6 +298,11 @@ describe('XP Service', () => {
             count: mockCount,
           },
         })),
+        AchievementType: {
+          BADGE: 'BADGE',
+          TROPHY: 'TROPHY',
+          CERTIFICATE: 'CERTIFICATE',
+        },
       }));
 
       const xpService = await import('../services/xpService');
@@ -209,10 +321,94 @@ describe('XP Service', () => {
     });
   });
 
+  describe('awardAchievement', () => {
+    test('should look up achievement ID and delegate awarding', async () => {
+      const mockAchievement = { id: 12, name: 'Pup Pal', type: 'BADGE' };
+      const mockFindFirst = jest.fn().mockResolvedValue(mockAchievement);
+      const mockAward = jest.fn().mockResolvedValue({});
+
+      jest.doMock('../services/achievementService', () => ({
+        __esModule: true,
+        default: {
+          awardAchievementToUser: mockAward,
+        },
+      }));
+
+      jest.doMock('@prisma/client', () => ({
+        PrismaClient: jest.fn(() => ({
+          achievements: {
+            findFirst: mockFindFirst,
+          },
+        })),
+        AchievementType: {
+          BADGE: 'BADGE',
+          TROPHY: 'TROPHY',
+          CERTIFICATE: 'CERTIFICATE',
+        },
+      }));
+
+      const xpService = await import('../services/xpService');
+
+      const result = await xpService.awardAchievement(mockUserId, 'Pup Pal', 'BADGE' as any);
+
+      expect(result).toEqual(mockAchievement);
+      expect(mockFindFirst).toHaveBeenCalledWith({
+        where: {
+          name: 'Pup Pal',
+          type: 'BADGE',
+        },
+      });
+      expect(mockAward).toHaveBeenCalledWith(mockUserId, mockAchievement.id, undefined);
+      jest.dontMock('@prisma/client');
+      jest.dontMock('../services/achievementService');
+    });
+
+    test('should return null when achievement not found', async () => {
+      const mockFindFirst = jest.fn().mockResolvedValue(null);
+      const mockAward = jest.fn();
+
+      jest.doMock('../services/achievementService', () => ({
+        __esModule: true,
+        default: {
+          awardAchievementToUser: mockAward,
+        },
+      }));
+
+      jest.doMock('@prisma/client', () => ({
+        PrismaClient: jest.fn(() => ({
+          achievements: {
+            findFirst: mockFindFirst,
+          },
+        })),
+        AchievementType: {
+          BADGE: 'BADGE',
+          TROPHY: 'TROPHY',
+          CERTIFICATE: 'CERTIFICATE',
+        },
+      }));
+
+      const xpService = await import('../services/xpService');
+
+      const result = await xpService.awardAchievement(mockUserId, 'Missing', 'BADGE' as any);
+
+      expect(result).toBeNull();
+      expect(mockAward).not.toHaveBeenCalled();
+      jest.dontMock('@prisma/client');
+      jest.dontMock('../services/achievementService');
+    });
+  });
+
   describe('XP_REWARDS constants', () => {
     test('should have correct reward values', async () => {
       const xpService = await import('../services/xpService');
 
+      expect(xpService.XP_REWARDS.LOGIN).toBe(5);
+      expect(xpService.XP_REWARDS.ADD_DOG).toBe(50);
+      expect(xpService.XP_REWARDS.ADD_OWNER_TO_DOG).toBe(20);
+      expect(xpService.XP_REWARDS.JOIN_EVENT).toBe(5);
+      expect(xpService.XP_REWARDS.CREATE_EVENT).toBe(15);
+      expect(xpService.XP_REWARDS.MESSAGE_FRIEND).toBe(1);
+      expect(xpService.XP_REWARDS.ADD_ENEMY).toBe(25);
       expect(xpService.XP_REWARDS.JOIN_ORGANIZATION).toBe(40);
       expect(xpService.XP_REWARDS.ADD_FRIEND).toBe(25);
       expect(xpService.XP_REWARDS.PARK_VISIT).toBe(10);

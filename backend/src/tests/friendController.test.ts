@@ -13,6 +13,7 @@ const mockGetFriendRequests = jest.fn<any>();
 const mockIsEnemy = jest.fn<any>();
 const mockRemoveEnemy = jest.fn<any>();
 const mockAwardExperience = jest.fn<any>();
+const mockAwardAchievement = jest.fn<any>();
 
 jest.mock('../utils/validator', () => ({
 	parseValidation: mockParseValidation,
@@ -42,6 +43,7 @@ jest.mock('../services/enemyService', () => ({
 jest.mock('../services/xpService', () => ({
 	__esModule: true,
 	awardExperience: mockAwardExperience,
+	awardAchievement: mockAwardAchievement,
 	XP_REWARDS: { ADD_FRIEND: 25 },
 }));
 
@@ -85,6 +87,7 @@ describe('friendController', () => {
 			expect(mockStatus).toHaveBeenCalledWith(201);
 			expect(mockJson).toHaveBeenCalledWith(mockFriendship);
 			expect(mockNext).not.toHaveBeenCalled();
+			expect(mockAwardAchievement).not.toHaveBeenCalled();
 		});
 
 		test('requires confirmation when addressee is on enemy list', async () => {
@@ -178,6 +181,8 @@ describe('friendController', () => {
 			expect(mockAcceptFriendRequest).toHaveBeenCalledWith(friendshipId);
 			expect(mockStatus).toHaveBeenCalledWith(200);
 			expect(mockJson).toHaveBeenCalledWith(updated);
+			expect(mockAwardAchievement).toHaveBeenCalledWith(1, 'Okay Friend', expect.any(String));
+			expect(mockAwardAchievement).toHaveBeenCalledWith(2, 'Okay Friend', expect.any(String));
 		});
 
 		test('forwards validation error', async () => {

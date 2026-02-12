@@ -4,6 +4,7 @@ import typeSafeLogger from "../utils/typeSafeLogger";
 import { toAppError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import { sendMessageSchema, updateMessageStatusSchema } from "../utils/validationSchemas";
+import { awardExperience, awardSirBarksALotIfEligible, XP_REWARDS } from "../services/xpService";
 
 
 const messageController = {
@@ -13,6 +14,8 @@ const messageController = {
             const { senderId, receiverId, content } = parseValidation(sendMessageSchema, req.body);
             const message = await messageService.sendMessage(senderId, receiverId, content);
             typeSafeLogger.logUserAction("Message sent", { senderId, receiverId, messageId: message.id });
+            await awardExperience(senderId, XP_REWARDS.MESSAGE_FRIEND, 'message_friend');
+            await awardSirBarksALotIfEligible(senderId);
              res.status(201).json(message);
         } catch (error) {
             if (isAppError(error)) {

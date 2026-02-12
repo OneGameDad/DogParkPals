@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 import type { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/errors';
+import { awardExperience, XP_REWARDS } from '../services/xpService';
 
 const mockGetUserByEmail = jest.fn<any>();
 const mockVerifyPassword = jest.fn<any>();
@@ -26,6 +27,13 @@ jest.mock('jsonwebtoken', () => ({
 
 jest.mock('../utils/tokenBlacklist', () => ({
   blacklistToken: (...args: any[]) => mockBlacklistToken(...args),
+}));
+
+jest.mock('../services/xpService', () => ({
+  awardExperience: jest.fn(),
+  XP_REWARDS: {
+    LOGIN: 5,
+  },
 }));
 
 import authController from '../controllers/authController';
@@ -80,6 +88,7 @@ describe('Auth Controller', () => {
       expect(payload.user).not.toHaveProperty('password_hash');
       expect(payload.token).toBe('jwt-token');
       expect(mockJwtSign).toHaveBeenCalledWith({ userId: 1, email: 'user@example.com', role: undefined }, expect.any(String), { expiresIn: '7d' });
+      expect(awardExperience).toHaveBeenCalledWith(1, XP_REWARDS.LOGIN, 'login');
     });
 
     test('forwards not found when user missing', async () => {
@@ -147,6 +156,7 @@ describe('Auth Controller', () => {
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: '/'
       });
+      expect(awardExperience).toHaveBeenCalledWith(1, XP_REWARDS.LOGIN, 'login');
       expect(mockRedirect).toHaveBeenCalledWith('http://localhost:5173/auth/google/callback');
     });
 
@@ -160,6 +170,7 @@ describe('Auth Controller', () => {
       await authController.googleCallback(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRedirect).toHaveBeenCalledWith('http://localhost:5173/auth/google/callback');
+      expect(awardExperience).toHaveBeenCalledWith(2, XP_REWARDS.LOGIN, 'login');
     });
 
     test('forwards error when user is missing', async () => {

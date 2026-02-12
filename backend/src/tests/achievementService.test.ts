@@ -19,6 +19,9 @@ const mockPrisma: any = {
     findMany: jest.fn(),
     delete: jest.fn(),
   },
+  notification: {
+    create: jest.fn(),
+  },
 };
 
 const mockAchievementData = {
@@ -45,10 +48,14 @@ const mockUserData = {
 jest.mock('@prisma/client', () => {
   return {
     PrismaClient: jest.fn(() => mockPrisma),
+    Prisma: {},
     AchievementType: {
       BADGE: 'BADGE',
       TROPHY: 'TROPHY',
       CERTIFICATE: 'CERTIFICATE',
+    },
+    NotificationType: {
+      ACHIEVEMENT_EARNED: 'ACHIEVEMENT_EARNED',
     },
   };
 });
@@ -97,6 +104,21 @@ describe('Achievement Service', () => {
       mockPrisma.achievements.findMany.mockRejectedValue(new Error('DB Error'));
 
       await expect(achievementService.getAllAchievements()).rejects.toThrow();
+    });
+
+    test('should use transaction client when provided', async () => {
+      const mockTx = {
+        achievements: {
+          findMany: jest.fn().mockResolvedValue([mockAchievementData]),
+        },
+      };
+
+      const result = await achievementService.getAllAchievements(mockTx as any);
+
+      expect(result).toEqual([mockAchievementData]);
+      expect(mockTx.achievements.findMany).toHaveBeenCalledWith({
+        orderBy: { createdAt: 'desc' },
+      });
     });
   });
 
@@ -328,6 +350,17 @@ describe('Achievement Service', () => {
             }
           }
         }
+      });
+      expect(mockPrisma.notification.create).toHaveBeenCalledWith({
+        data: {
+          userId: 1,
+          type: 'ACHIEVEMENT_EARNED',
+          payload: {
+            achievementId: mockAchievementData.id,
+            name: mockAchievementData.name,
+            type: mockAchievementData.type,
+          },
+        },
       });
     });
 

@@ -4,7 +4,8 @@ import { parseValidation } from "../utils/validator";
 import { addEnemySchema, removeEnemySchema, getUserIdSchema } from "../utils/validationSchemas";
 import enemyService from "../services/enemyService";
 import { Request, Response, NextFunction } from "express";
-import { awardExperience, XP_REWARDS } from "../services/xpService";
+import { awardAchievement, awardExperience, XP_REWARDS } from "../services/xpService";
+import { AchievementType } from "@prisma/client";
 
 const enemyController = {
     addEnemy: async (req: Request, res: Response, next: NextFunction) => {
@@ -17,6 +18,7 @@ const enemyController = {
         const enemy = await enemyService.confirmAddEnemy(userId, enemyUserId);
         typeSafeLogger.info("Enemy added with confirmation", { userId, enemyUserId, enemyId: enemy.id });
         await awardExperience(userId, XP_REWARDS.ADD_ENEMY, 'add_enemy');
+        await awardAchievement(userId, "Fought The Post Man", AchievementType.BADGE);
         return res.status(201).json(enemy);
         }
         
@@ -35,6 +37,7 @@ const enemyController = {
         typeSafeLogger.info("Enemy added successfully", { userId, enemyUserId, enemyId: result.enemy?.id });
         if (result.enemy) {
         await awardExperience(userId, XP_REWARDS.ADD_ENEMY, 'add_enemy');
+        await awardAchievement(userId, "Fought The Post Man", AchievementType.BADGE);
         }
         return res.status(201).json(result.enemy);
     } catch (error) {
@@ -57,6 +60,7 @@ const enemyController = {
         const enemy = await enemyService.confirmAddEnemy(userId, enemyUserId);
         typeSafeLogger.info("Enemy confirmed and added successfully", { userId, enemyUserId, enemyId: enemy.id });
         await awardExperience(userId, XP_REWARDS.ADD_ENEMY, 'add_enemy');
+        await awardAchievement(userId, "Fought The Post Man", AchievementType.BADGE);
         return res.status(201).json(enemy);
     } catch (error) {
         typeSafeLogger.error("Failed to confirm adding enemy", { userId: req.body.userId, enemyUserId: req.body.enemyUserId, error });

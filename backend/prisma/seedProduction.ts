@@ -54,7 +54,15 @@
  */
 
 import "dotenv/config";
-import { PrismaClient, DogBreed, DogPlaystyle, DogSize, UserRole, OrgRole } from "@prisma/client";
+import {
+  PrismaClient,
+  DogBreed,
+  DogPlaystyle,
+  DogSize,
+  UserRole,
+  OrgRole,
+  AchievementType,
+} from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -178,6 +186,12 @@ interface DogData {
   fixed?: boolean;
   description?: string;
   ownerIndex: number; // Index of user in USERS array who owns this dog
+}
+
+interface AchievementData {
+  name: string;
+  type: AchievementType;
+  badgeUrl?: string;
 }
 
 // ============================================================================
@@ -411,6 +425,74 @@ const DOGS: DogData[] = [
   },
 ];
 
+const ACHIEVEMENTS: AchievementData[] = [
+  {
+    name: "Level 2",
+    type: AchievementType.TROPHY,
+    badgeUrl: "https://example.com/achievements/level-2.png",
+  },
+  {
+    name: "Level 3",
+    type: AchievementType.TROPHY,
+    badgeUrl: "https://example.com/achievements/level-3.png",
+  },
+  {
+    name: "Level 4",
+    type: AchievementType.TROPHY,
+    badgeUrl: "https://example.com/achievements/level-4.png",
+  },
+  {
+    name: "Level 5",
+    type: AchievementType.TROPHY,
+    badgeUrl: "https://example.com/achievements/level-5.png",
+  },
+  {
+    name: "Best Friend",
+    type: AchievementType.BADGE,
+    badgeUrl: "https://example.com/achievements/best-friend.png",
+  },
+  {
+    name: "Okay Friend",
+    type: AchievementType.BADGE,
+    badgeUrl: "https://example.com/achievements/okay-friend.png",
+  },
+  {
+    name: "Pack Leader",
+    type: AchievementType.BADGE,
+    badgeUrl: "https://example.com/achievements/pack-leader.png",
+  },
+  {
+    name: "Pack Member",
+    type: AchievementType.BADGE,
+    badgeUrl: "https://example.com/achievements/pack-member.png",
+  },
+  {
+    name: "Pup Pal",
+    type: AchievementType.BADGE,
+    badgeUrl: "https://example.com/achievements/pup-pal.png",
+  },
+  {
+    name: "Park Patrol",
+    type: AchievementType.BADGE,
+    badgeUrl: "https://example.com/achievements/park-patrol.png",
+  },
+  {
+    name: "Family Dog",
+    type: AchievementType.BADGE,
+    badgeUrl: "https://example.com/achievements/family-dog.png",
+  },
+  {
+    name: "Sir Barks-A-Lot",
+    type: AchievementType.BADGE,
+    badgeUrl: "https://example.com/achievements/sir-barks-a-lot.png",
+  },
+  {
+    name: "Fought The Post Man",
+    type: AchievementType.BADGE,
+    badgeUrl: "https://example.com/achievements/fought-the-post-man.png",
+  },
+];
+
 // ============================================================================
 // Seeding Function - No changes needed below this line
 // ============================================================================
@@ -558,12 +640,32 @@ async function seedProduction() {
       );
     }
 
+    console.log("\n🏆 Creating achievements...");
+    let createdAchievements = 0;
+    for (const achievement of ACHIEVEMENTS) {
+      const existingAchievement = await prisma.achievements.findFirst({
+        where: {
+          name: achievement.name,
+          type: achievement.type,
+        },
+      });
+
+      if (!existingAchievement) {
+        await prisma.achievements.create({ data: achievement });
+        createdAchievements += 1;
+        console.log(`  ✓ Created achievement: ${achievement.name} (${achievement.type})`);
+      } else {
+        console.log(`  ↺ Achievement exists: ${achievement.name} (${achievement.type})`);
+      }
+    }
+
     console.log("\n✅ Production seed completed successfully!\n");
     console.log("Summary:");
     console.log(`  - Parks created/updated: ${PARKS.length}`);
     console.log(`  - Users created: ${USERS.length}`);
     console.log(`  - Dogs created: ${DOGS.length}`);
     console.log(`  - Organizations created/updated: ${ORGANIZATIONS.length}`);
+    console.log(`  - Achievements created: ${createdAchievements}`);
     console.log("\n⚠️  Remember: Only run this script during initial setup, not on subsequent deployments.");
   } catch (error) {
     console.error("\n❌ Error during seeding:", error instanceof Error ? error.message : error);

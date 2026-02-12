@@ -85,7 +85,7 @@ describe('Enemy Service', () => {
 
   describe('addEnemy', () => {
     test('should add enemy when user is not a friend', async () => {
-      mockGetFriend.mockResolvedValue([]);
+      mockGetFriend.mockResolvedValue({ users: [], dogs: [] });
       mockPrisma.enemies.count.mockResolvedValue(0);
       mockPrisma.enemies.create.mockResolvedValue(mockEnemyData);
 
@@ -100,7 +100,7 @@ describe('Enemy Service', () => {
     });
 
     test('should require confirmation when user is a friend', async () => {
-      mockGetFriend.mockResolvedValue([{ id: 2, username: 'friend' }]);
+      mockGetFriend.mockResolvedValue({ users: [{ id: 2, username: 'friend' }], dogs: [] });
 
       const result = await enemyService.addEnemy(1, 2);
 
@@ -112,7 +112,7 @@ describe('Enemy Service', () => {
     });
 
     test('should return existing enemy when already enemies', async () => {
-      mockGetFriend.mockResolvedValue([]);
+      mockGetFriend.mockResolvedValue({ users: [], dogs: [] });
       mockPrisma.enemies.count.mockResolvedValue(1);
 
       const result = await enemyService.addEnemy(1, 2);
@@ -124,7 +124,7 @@ describe('Enemy Service', () => {
     });
 
     test('should throw error when database operation fails', async () => {
-      mockGetFriend.mockResolvedValue([]);
+      mockGetFriend.mockResolvedValue({ users: [], dogs: [] });
       mockPrisma.enemies.count.mockResolvedValue(0);
       mockPrisma.enemies.create.mockRejectedValue(new Error('Database error'));
 
@@ -134,7 +134,7 @@ describe('Enemy Service', () => {
 
   describe('confirmAddEnemy', () => {
     test('should remove friend and add enemy atomically', async () => {
-      mockGetFriend.mockResolvedValue([{ id: 2, username: 'friend' }]);
+      mockGetFriend.mockResolvedValue({ users: [{ id: 2, username: 'friend' }], dogs: [] });
       mockPrisma.$transaction.mockImplementation(async (callback: any) => {
         return await callback(mockPrisma);
       });
@@ -158,14 +158,14 @@ describe('Enemy Service', () => {
     });
 
     test('should throw error when user is not a friend', async () => {
-      mockGetFriend.mockResolvedValue([]);
+      mockGetFriend.mockResolvedValue({ users: [], dogs: [] });
 
       await expect(enemyService.confirmAddEnemy(1, 2)).rejects.toThrow();
       expect(mockPrisma.$transaction).not.toHaveBeenCalled();
     });
 
     test('should throw error when transaction fails', async () => {
-      mockGetFriend.mockResolvedValue([{ id: 2, username: 'friend' }]);
+      mockGetFriend.mockResolvedValue({ users: [{ id: 2, username: 'friend' }], dogs: [] });
       mockPrisma.$transaction.mockRejectedValue(new Error('Transaction failed'));
 
       await expect(enemyService.confirmAddEnemy(1, 2)).rejects.toThrow();

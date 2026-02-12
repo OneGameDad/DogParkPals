@@ -214,12 +214,12 @@ describe('XP Service', () => {
       const xpService = await import('../services/xpService');
 
       expect(xpService.XP_REWARDS.LOGIN).toBe(5);
-      expect(xpService.XP_REWARDS.ADD_DOG).toBe(5);
-      expect(xpService.XP_REWARDS.ADD_OWNER_TO_DOG).toBe(5);
+      expect(xpService.XP_REWARDS.ADD_DOG).toBe(50);
+      expect(xpService.XP_REWARDS.ADD_OWNER_TO_DOG).toBe(20);
       expect(xpService.XP_REWARDS.JOIN_EVENT).toBe(5);
-      expect(xpService.XP_REWARDS.CREATE_EVENT).toBe(5);
-      expect(xpService.XP_REWARDS.MESSAGE_FRIEND).toBe(5);
-      expect(xpService.XP_REWARDS.ADD_ENEMY).toBe(5);
+      expect(xpService.XP_REWARDS.CREATE_EVENT).toBe(15);
+      expect(xpService.XP_REWARDS.MESSAGE_FRIEND).toBe(1);
+      expect(xpService.XP_REWARDS.ADD_ENEMY).toBe(25);
       expect(xpService.XP_REWARDS.JOIN_ORGANIZATION).toBe(40);
       expect(xpService.XP_REWARDS.ADD_FRIEND).toBe(25);
       expect(xpService.XP_REWARDS.PARK_VISIT).toBe(10);

@@ -3,6 +3,12 @@ import type { Request, Response, NextFunction, Express } from 'express';
 import express from 'express';
 import request from 'supertest';
 
+const mockExistsSync = jest.fn();
+
+jest.mock('fs', () => ({
+    existsSync: (...args: any[]) => mockExistsSync(...args),
+}));
+
 // Mock auth middleware
 jest.mock('../middlewares/authMiddleware', () => ({
     requireAuth: (req: Request, res: Response, next: NextFunction) => {
@@ -73,11 +79,16 @@ describe('File Router', () => {
     beforeEach(() => {
         app = express();
         app.use(express.json());
+        app.use((req: Request, res: Response, next: NextFunction) => {
+            res.sendFile = ((filePath: string) => res.status(200).json({ filePath })) as any;
+            next();
+        });
         app.use(fileRouter);
         app.use((err: any, req: Request, res: Response, next: NextFunction) => {
             res.status(err.statusCode || 500).json({ message: err.message });
         });
         jest.clearAllMocks();
+        mockExistsSync.mockReturnValue(true);
     });
 
     describe('GET /dogs/:dogId/photo', () => {
@@ -90,7 +101,7 @@ describe('File Router', () => {
             expect(mockCheckDogAuthorization).toHaveBeenCalledWith(1, 1, 'CLIENT');
             expect(mockGetDogById).toHaveBeenCalledWith(1);
             expect(response.status).toBe(200);
-            expect(response.body.url).toBe('/api/files/dogs/1/photo');
+            expect(response.body.filePath).toContain('/uploads/dogs/1/photo.jpg');
         });
 
         test('returns 404 when dog has no photo', async () => {
@@ -122,7 +133,7 @@ describe('File Router', () => {
             expect(mockCheckDogAuthorization).toHaveBeenCalledWith(1, 1, 'CLIENT');
             expect(mockGetDogById).toHaveBeenCalledWith(1);
             expect(response.status).toBe(200);
-            expect(response.body.url).toBe('/api/files/dogs/1/document');
+            expect(response.body.filePath).toContain('/uploads/dogs/1/vax.pdf');
         });
 
         test('returns 404 when dog has no document', async () => {
@@ -152,7 +163,7 @@ describe('File Router', () => {
 
             expect(mockGetUserById).toHaveBeenCalledWith(1);
             expect(response.status).toBe(200);
-            expect(response.body.url).toBe('/api/files/users/1/profile-picture');
+            expect(response.body.filePath).toContain('/uploads/users/1/profile.jpg');
         });
 
         test('returns 403 when user tries to access another user\'s profile picture', async () => {
@@ -188,6 +199,8 @@ describe('File Router', () => {
             }));
 
             mockGetUserById.mockResolvedValue(mockUser);
+
+            mockExistsSync.mockReturnValue(true);
 
             const response = await request(app).get('/users/1/profile-picture');
 

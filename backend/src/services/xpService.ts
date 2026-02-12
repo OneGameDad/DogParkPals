@@ -1,6 +1,8 @@
-import { PrismaClient, Prisma, Levels } from '@prisma/client';
+import { PrismaClient, Prisma, Levels, AchievementType } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
+import achievementService from './achievementService';
+import { XP_ACHIEVEMENT_THRESHOLDS } from '../config/achivements';
 
 const prisma = new PrismaClient();
 
@@ -55,6 +57,36 @@ async function syncUserLevel(client: PrismaClientOrTx, userId: number, level: Le
   return level;
 }
 
+async function awardXpAchievements(client: PrismaClientOrTx, userId: number, totalExp: number) {
+  const eligible = XP_ACHIEVEMENT_THRESHOLDS.filter((threshold) => totalExp >= threshold.minXp);
+  if (eligible.length === 0) return;
+
+  const achievements = await client.achievements.findMany({
+    where: {
+      OR: eligible.map((threshold) => ({
+        name: threshold.name,
+        type: threshold.type,
+      })),
+    },
+  });
+
+  for (const achievement of achievements) {
+    await client.userAchievement.upsert({
+      where: {
+        userId_achievementId: {
+          userId,
+          achievementId: achievement.id,
+        },
+      },
+      update: {},
+      create: {
+        userId,
+        achievementId: achievement.id,
+      },
+    });
+  }
+}
+
 async function runAward(client: PrismaClientOrTx, userId: number, amount: number, reason: string): Promise<AwardResult> {
   if (amount <= 0) {
     return { totalExp: 0, level: null };
@@ -67,6 +99,7 @@ async function runAward(client: PrismaClientOrTx, userId: number, amount: number
 
   const level = await findLevelForPoints(client, updatedUser.ExpPoints);
   const syncedLevel = await syncUserLevel(client, userId, level);
+  await awardXpAchievements(client, userId, updatedUser.ExpPoints);
 
   typeSafeLogger.logUserAction('XP awarded', {
     userId,
@@ -96,6 +129,71 @@ export async function awardExperience(
       code: 'AWARD_XP_FAILED',
     });
   }
+}
+
+export async function awardAchievement(
+  userId: number,
+  name: string,
+  type: AchievementType,
+  tx?: PrismaClientOrTx
+) {
+  const client = getClient(tx);
+  const achievement = await client.achievements.findFirst({
+    where: {
+      name,
+      type,
+    },
+  });
+
+  if (!achievement) {
+    return null;
+  }
+
+  try {
+    await achievementService.awardAchievementToUser(userId, achievement.id, tx);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'User already has this achievement') {
+      return achievement;
+    }
+    throw error;
+  }
+
+  return achievement;
+}
+
+export async function awardParkPatrolIfEligible(
+  userId: number,
+  parkId: number,
+  tx?: PrismaClientOrTx
+) {
+  const client = getClient(tx);
+  const visitCount = await client.checkIn.count({
+    where: {
+      userId,
+      parkId,
+    },
+  });
+
+  if (visitCount < 10) {
+    return null;
+  }
+
+  return awardAchievement(userId, "Park Patrol", AchievementType.BADGE, client);
+}
+
+export async function awardSirBarksALotIfEligible(userId: number, tx?: PrismaClientOrTx) {
+  const client = getClient(tx);
+  const sentCount = await client.messages.count({
+    where: {
+      senderId: userId,
+    },
+  });
+
+  if (sentCount < 20) {
+    return null;
+  }
+
+  return awardAchievement(userId, "Sir Barks-A-Lot", AchievementType.BADGE, client);
 }
 
 export async function hasVisitedParkBefore(userId: number, parkId: number, excludeCheckInId?: number) {

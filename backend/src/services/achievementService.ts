@@ -1,15 +1,18 @@
-import { PrismaClient, AchievementType } from '@prisma/client';
+import { PrismaClient, Prisma, AchievementType } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { NotFoundError, toAppError, ConflictError } from '../utils/errors';
 
 const prisma = new PrismaClient();
 
+type PrismaClientOrTx = PrismaClient | Prisma.TransactionClient;
+
 const achievementService = {
   
-  async getAllAchievements() {
+  async getAllAchievements(tx?: PrismaClientOrTx) {
     typeSafeLogger.info('Fetching all achievements');
     try {
-      const achievements = await prisma.achievements.findMany({
+      const client = tx ?? prisma;
+      const achievements = await client.achievements.findMany({
         orderBy: { createdAt: 'desc' }
       });
       typeSafeLogger.logUserAction('All achievements retrieved', { count: achievements.length });
@@ -24,10 +27,11 @@ const achievementService = {
     }
   },
 
-  async getAchievementById(achievementId: number) {
+  async getAchievementById(achievementId: number, tx?: PrismaClientOrTx) {
     typeSafeLogger.info('Fetching achievement by ID', { achievementId });
     try {
-      const achievement = await prisma.achievements.findUnique({
+      const client = tx ?? prisma;
+      const achievement = await client.achievements.findUnique({
         where: { id: achievementId },
       });
       if (!achievement) {
@@ -49,10 +53,11 @@ const achievementService = {
     }
   },
 
-  async getAchievementByName(name: string) {
+  async getAchievementByName(name: string, tx?: PrismaClientOrTx) {
     typeSafeLogger.info('Fetching achievement by name', { name });
     try {
-      const achievement = await prisma.achievements.findFirst({
+      const client = tx ?? prisma;
+      const achievement = await client.achievements.findFirst({
         where: { name },
       });
       if (!achievement) {
@@ -79,18 +84,19 @@ const achievementService = {
     type?: AchievementType; 
     description?: string; 
     badgeUrl?: string;
-  }) {
+  }, tx?: PrismaClientOrTx) {
     typeSafeLogger.logUserAction('Creating achievement', { name: data.name });
     try {
+      const client = tx ?? prisma;
       // Check if achievement with same name already exists
-      const existing = await prisma.achievements.findFirst({
+      const existing = await client.achievements.findFirst({
         where: { name: data.name }
       });
       if (existing) {
         throw ConflictError('Achievement with this name already exists');
       }
 
-      const newAchievement = await prisma.achievements.create({
+      const newAchievement = await client.achievements.create({
         data: {
           name: data.name,
           type: data.type || 'BADGE',
@@ -121,11 +127,12 @@ const achievementService = {
     type?: AchievementType; 
     description?: string; 
     badgeUrl?: string;
-  }) {
+  }, tx?: PrismaClientOrTx) {
     typeSafeLogger.logUserAction('Updating achievement', { achievementId, updates });
     try {
+      const client = tx ?? prisma;
       // Check if achievement exists
-      const existing = await prisma.achievements.findUnique({
+      const existing = await client.achievements.findUnique({
         where: { id: achievementId }
       });
       if (!existing) {
@@ -134,7 +141,7 @@ const achievementService = {
 
       // If name is being updated, check for conflicts
       if (updates.name && updates.name !== existing.name) {
-        const nameConflict = await prisma.achievements.findFirst({
+        const nameConflict = await client.achievements.findFirst({
           where: { 
             name: updates.name,
             NOT: { id: achievementId }
@@ -145,7 +152,7 @@ const achievementService = {
         }
       }
 
-      const updatedAchievement = await prisma.achievements.update({
+      const updatedAchievement = await client.achievements.update({
         where: { id: achievementId },
         data: updates,
       });
@@ -169,18 +176,19 @@ const achievementService = {
     }
   },
 
-  async deleteAchievement(achievementId: number) {
+  async deleteAchievement(achievementId: number, tx?: PrismaClientOrTx) {
     typeSafeLogger.logUserAction('Deleting achievement', { achievementId });
     try {
+      const client = tx ?? prisma;
       // Check if achievement exists
-      const existing = await prisma.achievements.findUnique({
+      const existing = await client.achievements.findUnique({
         where: { id: achievementId }
       });
       if (!existing) {
         throw NotFoundError('Achievement not found');
       }
 
-      await prisma.achievements.delete({
+      await client.achievements.delete({
         where: { id: achievementId },
       });
       typeSafeLogger.logUserAction('Achievement deleted successfully', { achievementId });
@@ -198,11 +206,12 @@ const achievementService = {
     }
   },
 
-  async awardAchievementToUser(userId: number, achievementId: number) {
+  async awardAchievementToUser(userId: number, achievementId: number, tx?: PrismaClientOrTx) {
     typeSafeLogger.logUserAction('Awarding achievement to user', { userId, achievementId });
     try {
+      const client = tx ?? prisma;
       // Check if user exists
-      const user = await prisma.user.findUnique({
+      const user = await client.user.findUnique({
         where: { id: userId }
       });
       if (!user) {
@@ -210,7 +219,7 @@ const achievementService = {
       }
 
       // Check if achievement exists
-      const achievement = await prisma.achievements.findUnique({
+      const achievement = await client.achievements.findUnique({
         where: { id: achievementId }
       });
       if (!achievement) {
@@ -218,7 +227,7 @@ const achievementService = {
       }
 
       // Check if user already has this achievement
-      const existing = await prisma.userAchievement.findUnique({
+      const existing = await client.userAchievement.findUnique({
         where: {
           userId_achievementId: {
             userId,
@@ -231,7 +240,7 @@ const achievementService = {
         throw ConflictError('User already has this achievement');
       }
 
-      const userAchievement = await prisma.userAchievement.create({
+      const userAchievement = await client.userAchievement.create({
         data: {
           userId,
           achievementId,
@@ -273,18 +282,19 @@ const achievementService = {
     }
   },
 
-  async getUserAchievements(userId: number) {
+  async getUserAchievements(userId: number, tx?: PrismaClientOrTx) {
     typeSafeLogger.info('Fetching user achievements', { userId });
     try {
+      const client = tx ?? prisma;
       // Check if user exists
-      const user = await prisma.user.findUnique({
+      const user = await client.user.findUnique({
         where: { id: userId }
       });
       if (!user) {
         throw NotFoundError('User not found');
       }
 
-      const userAchievements = await prisma.userAchievement.findMany({
+      const userAchievements = await client.userAchievement.findMany({
         where: { userId },
         include: {
           achievement: true,
@@ -310,11 +320,12 @@ const achievementService = {
     }
   },
 
-  async removeAchievementFromUser(userId: number, achievementId: number) {
+  async removeAchievementFromUser(userId: number, achievementId: number, tx?: PrismaClientOrTx) {
     typeSafeLogger.logUserAction('Removing achievement from user', { userId, achievementId });
     try {
+      const client = tx ?? prisma;
       // Check if user exists
-      const user = await prisma.user.findUnique({
+      const user = await client.user.findUnique({
         where: { id: userId }
       });
       if (!user) {
@@ -322,7 +333,7 @@ const achievementService = {
       }
 
       // Check if achievement exists
-      const achievement = await prisma.achievements.findUnique({
+      const achievement = await client.achievements.findUnique({
         where: { id: achievementId }
       });
       if (!achievement) {
@@ -330,7 +341,7 @@ const achievementService = {
       }
 
       // Check if user has this achievement
-      const existing = await prisma.userAchievement.findUnique({
+      const existing = await client.userAchievement.findUnique({
         where: {
           userId_achievementId: {
             userId,
@@ -343,7 +354,7 @@ const achievementService = {
         throw NotFoundError('User does not have this achievement');
       }
 
-      await prisma.userAchievement.delete({
+      await client.userAchievement.delete({
         where: {
           userId_achievementId: {
             userId,

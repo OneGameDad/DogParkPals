@@ -45,6 +45,7 @@ const mockUserData = {
 jest.mock('@prisma/client', () => {
   return {
     PrismaClient: jest.fn(() => mockPrisma),
+    Prisma: {},
     AchievementType: {
       BADGE: 'BADGE',
       TROPHY: 'TROPHY',
@@ -97,6 +98,21 @@ describe('Achievement Service', () => {
       mockPrisma.achievements.findMany.mockRejectedValue(new Error('DB Error'));
 
       await expect(achievementService.getAllAchievements()).rejects.toThrow();
+    });
+
+    test('should use transaction client when provided', async () => {
+      const mockTx = {
+        achievements: {
+          findMany: jest.fn().mockResolvedValue([mockAchievementData]),
+        },
+      };
+
+      const result = await achievementService.getAllAchievements(mockTx as any);
+
+      expect(result).toEqual([mockAchievementData]);
+      expect(mockTx.achievements.findMany).toHaveBeenCalledWith({
+        orderBy: { createdAt: 'desc' },
+      });
     });
   });
 

@@ -4,7 +4,7 @@ import messageController from '../controllers/messageController';
 import messageService from '../services/messageService';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { parseValidation } from '../utils/validator';
-import { awardExperience, XP_REWARDS } from '../services/xpService';
+import { awardExperience, awardSirBarksALotIfEligible, XP_REWARDS } from '../services/xpService';
 
 
 jest.mock('../services/messageService', () => ({
@@ -31,6 +31,7 @@ jest.mock('../utils/validator', () => ({
 
 jest.mock('../services/xpService', () => ({
   awardExperience: jest.fn(),
+  awardSirBarksALotIfEligible: jest.fn(),
   XP_REWARDS: {
     MESSAGE_FRIEND: 5,
   },
@@ -71,6 +72,7 @@ describe('messageController', () => {
       expect(typeSafeLogger.logRequest).toHaveBeenCalled();
       expect(typeSafeLogger.logUserAction).toHaveBeenCalledWith('Message sent', { senderId: 1, receiverId: 2, messageId: 1 });
       expect(awardExperience).toHaveBeenCalledWith(1, XP_REWARDS.MESSAGE_FRIEND, 'message_friend');
+      expect(awardSirBarksALotIfEligible).toHaveBeenCalledWith(1);
       expect(mockStatus).toHaveBeenCalledWith(201);
       expect(mockJson).toHaveBeenCalledWith(mockMessage);
       expect(mockNext).not.toHaveBeenCalled();

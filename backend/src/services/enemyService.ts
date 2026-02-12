@@ -16,7 +16,7 @@ const enemyService = {
       
       // 1. Check if they're currently friends
       const existingFriend = await friendService.getFriend(validatedData.userId);
-      const areFriends = existingFriend.some(friend => friend.id === validatedData.enemyUserId);
+      const areFriends = existingFriend.users.some(friend => friend.id === validatedData.enemyUserId);
       
       // 2. If they ARE friends, block and require confirmation
       if (areFriends) {
@@ -73,7 +73,7 @@ const enemyService = {
       
       // This should ALWAYS check friendship status again for safety
       const existingFriend = await friendService.getFriend(validatedData.userId);
-      const areFriends = existingFriend.some(friend => friend.id === validatedData.enemyUserId);
+      const areFriends = existingFriend.users.some(friend => friend.id === validatedData.enemyUserId);
       
       if (!areFriends) {
         typeSafeLogger.warn('User is not a friend, cannot confirm enemy addition', { userId, enemyUserId });

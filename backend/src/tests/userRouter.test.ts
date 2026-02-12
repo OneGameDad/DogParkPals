@@ -14,6 +14,8 @@ const mockDeleteUser = jest.fn() as any;
 const mockChangePassword = jest.fn() as any;
 const mockUploadProfilePicture = jest.fn() as any;
 const mockDeleteProfilePicture = jest.fn() as any;
+const mockRecordHeartbeat = jest.fn() as any;
+const mockGetUserPresence = jest.fn() as any;
 
 // Mock the controller
 jest.mock('../controllers/userController', () => ({
@@ -28,6 +30,8 @@ jest.mock('../controllers/userController', () => ({
     changePassword: mockChangePassword,
     uploadProfilePicture: mockUploadProfilePicture,
     deleteProfilePicture: mockDeleteProfilePicture,
+    recordHeartbeat: mockRecordHeartbeat,
+    getUserPresence: mockGetUserPresence,
   },
 }));
 
@@ -288,6 +292,49 @@ describe('User Router', () => {
 
       expect(mockGetAllUsers).toHaveBeenCalled();
       expect(response.status).toBe(200);
+    });
+  });
+
+  describe('POST /presence/heartbeat', () => {
+    test('calls recordHeartbeat controller', async () => {
+      mockRecordHeartbeat.mockImplementation((_req: Request, res: Response) => {
+        res.status(200).json({ userId: 1, isOnline: true });
+      });
+
+      const response = await request(app).post('/presence/heartbeat');
+
+      expect(mockRecordHeartbeat).toHaveBeenCalled();
+      expect(response.status).toBe(200);
+      expect(response.body.userId).toBe(1);
+      expect(response.body.isOnline).toBe(true);
+    });
+  });
+
+  describe('GET /presence', () => {
+    test('calls getUserPresence controller for current user', async () => {
+      mockGetUserPresence.mockImplementation((req: Request, res: Response) => {
+        res.status(200).json({ userId: (req as any).userId, isOnline: true });
+      });
+
+      const response = await request(app).get('/presence');
+
+      expect(mockGetUserPresence).toHaveBeenCalled();
+      expect(response.status).toBe(200);
+      expect(response.body.userId).toBe(1);
+    });
+  });
+
+  describe('GET /presence/:id', () => {
+    test('calls getUserPresence controller for specified user', async () => {
+      mockGetUserPresence.mockImplementation((req: Request, res: Response) => {
+        res.status(200).json({ userId: Number(req.params.id), isOnline: false });
+      });
+
+      const response = await request(app).get('/presence/42');
+
+      expect(mockGetUserPresence).toHaveBeenCalled();
+      expect(response.status).toBe(200);
+      expect(response.body.userId).toBe(42);
     });
   });
 

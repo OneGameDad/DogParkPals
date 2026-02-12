@@ -14,6 +14,8 @@ const mockChangePassword = jest.fn<any>();
 const mockResetUserPassword = jest.fn<any>();
 const mockUploadProfilePicture = jest.fn<any>();
 const mockDeleteProfilePicture = jest.fn<any>();
+const mockRecordHeartbeat = jest.fn<any>();
+const mockGetUserPresence = jest.fn<any>();
 
 // Mock the entire userServices module
 jest.mock('../services/userServices', () => ({
@@ -29,6 +31,8 @@ jest.mock('../services/userServices', () => ({
     resetUserPassword: mockResetUserPassword,
     uploadProfilePicture: mockUploadProfilePicture,
     deleteProfilePicture: mockDeleteProfilePicture,
+    recordHeartbeat: mockRecordHeartbeat,
+    getUserPresence: mockGetUserPresence,
   },
 }));
 
@@ -539,6 +543,100 @@ describe('User Controller', () => {
       const error = mockNext.mock.calls[0][0] as AppError;
       expect(error.statusCode).toBe(500);
       expect(error.code).toBe('INTERNAL_ERROR');
+    });
+  });
+
+  describe('recordHeartbeat', () => {
+    test('forwards forbidden when not authenticated', async () => {
+      await userController.recordHeartbeat(
+        mockReq as Request,
+        mockRes as Response,
+        mockNext as any
+      );
+
+      const error = mockNext.mock.calls[0][0] as AppError;
+      expect(error.statusCode).toBe(403);
+    });
+
+    test('records heartbeat and returns presence', async () => {
+      (mockReq as any).userId = 7;
+      const presence = {
+        userId: 7,
+        lastSeenAt: new Date(),
+        isOnline: true,
+        heartbeatIntervalSeconds: 150,
+        offlineTimeoutSeconds: 300,
+      };
+      mockRecordHeartbeat.mockResolvedValue(presence);
+
+      await userController.recordHeartbeat(
+        mockReq as Request,
+        mockRes as Response,
+        mockNext as any
+      );
+
+      expect(mockRecordHeartbeat).toHaveBeenCalledWith(7);
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      expect(mockJson).toHaveBeenCalledWith(presence);
+    });
+  });
+
+  describe('getUserPresence', () => {
+    test('forwards forbidden when not authenticated', async () => {
+      await userController.getUserPresence(
+        mockReq as Request,
+        mockRes as Response,
+        mockNext as any
+      );
+
+      const error = mockNext.mock.calls[0][0] as AppError;
+      expect(error.statusCode).toBe(403);
+    });
+
+    test('uses params id when provided', async () => {
+      (mockReq as any).userId = 1;
+      mockReq.params = { id: '9' };
+      const presence = {
+        userId: 9,
+        lastSeenAt: new Date(),
+        isOnline: false,
+        heartbeatIntervalSeconds: 150,
+        offlineTimeoutSeconds: 300,
+      };
+      mockGetUserPresence.mockResolvedValue(presence);
+
+      await userController.getUserPresence(
+        mockReq as Request,
+        mockRes as Response,
+        mockNext as any
+      );
+
+      expect(mockGetUserPresence).toHaveBeenCalledWith(9);
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      expect(mockJson).toHaveBeenCalledWith(presence);
+    });
+
+    test('uses current user when params id missing', async () => {
+      (mockReq as any).userId = 11;
+      mockReq.params = {};
+      const presence = {
+        userId: 11,
+        lastSeenAt: new Date(),
+        isOnline: true,
+        heartbeatIntervalSeconds: 150,
+        offlineTimeoutSeconds: 300,
+      };
+      mockGetUserPresence.mockResolvedValue(presence);
+
+      await userController.getUserPresence(
+        mockReq as Request,
+        mockRes as Response,
+        mockNext as any
+      );
+
+      expect(mockGetUserPresence).toHaveBeenCalledWith(11);
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      expect(mockJson).toHaveBeenCalledWith(presence);
     });
   });
 

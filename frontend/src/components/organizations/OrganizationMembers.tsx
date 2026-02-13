@@ -71,7 +71,6 @@ const OrganizationMembers: React.FC<OrganizationMembersProps> = ({
             return;
         }
 
-        setLoading(true);
         try {
             await api.post(`/api/organizations/${organizationId}/members`, {
                 userId: user.id,
@@ -83,8 +82,6 @@ const OrganizationMembers: React.FC<OrganizationMembersProps> = ({
             setSearchQuery('');
         } catch (error) {
             toast.error(t('organizations.addMemberFailed', 'Failed to add member.'));
-        } finally {
-            setLoading(false);
         }
     };
 

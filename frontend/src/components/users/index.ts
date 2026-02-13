@@ -6,6 +6,9 @@ import RelationshipManager from './RelationshipManager';
 import UserDogsList from './UserDogsList';
 import DogFinder from './DogFinder';
 import FriendRequestList from './FriendRequestList';
+import InfoRow from './InfoRow';
+import UserLevelDisplay from './UserLevelDisplay';
+import UserProfileHeader from './UserProfileHeader';
 
 export {
     UserList,
@@ -15,5 +18,8 @@ export {
     UserDogsList,
     RelationshipManager,
     DogFinder,
-    FriendRequestList
+    FriendRequestList,
+    InfoRow,
+    UserLevelDisplay,
+    UserProfileHeader
 };

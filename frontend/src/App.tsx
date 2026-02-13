@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { useAuth, useHeartbeat } from './hooks';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Logout from './pages/Logout';
@@ -23,6 +24,14 @@ import OrganizationProfile from './pages/OrganizationProfile';
 import OrganizationUpdate from './pages/OrganizationUpdate';
 
 function App() {
+  const { user } = useAuth();
+  
+  // Send heartbeat for logged-in users
+  useHeartbeat({
+    enabled: !!user,
+    interval: 120000 // 2 minutes
+  });
+
   return (
     <BrowserRouter>
       <Toaster position="top-right" />
@@ -58,6 +67,11 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/user/:id" element={
               <ProtectedRoute>
                 <Profile />
               </ProtectedRoute>

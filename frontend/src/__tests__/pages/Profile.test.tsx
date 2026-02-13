@@ -102,8 +102,8 @@ describe('Profile Component', () => {
     
     expect(screen.getByText('testuser')).toBeInTheDocument();
     expect(screen.getByText('test@example.com')).toBeInTheDocument();
-    // ExpPoints now displayed in UserLevelDisplay component with " / 300 XP" format
-    expect(screen.getByText(/100.*300.*XP/)).toBeInTheDocument();
+    // ExpPoints now displayed in UserLevelDisplay component with " / 250 XP" format
+    expect(screen.getByText(/100.*250.*XP/)).toBeInTheDocument();
   });
 
   it('should display full name when first and last name are available', () => {

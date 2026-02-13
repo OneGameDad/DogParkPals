@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Modal, Button, Picture } from '../common';
 import UserDogsList from './UserDogsList';
@@ -55,6 +56,12 @@ export default function UserProfileModal({
                             {user.first_name} {user.last_name}
                         </p>
                     )}
+                    <Link 
+                        to={`/user/${user.id}`}
+                        className="inline-block mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline"
+                    >
+                        {t('social.viewFullProfile') || 'View Full Profile'}
+                    </Link>
                 </div>
 
                 {error && (

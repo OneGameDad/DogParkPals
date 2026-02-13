@@ -24,16 +24,16 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-// Mock useAuth hook
-const mockUseAuth = vi.fn();
-vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => mockUseAuth(),
+// Mock useProfileData hook
+const mockUseProfileData = vi.fn();
+vi.mock('../../hooks/users/useProfileData', () => ({
+  useProfileData: () => mockUseProfileData(),
 }));
 
-// Mock useFetch hook
-const mockUseFetch = vi.fn();
-vi.mock('../../hooks/useFetch', () => ({
-  useFetch: () => mockUseFetch(),
+// Mock useUserPresence hook
+const mockUseUserPresence = vi.fn();
+vi.mock('../../hooks/users/useUserPresence', () => ({
+  useUserPresence: () => mockUseUserPresence(),
 }));
 
 describe('Profile Component', () => {
@@ -77,8 +77,8 @@ describe('Profile Component', () => {
   ];
 
   it('should show loading state while fetching user data', () => {
-    mockUseAuth.mockReturnValue({ user: null, loading: true });
-    mockUseFetch.mockReturnValue({ data: null, loading: true });
+    mockUseProfileData.mockReturnValue({ displayUser: null, isOwnProfile: true, loading: true, dogs: null, viewingUserId: null });
+    mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
     
@@ -86,8 +86,8 @@ describe('Profile Component', () => {
   });
 
   it('should show error message when user is not found', () => {
-    mockUseAuth.mockReturnValue({ user: null, loading: false });
-    mockUseFetch.mockReturnValue({ data: null, loading: false });
+    mockUseProfileData.mockReturnValue({ displayUser: null, isOwnProfile: true, loading: false, dogs: null, viewingUserId: null });
+    mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
     
@@ -95,19 +95,20 @@ describe('Profile Component', () => {
   });
 
   it('should render user profile information', () => {
-    mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
-    mockUseFetch.mockReturnValue({ data: [], loading: false });
+    mockUseProfileData.mockReturnValue({ displayUser: mockUser, isOwnProfile: true, loading: false, dogs: [], viewingUserId: 1 });
+    mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
     
     expect(screen.getByText('testuser')).toBeInTheDocument();
     expect(screen.getByText('test@example.com')).toBeInTheDocument();
-    expect(screen.getByText('100')).toBeInTheDocument();
+    // ExpPoints now displayed in UserLevelDisplay component with " / 250 XP" format
+    expect(screen.getByText(/100.*250.*XP/)).toBeInTheDocument();
   });
 
   it('should display full name when first and last name are available', () => {
-    mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
-    mockUseFetch.mockReturnValue({ data: [], loading: false });
+    mockUseProfileData.mockReturnValue({ displayUser: mockUser, isOwnProfile: true, loading: false, dogs: [], viewingUserId: 1 });
+    mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
     
@@ -116,8 +117,8 @@ describe('Profile Component', () => {
 
   it('should display username when first or last name is missing', () => {
     const userWithoutName = { ...mockUser, first_name: null, last_name: null };
-    mockUseAuth.mockReturnValue({ user: userWithoutName, loading: false });
-    mockUseFetch.mockReturnValue({ data: [], loading: false });
+    mockUseProfileData.mockReturnValue({ displayUser: userWithoutName, isOwnProfile: true, loading: false, dogs: [], viewingUserId: 1 });
+    mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
     
@@ -125,8 +126,8 @@ describe('Profile Component', () => {
   });
 
   it('should render Edit Profile button', () => {
-    mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
-    mockUseFetch.mockReturnValue({ data: [], loading: false });
+    mockUseProfileData.mockReturnValue({ displayUser: mockUser, isOwnProfile: true, loading: false, dogs: [], viewingUserId: 1 });
+    mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
     
@@ -134,8 +135,8 @@ describe('Profile Component', () => {
   });
 
   it('should navigate to edit profile page when Edit Profile button is clicked', () => {
-    mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
-    mockUseFetch.mockReturnValue({ data: [], loading: false });
+    mockUseProfileData.mockReturnValue({ displayUser: mockUser, isOwnProfile: true, loading: false, dogs: [], viewingUserId: 1 });
+    mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
     
@@ -146,8 +147,8 @@ describe('Profile Component', () => {
   });
 
   it('should show "No dogs added yet" message when there are no dogs', () => {
-    mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
-    mockUseFetch.mockReturnValue({ data: [], loading: false });
+    mockUseProfileData.mockReturnValue({ displayUser: mockUser, isOwnProfile: true, loading: false, dogs: [], viewingUserId: 1 });
+    mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
     
@@ -155,8 +156,8 @@ describe('Profile Component', () => {
   });
 
   it('should render list of dogs when user has dogs', () => {
-    mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
-    mockUseFetch.mockReturnValue({ data: mockDogs, loading: false });
+    mockUseProfileData.mockReturnValue({ displayUser: mockUser, isOwnProfile: true, loading: false, dogs: mockDogs, viewingUserId: 1 });
+    mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
     
@@ -166,8 +167,8 @@ describe('Profile Component', () => {
   });
 
   it('should render Add Dog button', () => {
-    mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
-    mockUseFetch.mockReturnValue({ data: [], loading: false });
+    mockUseProfileData.mockReturnValue({ displayUser: mockUser, isOwnProfile: true, loading: false, dogs: [], viewingUserId: 1 });
+    mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
     
@@ -175,8 +176,8 @@ describe('Profile Component', () => {
   });
 
   it('should navigate to add dog page when Add Dog button is clicked', () => {
-    mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
-    mockUseFetch.mockReturnValue({ data: [], loading: false });
+    mockUseProfileData.mockReturnValue({ displayUser: mockUser, isOwnProfile: true, loading: false, dogs: [], viewingUserId: 1 });
+    mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
     
@@ -187,8 +188,8 @@ describe('Profile Component', () => {
   });
 
   it('should display profile picture with correct alt text', () => {
-    mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
-    mockUseFetch.mockReturnValue({ data: [], loading: false });
+    mockUseProfileData.mockReturnValue({ displayUser: mockUser, isOwnProfile: true, loading: false, dogs: [], viewingUserId: 1 });
+    mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
     
@@ -198,18 +199,20 @@ describe('Profile Component', () => {
 
   it('should display default profile picture when user has no profile picture', () => {
     const userWithoutPicture = { ...mockUser, profilePictureUrl: null };
-    mockUseAuth.mockReturnValue({ user: userWithoutPicture, loading: false });
-    mockUseFetch.mockReturnValue({ data: [], loading: false });
+    mockUseProfileData.mockReturnValue({ displayUser: userWithoutPicture, isOwnProfile: true, loading: false, dogs: [], viewingUserId: 1 });
+    mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
     
-    const profileImage = screen.getByAltText('Profile');
-    expect(profileImage).toHaveAttribute('src', '/imgs/exampleprofilepic.jpg');
+    // When no profile picture, Picture component shows initials instead of image
+    const profileElement = screen.getByRole('img', { name: 'Profile' });
+    expect(profileElement).toBeInTheDocument();
+    expect(profileElement).toHaveTextContent('JD'); // Initials for John Doe
   });
 
   it('should render dog images with correct alt text', () => {
-    mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
-    mockUseFetch.mockReturnValue({ data: mockDogs, loading: false });
+    mockUseProfileData.mockReturnValue({ displayUser: mockUser, isOwnProfile: true, loading: false, dogs: mockDogs, viewingUserId: 1 });
+    mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
     
@@ -218,8 +221,8 @@ describe('Profile Component', () => {
   });
 
   it('should render all user information labels', () => {
-    mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
-    mockUseFetch.mockReturnValue({ data: [], loading: false });
+    mockUseProfileData.mockReturnValue({ displayUser: mockUser, isOwnProfile: true, loading: false, dogs: [], viewingUserId: 1 });
+    mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
     
@@ -230,8 +233,8 @@ describe('Profile Component', () => {
   });
 
   it('should format date correctly', () => {
-    mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
-    mockUseFetch.mockReturnValue({ data: [], loading: false });
+    mockUseProfileData.mockReturnValue({ displayUser: mockUser, isOwnProfile: true, loading: false, dogs: [], viewingUserId: 1 });
+    mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
     
@@ -241,8 +244,8 @@ describe('Profile Component', () => {
   });
 
   it('should handle null dogs data', () => {
-    mockUseAuth.mockReturnValue({ user: mockUser, loading: false });
-    mockUseFetch.mockReturnValue({ data: null, loading: false });
+    mockUseProfileData.mockReturnValue({ displayUser: mockUser, isOwnProfile: true, loading: false, dogs: null, viewingUserId: 1 });
+    mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
     

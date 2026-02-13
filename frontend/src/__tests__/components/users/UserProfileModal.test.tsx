@@ -1,5 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
+import { BrowserRouter } from 'react-router-dom';
 import UserProfileModal from '../../../components/users/UserProfileModal';
 
 // Mock Dependencies
@@ -35,13 +36,21 @@ describe('UserProfileModal', () => {
     const mockUser = { id: 1, username: 'testuser', first_name: 'Test', last_name: 'User' };
     const mockClose = vi.fn();
 
+    const renderModal = (props: any) => {
+        return render(
+            <BrowserRouter>
+                <UserProfileModal {...props} />
+            </BrowserRouter>
+        );
+    };
+
     it('renders nothing when user is null', () => {
-        render(<UserProfileModal user={null} onClose={mockClose} />);
+        renderModal({ user: null, onClose: mockClose });
         expect(screen.queryByTestId('modal')).not.toBeInTheDocument();
     });
 
     it('renders modal content when user is provided', () => {
-        render(<UserProfileModal user={mockUser as any} onClose={mockClose} />);
+        renderModal({ user: mockUser as any, onClose: mockClose });
         expect(screen.getByTestId('modal')).toBeInTheDocument();
         // Username appears in title and body
         expect(screen.getAllByText('testuser').length).toBeGreaterThan(0);
@@ -52,29 +61,25 @@ describe('UserProfileModal', () => {
         const addFriend = vi.fn();
         const addEnemy = vi.fn();
 
-        render(
-            <UserProfileModal
-                user={mockUser as any}
-                onClose={mockClose}
-                onAddFriend={addFriend}
-                onAddEnemy={addEnemy}
-            />
-        );
+        renderModal({
+            user: mockUser as any,
+            onClose: mockClose,
+            onAddFriend: addFriend,
+            onAddEnemy: addEnemy,
+        });
 
         expect(screen.getByText('findFriends.addFriend')).toBeInTheDocument();
         expect(screen.getByText('findFriends.addEnemy')).toBeInTheDocument();
     });
 
     it('shows disabled Request Sent button when isRequestSent is true', () => {
-        render(
-            <UserProfileModal
-                user={mockUser as any}
-                onClose={mockClose}
-                onAddFriend={vi.fn()}
-                onAddEnemy={vi.fn()}
-                isRequestSent={true}
-            />
-        );
+        renderModal({
+            user: mockUser as any,
+            onClose: mockClose,
+            onAddFriend: vi.fn(),
+            onAddEnemy: vi.fn(),
+            isRequestSent: true,
+        });
 
         expect(screen.getByText('findFriends.requestSentButton')).toBeDisabled();
         expect(screen.queryByText('findFriends.addFriend')).not.toBeInTheDocument();
@@ -82,13 +87,11 @@ describe('UserProfileModal', () => {
 
     it('shows Remove Friend button when onRemoveFriend provided', () => {
         const removeFriend = vi.fn();
-        render(
-            <UserProfileModal
-                user={mockUser as any}
-                onClose={mockClose}
-                onRemoveFriend={removeFriend}
-            />
-        );
+        renderModal({
+            user: mockUser as any,
+            onClose: mockClose,
+            onRemoveFriend: removeFriend,
+        });
 
         expect(screen.getByText('friends.remove')).toBeInTheDocument();
 
@@ -98,25 +101,21 @@ describe('UserProfileModal', () => {
 
     it('shows Remove Enemy button when onRemoveEnemy provided', () => {
         const removeEnemy = vi.fn();
-        render(
-            <UserProfileModal
-                user={mockUser as any}
-                onClose={mockClose}
-                onRemoveEnemy={removeEnemy}
-            />
-        );
+        renderModal({
+            user: mockUser as any,
+            onClose: mockClose,
+            onRemoveEnemy: removeEnemy,
+        });
 
         expect(screen.getByText('enemies.remove')).toBeInTheDocument();
     });
 
     it('displays error message', () => {
-        render(
-            <UserProfileModal
-                user={mockUser as any}
-                onClose={mockClose}
-                error="Something failed"
-            />
-        );
+        renderModal({
+            user: mockUser as any,
+            onClose: mockClose,
+            error: "Something failed",
+        });
         expect(screen.getByText('Something failed')).toBeInTheDocument();
     });
 });

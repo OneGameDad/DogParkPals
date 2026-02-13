@@ -91,6 +91,15 @@ export const en = {
       username: "Username",
       email: "Email",
       experiencePoints: "Experience Points",
+      level: "Level",
+      online: "Online",
+      offline: "Offline",
+      lastSeen: "Last seen",
+      justNow: "Just now",
+      minutesAgo: "{{count}} minutes ago",
+      hoursAgo: "{{count}} hours ago",
+      daysAgo: "{{count}} days ago",
+      neverOnline: "Never online",
       dogs: "Dogs",
       addDog: "+ Add Dog",
       noDogs: "No dogs added yet",
@@ -109,7 +118,8 @@ export const en = {
       loading: "Loading...",
       required: "*",
       favoriteParks: "Favorite Parks",
-      noFavoriteParks: "No favorite parks yet."
+      noFavoriteParks: "No favorite parks yet.",
+      updateAtLeastOneField: "Please update at least one field before saving."
     },
     dogProfile: {
       title: "Dog Profile",
@@ -230,7 +240,8 @@ export const en = {
     social: {
       title: "Social",
       people: "People",
-      dogs: "Dogs"
+      dogs: "Dogs",
+      viewFullProfile: "View Full Profile"
     },
     organizations: {
       title: "Organizations",

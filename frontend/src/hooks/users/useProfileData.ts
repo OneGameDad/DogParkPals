@@ -19,7 +19,7 @@ export const useProfileData = (id?: string) => {
 	
 	// Fetch dogs using the determined user ID
 	const { data: dogs, loading: dogsLoading } = useFetch<Dog[]>(
-		viewingUserId ? `/dogs/owner/${viewingUserId}` : ''
+		viewingUserId ? `/api/dogs/owner/${viewingUserId}` : ''
 	);
 
 	return {

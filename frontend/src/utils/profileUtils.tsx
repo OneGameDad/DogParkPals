@@ -18,7 +18,7 @@ export const formatLevel = (expPoints: number): number => {
 };
 
 export const getLevelBadge = (level: number, t: TFunction) => {
-	const colors = ['bg-gray-400', 'bg-green-400', 'bg-blue-400', 'bg-purple-400', 'bg-gold-400'];
+	const colors = ['bg-gray-400', 'bg-green-400', 'bg-blue-400', 'bg-purple-400', 'bg-yellow-400'];
 	return (
 		<span className={`ml-2 px-2 py-1 text-xs font-semibold text-white rounded ${colors[level - 1]}`}>
 			{t('profile.level')} {level}

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { API_BASE_URL } from '../../constants';
 
 interface UseHeartbeatOptions {
@@ -12,7 +12,7 @@ export const useHeartbeat = ({
 }: UseHeartbeatOptions = {}) => {
 	const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-	const sendHeartbeat = async () => {
+	const sendHeartbeat = useCallback(async () => {
 		try {
 			await fetch(`${API_BASE_URL}/users/presence/heartbeat`, {
 				method: 'POST',
@@ -24,7 +24,7 @@ export const useHeartbeat = ({
 		} catch (error) {
 			console.error('Failed to send heartbeat:', error);
 		}
-	};
+	}, []);
 
 	useEffect(() => {
 		if (!enabled) return;
@@ -42,5 +42,5 @@ export const useHeartbeat = ({
 				intervalRef.current = null;
 			}
 		};
-	}, [enabled, interval]);
+	}, [enabled, interval, sendHeartbeat]);
 };

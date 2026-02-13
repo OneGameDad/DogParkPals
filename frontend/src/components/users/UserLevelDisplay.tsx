@@ -9,6 +9,7 @@ interface UserLevelDisplayProps {
 const UserLevelDisplay: React.FC<UserLevelDisplayProps> = ({ expPoints }) => {
 	const { t } = useTranslation();
 	const level = formatLevel(expPoints);
+	const levelIndex = Math.max(0, Math.min(level - 1, LEVEL_THRESHOLDS.length - 1));
 	
 	return (
 		<div className="border-b pb-3">
@@ -24,7 +25,7 @@ const UserLevelDisplay: React.FC<UserLevelDisplayProps> = ({ expPoints }) => {
 			</div>
 			<div className="text-right mt-1">
 				<span className="text-xs text-gray-600">
-					{expPoints} / {LEVEL_THRESHOLDS[level - 1].max} XP
+					{expPoints} / {LEVEL_THRESHOLDS[levelIndex].max} XP
 				</span>
 			</div>
 		</div>

@@ -40,6 +40,7 @@ const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({
 							<div 
 								className={`w-6 h-6 rounded-full border-4 border-white ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} 
 								title={isOnline ? t('profile.online', 'Online') : t('profile.offline', 'Offline')}
+								aria-label={isOnline ? t('profile.online', 'Online') : t('profile.offline', 'Offline')}
 							/>
 						</div>
 					)}

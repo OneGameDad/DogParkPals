@@ -7,6 +7,7 @@ import { parseValidation } from "../utils/validator";
 import {
     changePasswordSchema,
     changeUserRoleSchema,
+    changeUsernameSchema,
     createUserSchema,
     deleteUserSchema,
     getUserByEmailSchema,
@@ -321,6 +322,38 @@ const userController = {
                     code: "INTERNAL_ERROR",
                     statusCode: 500,
                 }));
+        }
+    },
+
+    changeUsername: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            if (!req.userId) {
+                throw ForbiddenError("Authentication required");
+            }
+
+            const { newUsername, userId } = parseValidation(changeUsernameSchema, req.body);
+            const targetUserId = userId ?? req.userId;
+
+            if (targetUserId !== req.userId) {
+                const userRole = (req as any).user?.role;
+                if (userRole !== 'ADMIN' && userRole !== 'DEVELOPER') {
+                    throw ForbiddenError("Only admins or developers can change another user's username");
+                }
+            }
+
+            const existingUser = await userService.getUserByUsername(newUsername);
+            if (existingUser && existingUser.id !== targetUserId) {
+                throw ConflictError("Username already in use");
+            }
+            const updatedUser = await userService.changeUsername(req.userId, targetUserId, newUsername);
+            res.status(200).json(sanitizeUser(updatedUser));
+        } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
+            return next(
+                toAppError(error, { message: "Failed to change username", code: "INTERNAL_ERROR", statusCode: 500 })
+            );
         }
     },
 };

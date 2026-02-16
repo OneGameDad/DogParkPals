@@ -1,8 +1,9 @@
 import 'dotenv/config';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { PrismaClient, UserRole, NotificationType } from '@prisma/client';
 import { hashPassword, verifyPassword } from '../utils/password';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { AuthError, ForbiddenError, NotFoundError, toAppError } from '../utils/errors';
+import notificationService from './notificationService';
 import path from 'path';
 import fs from "fs";
 
@@ -238,9 +239,18 @@ const userService = {
         throw NotFoundError('User not found');
       }
 
-      const updatedUser = await prisma.user.update({
-        where: { id: targetUserId },
-        data: { role },
+      const updatedUser = await prisma.$transaction(async (tx) => {
+        const user = await tx.user.update({
+          where: { id: targetUserId },
+          data: { role },
+        });
+        await notificationService.createNotification(
+          targetUserId,
+          NotificationType.USER_ROLE_UPDATED,
+          { role },
+          tx
+        );
+        return user;
       });
       typeSafeLogger.logUserAction('User role updated', { adminUserId, targetUserId, role });
       return updatedUser;

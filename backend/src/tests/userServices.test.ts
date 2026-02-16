@@ -289,13 +289,33 @@ describe('User Services', () => {
       .mockResolvedValueOnce(targetUser);
     const mockUpdate = jest.fn<any>().mockResolvedValue(updatedUser);
 
+    const mockCreateNotification = jest.fn<any>().mockResolvedValue(undefined);
+
+    jest.doMock('../services/notificationService', () => ({
+      __esModule: true,
+      default: {
+        createNotification: mockCreateNotification,
+      },
+    }));
+
     jest.doMock('@prisma/client', () => ({
       PrismaClient: jest.fn(() => ({
         user: {
           findUnique: mockFindUnique,
           update: mockUpdate,
         },
+        $transaction: jest.fn(async (callback: any) => callback({
+          user: {
+            update: mockUpdate,
+          },
+          notification: {
+            create: mockCreateNotification,
+          },
+        })),
       })),
+      NotificationType: {
+        USER_ROLE_UPDATED: 'USER_ROLE_UPDATED',
+      },
     }));
 
     const userService = await import('../services/userServices');
@@ -306,44 +326,91 @@ describe('User Services', () => {
       where: { id: 2 },
       data: { role: 'ADMIN' },
     });
+    expect(mockCreateNotification).toHaveBeenCalledWith(
+      2,
+      'USER_ROLE_UPDATED',
+      { role: 'ADMIN' },
+      expect.any(Object)
+    );
     expect(result.role).toBe('ADMIN');
 
+    jest.dontMock('../services/notificationService');
     jest.dontMock('@prisma/client');
   });
 
   test('changeUserRole throws when admin is not found', async () => {
     const mockFindUnique = jest.fn<any>().mockResolvedValueOnce(null);
+    const mockCreateNotification = jest.fn<any>();
+
+    jest.doMock('../services/notificationService', () => ({
+      __esModule: true,
+      default: {
+        createNotification: mockCreateNotification,
+      },
+    }));
 
     jest.doMock('@prisma/client', () => ({
       PrismaClient: jest.fn(() => ({
         user: {
           findUnique: mockFindUnique,
         },
+        $transaction: jest.fn(async (callback: any) => callback({
+          user: {
+            update: jest.fn(),
+          },
+          notification: {
+            create: mockCreateNotification,
+          },
+        })),
       })),
+      NotificationType: {
+        USER_ROLE_UPDATED: 'USER_ROLE_UPDATED',
+      },
     }));
 
     const userService = await import('../services/userServices');
 
     await expect(userService.default.changeUserRole(1, 2, 'ADMIN')).rejects.toThrow();
 
+    jest.dontMock('../services/notificationService');
     jest.dontMock('@prisma/client');
   });
 
   test('changeUserRole throws when admin lacks permission', async () => {
     const mockFindUnique = jest.fn<any>().mockResolvedValueOnce({ id: 1, role: 'CLIENT' });
+    const mockCreateNotification = jest.fn<any>();
+
+    jest.doMock('../services/notificationService', () => ({
+      __esModule: true,
+      default: {
+        createNotification: mockCreateNotification,
+      },
+    }));
 
     jest.doMock('@prisma/client', () => ({
       PrismaClient: jest.fn(() => ({
         user: {
           findUnique: mockFindUnique,
         },
+        $transaction: jest.fn(async (callback: any) => callback({
+          user: {
+            update: jest.fn(),
+          },
+          notification: {
+            create: mockCreateNotification,
+          },
+        })),
       })),
+      NotificationType: {
+        USER_ROLE_UPDATED: 'USER_ROLE_UPDATED',
+      },
     }));
 
     const userService = await import('../services/userServices');
 
     await expect(userService.default.changeUserRole(1, 2, 'ADMIN')).rejects.toThrow();
 
+    jest.dontMock('../services/notificationService');
     jest.dontMock('@prisma/client');
   });
 

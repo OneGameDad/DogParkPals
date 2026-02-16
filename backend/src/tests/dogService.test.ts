@@ -53,6 +53,9 @@ jest.mock('@prisma/client', () => {
     Prisma: {
       PrismaClientKnownRequestError: mockPrismaClientKnownRequestError,
     },
+    NotificationType: {
+      DOG_OWNERSHIP_ADDED: 'DOG_OWNERSHIP_ADDED',
+    },
   };
 });
 // Mock utilities
@@ -68,6 +71,13 @@ jest.mock('../utils/typeSafeLogger', () => ({
 
 jest.mock('../utils/validator', () => ({
   parseValidation: jest.fn((schema, data) => data),
+}));
+
+jest.mock('../services/notificationService', () => ({
+  __esModule: true,
+  default: {
+    createNotification: jest.fn(),
+  },
 }));
 
 // Import AFTER all mocks are defined

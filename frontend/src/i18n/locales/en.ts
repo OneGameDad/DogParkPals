@@ -36,7 +36,13 @@ export const en = {
       messageReceived: 'You received a message from {name}',
       eventCreated: '{name} created a new event',
       parkAdded: 'Park "{parkName}" was added',
-      friendAccepted: 'You and {name} are now friends'
+      friendAccepted: 'You and {name} are now friends',
+      dogOwnershipAdded: 'You were added as an owner of "{dogName}"',
+      organizationJoinRequest: '"{name}" requested to join "{organizationName}"',
+      organizationJoinApproved: 'You were approved to join "{organizationName}"',
+      organizationRoleUpdated: 'Your role in "{organizationName}" is now {role}',
+      eventCreatedAtFavoritePark: 'A new event was created at "{parkName}"',
+      eventCreatedByOrganization: 'A new event was created by "{organizationName}"'
     },
     // ... existing auth ...
     auth: {

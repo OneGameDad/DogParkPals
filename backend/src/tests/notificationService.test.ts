@@ -13,6 +13,7 @@ jest.mock('@prisma/client', () => {
       update: jest.fn(),
       updateMany: jest.fn(),
       create: jest.fn(),
+      createMany: jest.fn(),
     },
   };
   return { PrismaClient: jest.fn(() => mPrisma) };
@@ -150,6 +151,39 @@ describe('notificationService', () => {
     test('throws app error if create fails', async () => {
       prisma.notification.create.mockRejectedValue(new Error('DB error'));
       await expect(notificationService.createNotification(1, 'MESSAGE_RECEIVED', {})).rejects.toThrow();
+    });
+  });
+
+  describe('createNotifications', () => {
+    test('creates notifications for unique users', async () => {
+      prisma.notification.createMany.mockResolvedValue({ count: 2 });
+
+      const result = await notificationService.createNotifications(
+        [1, 2, 1],
+        'MESSAGE_RECEIVED',
+        { eventId: 10 }
+      );
+
+      expect(result).toBe(2);
+      expect(prisma.notification.createMany).toHaveBeenCalledWith({
+        data: [
+          { userId: 1, type: 'MESSAGE_RECEIVED', payload: { eventId: 10 } },
+          { userId: 2, type: 'MESSAGE_RECEIVED', payload: { eventId: 10 } },
+        ],
+      });
+    });
+
+    test('skips when user list is empty', async () => {
+      const result = await notificationService.createNotifications([], 'MESSAGE_RECEIVED', {});
+      expect(result).toBe(0);
+      expect(prisma.notification.createMany).not.toHaveBeenCalled();
+    });
+
+    test('throws app error if createMany fails', async () => {
+      prisma.notification.createMany.mockRejectedValue(new Error('DB error'));
+      await expect(
+        notificationService.createNotifications([1], 'MESSAGE_RECEIVED', {})
+      ).rejects.toThrow();
     });
   });
 });

@@ -1,12 +1,14 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma, NotificationType } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
+import notificationService from './notificationService';
 import {
   createOrganizationSchema,
   updateOrganizationSchema,
   getOrganizationByIdSchema,
   getOrganizationByNameSchema,
   addMemberSchema,
+  joinOrganizationSchema,
   removeMemberSchema,
   updateMemberRoleSchema,
   getMemberSchema,
@@ -146,16 +148,91 @@ const organizationService = {
   },
 
   // Member Management Methods
+  async joinOrganization(organizationId: number, userId: number) {
+    const validated = joinOrganizationSchema.parse({ organizationId, userId });
+    typeSafeLogger.logUserAction('Requesting to join organization', { organizationId: validated.organizationId, userId: validated.userId });
+    try {
+      const member = await prisma.$transaction(async (tx) => {
+        const createdMember = await tx.organizationMember.create({
+          data: {
+            organizationId: validated.organizationId,
+            userId: validated.userId,
+            role: 'INVITEE',
+          },
+        });
+
+        const [org, privilegedMembers] = await Promise.all([
+          tx.organization.findUnique({
+            where: { id: validated.organizationId },
+            select: { ownerId: true },
+          }),
+          tx.organizationMember.findMany({
+            where: {
+              organizationId: validated.organizationId,
+              role: { in: ['OWNER', 'MODERATOR'] },
+            },
+            select: { userId: true },
+          }),
+        ]);
+
+        const recipientIds = new Set<number>();
+        privilegedMembers.forEach((member) => recipientIds.add(member.userId));
+        if (org?.ownerId) {
+          recipientIds.add(org.ownerId);
+        }
+        recipientIds.delete(validated.userId);
+
+        const recipients = Array.from(recipientIds);
+        if (recipients.length > 0) {
+          await tx.notification.createMany({
+            data: recipients.map((recipientId) => ({
+              userId: recipientId,
+              type: NotificationType.ORGANIZATION_JOIN_REQUEST,
+              payload: {
+                organizationId: validated.organizationId,
+                requesterId: validated.userId,
+              },
+            })),
+          });
+        }
+
+        return createdMember;
+      });
+
+      typeSafeLogger.logUserAction('Join request created', { organizationId: validated.organizationId, userId: validated.userId });
+      return member;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to join organization',
+        code: 'JOIN_ORGANIZATION_FAILED',
+      });
+      typeSafeLogger.logError('Failed to join organization', appError, { organizationId, userId });
+      throw appError;
+    }
+  },
+
   async addMember(organizationId: number, userId: number, role: 'MEMBER' | 'MODERATOR' | 'OWNER' = 'MEMBER') {
     const validated = addMemberSchema.parse({ organizationId, userId, role });
     typeSafeLogger.logUserAction('Adding member to organization', { organizationId: validated.organizationId, userId: validated.userId, role: validated.role });
     try {
-      const member = await prisma.organizationMember.create({
-        data: {
-          organizationId: validated.organizationId,
-          userId: validated.userId,
-          role: validated.role,
-        },
+      const member = await prisma.$transaction(async (tx) => {
+        const createdMember = await tx.organizationMember.create({
+          data: {
+            organizationId: validated.organizationId,
+            userId: validated.userId,
+            role: validated.role,
+          },
+        });
+        await notificationService.createNotification(
+          validated.userId,
+          NotificationType.ORGANIZATION_JOIN_APPROVED,
+          {
+            organizationId: validated.organizationId,
+            role: validated.role,
+          },
+          tx
+        );
+        return createdMember;
       });
       typeSafeLogger.logUserAction('Member added to organization successfully', { organizationId, userId, role });
       return member;
@@ -207,6 +284,14 @@ const organizationService = {
           role: validated.role,
         },
       });
+      await notificationService.createNotification(
+        validated.userId,
+        NotificationType.ORGANIZATION_ROLE_UPDATED,
+        {
+          organizationId: validated.organizationId,
+          role: validated.role,
+        }
+      );
       typeSafeLogger.logUserAction('Member role updated successfully', { organizationId, userId, role });
       return updatedMember;
     } catch (error) {

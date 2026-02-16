@@ -67,6 +67,7 @@ const eventController = {
         startTime,
         endTime,
         parkId,
+        organizationId,
         organizerId,
         private: isPrivate,
       } = parseValidation(createEventSchema, req.body);
@@ -79,7 +80,8 @@ const eventController = {
         endTime,
         parkId,
         organizerId,
-        isPrivate === 'PRIVATE'
+        isPrivate === 'PRIVATE',
+        organizationId
       );
 
       typeSafeLogger.logUserAction("Event created", { eventId: newEvent.id, title });

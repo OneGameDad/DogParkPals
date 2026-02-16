@@ -20,6 +20,10 @@ const mockPrisma: any = {
   event: {
     findMany: jest.fn(),
   },
+  notification: {
+    createMany: jest.fn(),
+  },
+  $transaction: jest.fn(async (callback: any) => callback(mockPrisma)),
 };
 
 jest.mock('@prisma/client', () => {
@@ -34,6 +38,11 @@ jest.mock('@prisma/client', () => {
     PrismaClient: jest.fn(() => mockPrisma),
     Prisma: {
       PrismaClientKnownRequestError: mockPrismaClientKnownRequestError,
+    },
+    NotificationType: {
+      ORGANIZATION_JOIN_REQUEST: 'ORGANIZATION_JOIN_REQUEST',
+      ORGANIZATION_JOIN_APPROVED: 'ORGANIZATION_JOIN_APPROVED',
+      ORGANIZATION_ROLE_UPDATED: 'ORGANIZATION_ROLE_UPDATED',
     },
   };
 });
@@ -71,6 +80,9 @@ jest.mock('../utils/validationSchemas', () => ({
   updateMemberRoleSchema: {
     parse: jest.fn((data) => data),
   },
+  joinOrganizationSchema: {
+    parse: jest.fn((data) => data),
+  },
   getMemberSchema: {
     parse: jest.fn((data) => data),
   },
@@ -79,6 +91,13 @@ jest.mock('../utils/validationSchemas', () => ({
   },
   isMemberSchema: {
     parse: jest.fn((data) => data),
+  },
+}));
+
+jest.mock('../services/notificationService', () => ({
+  __esModule: true,
+  default: {
+    createNotification: jest.fn(),
   },
 }));
 
@@ -341,6 +360,57 @@ describe('Organization Service', () => {
       mockPrisma.organizationMember.create.mockRejectedValue(new Error('Unique constraint failed'));
 
       await expect(organizationService.addMember(1, 2)).rejects.toThrow();
+    });
+  });
+
+  describe('joinOrganization', () => {
+    test('creates invitee and notifies moderators/owners', async () => {
+      mockPrisma.organizationMember.create.mockResolvedValue({
+        organizationId: 1,
+        userId: 7,
+        role: 'INVITEE',
+      });
+      mockPrisma.organization.findUnique.mockResolvedValue({ ownerId: 3 });
+      mockPrisma.organizationMember.findMany.mockResolvedValue([
+        { userId: 3 },
+        { userId: 4 },
+      ]);
+      mockPrisma.notification.createMany.mockResolvedValue({ count: 2 });
+
+      const result = await organizationService.joinOrganization(1, 7);
+
+      expect(result).toEqual({ organizationId: 1, userId: 7, role: 'INVITEE' });
+      expect(mockPrisma.organizationMember.create).toHaveBeenCalledWith({
+        data: { organizationId: 1, userId: 7, role: 'INVITEE' },
+      });
+      expect(mockPrisma.notification.createMany).toHaveBeenCalledWith({
+        data: [
+          {
+            userId: 3,
+            type: 'ORGANIZATION_JOIN_REQUEST',
+            payload: { organizationId: 1, requesterId: 7 },
+          },
+          {
+            userId: 4,
+            type: 'ORGANIZATION_JOIN_REQUEST',
+            payload: { organizationId: 1, requesterId: 7 },
+          },
+        ],
+      });
+    });
+
+    test('skips notifications when no moderators/owners found', async () => {
+      mockPrisma.organizationMember.create.mockResolvedValue({
+        organizationId: 1,
+        userId: 7,
+        role: 'INVITEE',
+      });
+      mockPrisma.organization.findUnique.mockResolvedValue({ ownerId: null });
+      mockPrisma.organizationMember.findMany.mockResolvedValue([]);
+
+      await organizationService.joinOrganization(1, 7);
+
+      expect(mockPrisma.notification.createMany).not.toHaveBeenCalled();
     });
   });
 

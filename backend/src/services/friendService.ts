@@ -1,7 +1,9 @@
 import { Prisma, PrismaClient } from '@prisma/client';
+import type { NotificationType } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
 import { createFriendRequestSchema, removeFriendSchema, friendshipIdSchema, getFriendsSchema } from '../utils/validationSchemas';
+import notificationService from './notificationService';
 
 const prisma = new PrismaClient();
 
@@ -38,6 +40,16 @@ const friendService = {
           status,
         },
       });
+      if (friendRequest.status === 'PENDING' && friendRequest.addresseeId) {
+        await notificationService.createNotification(
+          friendRequest.addresseeId,
+          'FRIENDSHIP_REQUEST' as NotificationType,
+          {
+            friendshipId: friendRequest.id,
+            requesterId: friendRequest.requesterId,
+          }
+        );
+      }
       typeSafeLogger.logUserAction('Friend request sent successfully', { 
         requesterId, 
         addresseeId, 
@@ -71,6 +83,16 @@ const friendService = {
         where: { id: validatedData.friendshipId },
         data: { status: 'ACCEPTED' },
       });
+      if (updatedRequest.requesterId) {
+        await notificationService.createNotification(
+          updatedRequest.requesterId,
+          'FRIENDSHIP_ACCEPTED' as NotificationType,
+          {
+            friendshipId: updatedRequest.id,
+            addresseeId: updatedRequest.addresseeId,
+          }
+        );
+      }
       typeSafeLogger.logUserAction('Friend request accepted', { friendshipId });
       return updatedRequest;
     } catch (error) {

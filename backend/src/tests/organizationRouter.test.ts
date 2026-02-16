@@ -19,6 +19,7 @@ const mockGetOrganizations = jest.fn();
 const mockUpdateOrganization = jest.fn();
 const mockDeleteOrganization = jest.fn();
 const mockAddMember = jest.fn();
+const mockJoinOrganization = jest.fn();
 const mockRemoveMember = jest.fn();
 const mockUpdateMemberRole = jest.fn();
 const mockGetMember = jest.fn();
@@ -36,6 +37,7 @@ jest.mock('../controllers/organizationController', () => ({
     updateOrganization: jest.fn((req: any, res: any, next: any) => mockUpdateOrganization(req, res, next)),
     deleteOrganization: jest.fn((req: any, res: any, next: any) => mockDeleteOrganization(req, res, next)),
     addMember: jest.fn((req: any, res: any, next: any) => mockAddMember(req, res, next)),
+    joinOrganization: jest.fn((req: any, res: any, next: any) => mockJoinOrganization(req, res, next)),
     removeMember: jest.fn((req: any, res: any, next: any) => mockRemoveMember(req, res, next)),
     updateMemberRole: jest.fn((req: any, res: any, next: any) => mockUpdateMemberRole(req, res, next)),
     getMember: jest.fn((req: any, res: any, next: any) => mockGetMember(req, res, next)),
@@ -218,6 +220,20 @@ describe('Organization Router', () => {
       await request(app).get('/1/details?sortBy=role&order=desc');
 
       expect(mockGetOrganizationWithDetails).toHaveBeenCalled();
+    });
+  });
+
+  describe('POST /organizations/:id/join', () => {
+    test('should call joinOrganization controller', async () => {
+      mockJoinOrganization.mockImplementation((req: any, res: any) => {
+        res.status(201).json({ organizationId: 1, userId: 7, role: 'INVITEE' });
+      });
+
+      await request(app)
+        .post('/1/join')
+        .expect(201);
+
+      expect(mockJoinOrganization).toHaveBeenCalled();
     });
   });
 

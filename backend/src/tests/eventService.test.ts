@@ -28,6 +28,12 @@ jest.mock('@prisma/client', () => {
         delete: mockEventDelete,
         findMany: mockEventFindMany,
       },
+      userFavoritePark: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      organizationMember: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
       eventAttendance: {
         create: mockEventAttendanceCreate,
         deleteMany: mockEventAttendanceDeleteMany,
@@ -49,6 +55,13 @@ jest.mock('../utils/typeSafeLogger', () => ({
     logError: jest.fn(),
     info: jest.fn(),
     warn: jest.fn(),
+  },
+}));
+
+jest.mock('../services/notificationService', () => ({
+  __esModule: true,
+  default: {
+    createNotifications: jest.fn().mockResolvedValue(0),
   },
 }));
 
@@ -87,6 +100,7 @@ const mockEventData: Event = {
   endTime: new Date('2025-12-25T12:00:00Z'),
   private: 'PUBLIC',
   parkId: 1,
+  organizationId: null,
   organizerId: 1,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -458,7 +472,7 @@ describe('Event Service', () => {
       const result = await eventService.getEventsByOrganization(1);
 
       expect(mockEventFindMany).toHaveBeenCalledWith({
-        where: { organizerId: 1 },
+        where: { organizationId: 1 },
       });
       expect(result).toEqual(events);
     });

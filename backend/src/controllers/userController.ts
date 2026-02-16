@@ -6,6 +6,7 @@ import { toAppError, ConflictError, NotFoundError, ForbiddenError, isAppError } 
 import { parseValidation } from "../utils/validator";
 import {
     changePasswordSchema,
+    changeUserRoleSchema,
     createUserSchema,
     deleteUserSchema,
     getUserByEmailSchema,
@@ -204,6 +205,25 @@ const userController = {
             }
             return next(
                 toAppError(error, { message: "Failed to reset password", code: "INTERNAL_ERROR", statusCode: 500 })
+            );
+        }
+    },
+
+    changeUserRole: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            if (!req.user?.id) {
+                throw ForbiddenError("Authentication required");
+            }
+
+            const { userId, role } = parseValidation(changeUserRoleSchema, req.body);
+            const updatedUser = await userService.changeUserRole(req.user.id, userId, role);
+            res.status(200).json(sanitizeUser(updatedUser));
+        } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
+            return next(
+                toAppError(error, { message: "Failed to change user role", code: "INTERNAL_ERROR", statusCode: 500 })
             );
         }
     },

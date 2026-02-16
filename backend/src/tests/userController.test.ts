@@ -11,6 +11,7 @@ const mockGetUserByUsername = jest.fn<any>();
 const mockListUsers = jest.fn<any>();
 const mockDeleteUser = jest.fn<any>();
 const mockChangePassword = jest.fn<any>();
+const mockChangeUserRole = jest.fn<any>();
 const mockResetUserPassword = jest.fn<any>();
 const mockUploadProfilePicture = jest.fn<any>();
 const mockDeleteProfilePicture = jest.fn<any>();
@@ -28,6 +29,7 @@ jest.mock('../services/userServices', () => ({
     listUsers: mockListUsers,
     deleteUser: mockDeleteUser,
     changePassword: mockChangePassword,
+    changeUserRole: mockChangeUserRole,
     resetUserPassword: mockResetUserPassword,
     uploadProfilePicture: mockUploadProfilePicture,
     deleteProfilePicture: mockDeleteProfilePicture,
@@ -219,6 +221,65 @@ describe('User Controller', () => {
       expect(forwardedError.statusCode).toBe(500);
       expect(forwardedError.code).toBe('INTERNAL_ERROR');
       expect(forwardedError.message).toBe('Failed to create user');
+    });
+  });
+
+  describe('changeUserRole', () => {
+    test('returns 200 and sanitized user when role update succeeds', async () => {
+      mockReq.body = { userId: 2, role: 'ADMIN' };
+      (mockReq as any).user = { id: 1, role: 'ADMIN' };
+
+      const updatedUser = {
+        id: 2,
+        username: 'target',
+        email: 'target@example.com',
+        password_hash: 'hashed',
+        first_name: null,
+        last_name: null,
+        profilePictureUrl: null,
+        role: 'ADMIN',
+        ExpPoints: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as unknown as User;
+
+      mockChangeUserRole.mockResolvedValue(updatedUser);
+
+      await userController.changeUserRole(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockChangeUserRole).toHaveBeenCalledWith(1, 2, 'ADMIN');
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      const responseCall = mockJson.mock.calls[0][0] as any;
+      expect(responseCall).not.toHaveProperty('password_hash');
+      expect(responseCall.role).toBe('ADMIN');
+    });
+
+    test('forwards forbidden error when no authenticated user', async () => {
+      mockReq.body = { userId: 2, role: 'ADMIN' };
+      (mockReq as any).user = undefined;
+
+      await userController.changeUserRole(mockReq as Request, mockRes as Response, mockNext as any);
+
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError).toBeInstanceOf(AppError);
+      expect(forwardedError.statusCode).toBe(403);
+      expect(forwardedError.code).toBe('FORBIDDEN');
+      expect(mockChangeUserRole).not.toHaveBeenCalled();
+    });
+
+    test('forwards 500 error when service throws', async () => {
+      mockReq.body = { userId: 2, role: 'ADMIN' };
+      (mockReq as any).user = { id: 1, role: 'ADMIN' };
+
+      mockChangeUserRole.mockRejectedValue(new Error('Database error'));
+
+      await userController.changeUserRole(mockReq as Request, mockRes as Response, mockNext as any);
+
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError).toBeInstanceOf(AppError);
+      expect(forwardedError.statusCode).toBe(500);
+      expect(forwardedError.code).toBe('INTERNAL_ERROR');
+      expect(forwardedError.message).toBe('Failed to change user role');
     });
   });
 

@@ -12,6 +12,7 @@ import {
   getOrganizationByIdSchema,
   getOrganizationByNameSchema,
   addMemberSchema,
+    joinOrganizationSchema,
   removeMemberSchema,
   updateMemberRoleSchema,
   getMemberSchema,
@@ -218,6 +219,32 @@ const organizationController = {
             }
             return next(
                 toAppError(error, { message: "Failed to add member to organization", code: "INTERNAL_ERROR", statusCode: 500 })
+            );
+        }
+    },
+
+    joinOrganization: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            typeSafeLogger.logRequest("Received request to join organization", { method: req.method, path: req.path });
+            const userId = (req as any).user?.id;
+            if (!userId) {
+                throw ForbiddenError("Authentication required");
+            }
+
+            const { organizationId } = parseValidation(joinOrganizationSchema, {
+                organizationId: parseInt(req.params.id, 10),
+                userId,
+            });
+
+            const member = await organizationService.joinOrganization(organizationId, userId);
+            typeSafeLogger.logUserAction("Join request submitted", { organizationId, userId });
+            res.status(201).json(member);
+        } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
+            return next(
+                toAppError(error, { message: "Failed to join organization", code: "INTERNAL_ERROR", statusCode: 500 })
             );
         }
     },

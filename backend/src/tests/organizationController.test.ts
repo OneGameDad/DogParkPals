@@ -10,6 +10,7 @@ const mockCreateOrganization = jest.fn<any>();
 const mockUpdateOrganization = jest.fn<any>();
 const mockDeleteOrganization = jest.fn<any>();
 const mockAddMember = jest.fn<any>();
+const mockJoinOrganization = jest.fn<any>();
 const mockRemoveMember = jest.fn<any>();
 const mockUpdateMemberRole = jest.fn<any>();
 const mockGetMember = jest.fn<any>();
@@ -32,6 +33,7 @@ jest.mock('../services/organizationService', () => ({
     updateOrganization: mockUpdateOrganization,
     deleteOrganization: mockDeleteOrganization,
     addMember: mockAddMember,
+    joinOrganization: mockJoinOrganization,
     removeMember: mockRemoveMember,
     updateMemberRole: mockUpdateMemberRole,
     getMember: mockGetMember,
@@ -184,6 +186,34 @@ describe('Organization Controller', () => {
       await organizationController.createOrganization(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockNext).toHaveBeenCalled();
+    });
+  });
+
+  describe('joinOrganization', () => {
+    test('should submit join request and return invitee', async () => {
+      mockReq.params = { id: '1' };
+      (mockReq as any).user = { id: 7, role: 'CLIENT' };
+      mockParseValidation.mockReturnValue({ organizationId: 1, userId: 7 });
+      mockJoinOrganization.mockResolvedValue({ organizationId: 1, userId: 7, role: 'INVITEE' });
+
+      await organizationController.joinOrganization(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockJoinOrganization).toHaveBeenCalledWith(1, 7);
+      expect(mockStatus).toHaveBeenCalledWith(201);
+      expect(mockJson).toHaveBeenCalledWith({ organizationId: 1, userId: 7, role: 'INVITEE' });
+    });
+
+    test('should reject when user is not authenticated', async () => {
+      mockReq.params = { id: '1' };
+      (mockReq as any).user = undefined;
+
+      await organizationController.joinOrganization(mockReq as Request, mockRes as Response, mockNext);
+
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError).toBeInstanceOf(AppError);
+      expect(forwardedError.statusCode).toBe(403);
+      expect(forwardedError.code).toBe('FORBIDDEN');
+      expect(mockJoinOrganization).not.toHaveBeenCalled();
     });
   });
 

@@ -1,8 +1,9 @@
-import { PrismaClient, DogBreed, DogGender, DogPlaystyle, DogSize } from '@prisma/client';
+import { PrismaClient, DogBreed, DogGender, DogPlaystyle, DogSize, NotificationType } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
 import { parseValidation } from '../utils/validator';
 import { addDogSchema, updateDogSchema } from '../utils/validationSchemas';
+import notificationService from './notificationService';
 import fs from "fs";
 import path from "path";
 
@@ -195,6 +196,9 @@ const dogService = {
           dogId,
           userId,
         },
+      });
+      await notificationService.createNotification(userId, NotificationType.DOG_OWNERSHIP_ADDED, {
+        dogId,
       });
       typeSafeLogger.logUserAction('Owner added to dog successfully', { dogId, userId });
     } catch (error) {

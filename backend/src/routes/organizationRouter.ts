@@ -7,6 +7,7 @@ const router = express.Router();
 router.use(requireAuth);
 router.get("/name/:name", organizationController.getOrganizationByName);
 router.get("/:id/details", organizationController.getOrganizationWithDetails);
+router.post("/:id/join", organizationController.joinOrganization);
 router.post("/:id/members", organizationController.addMember);
 router.delete("/:id/members/:memberId", organizationController.removeMember);
 router.put("/:id/members/:memberId", organizationController.updateMemberRole);

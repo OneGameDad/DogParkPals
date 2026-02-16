@@ -234,12 +234,32 @@ describe('User Services', () => {
       updatedAt: new Date(),
     });
 
+    const mockCreateNotification = jest.fn<any>().mockResolvedValue(undefined);
+
+    jest.doMock('../services/notificationService', () => ({
+      __esModule: true,
+      default: {
+        createNotification: mockCreateNotification,
+      },
+    }));
+
     jest.doMock('@prisma/client', () => ({
       PrismaClient: jest.fn(() => ({
         user: {
           update: mockUpdate,
         },
+        $transaction: jest.fn(async (callback: any) => callback({
+          user: {
+            update: mockUpdate,
+          },
+          notification: {
+            create: mockCreateNotification,
+          },
+        })),
       })),
+      NotificationType: {
+        PROFILE_UPDATED: 'PROFILE_UPDATED',
+      },
     }));
 
     const userService = await import('../services/userServices');
@@ -264,7 +284,22 @@ describe('User Services', () => {
         longitude: -73.9,
       },
     });
+    expect(mockCreateNotification).toHaveBeenCalledWith(
+      1,
+      'PROFILE_UPDATED',
+      {
+        fields: [
+          'first_name',
+          'last_name',
+          'profilePictureUrl',
+          'latitude',
+          'longitude',
+        ],
+      },
+      expect.any(Object)
+    );
 
+    jest.dontMock('../services/notificationService');
     jest.dontMock('@prisma/client');
   });
 
@@ -315,6 +350,7 @@ describe('User Services', () => {
       })),
       NotificationType: {
         USER_ROLE_UPDATED: 'USER_ROLE_UPDATED',
+        PROFILE_UPDATED: 'PROFILE_UPDATED',
       },
     }));
 
@@ -365,6 +401,7 @@ describe('User Services', () => {
       })),
       NotificationType: {
         USER_ROLE_UPDATED: 'USER_ROLE_UPDATED',
+        PROFILE_UPDATED: 'PROFILE_UPDATED',
       },
     }));
 
@@ -403,6 +440,7 @@ describe('User Services', () => {
       })),
       NotificationType: {
         USER_ROLE_UPDATED: 'USER_ROLE_UPDATED',
+        PROFILE_UPDATED: 'PROFILE_UPDATED',
       },
     }));
 
@@ -425,12 +463,32 @@ describe('User Services', () => {
       lastSeenAt: new Date(),
     });
 
+    const mockCreateNotification = jest.fn<any>().mockResolvedValue(undefined);
+
+    jest.doMock('../services/notificationService', () => ({
+      __esModule: true,
+      default: {
+        createNotification: mockCreateNotification,
+      },
+    }));
+
     jest.doMock('@prisma/client', () => ({
       PrismaClient: jest.fn(() => ({
         user: {
           update: mockUpdate,
         },
+        $transaction: jest.fn(async (callback: any) => callback({
+          user: {
+            update: mockUpdate,
+          },
+          notification: {
+            create: mockCreateNotification,
+          },
+        })),
       })),
+      NotificationType: {
+        PROFILE_UPDATED: 'PROFILE_UPDATED',
+      },
     }));
 
     const userService = await import('../services/userServices');
@@ -444,7 +502,168 @@ describe('User Services', () => {
         first_name: 'OnlyFirstName',
       },
     });
+    expect(mockCreateNotification).toHaveBeenCalledWith(
+      1,
+      'PROFILE_UPDATED',
+      { fields: ['first_name'] },
+      expect.any(Object)
+    );
 
+    jest.dontMock('../services/notificationService');
+    jest.dontMock('@prisma/client');
+  });
+
+  test('changeUsername allows user to update own username', async () => {
+    const targetUser = { id: 2, username: 'oldname' };
+    const updatedUser = { id: 2, username: 'newname' } as unknown as User;
+
+    const mockFindUnique = jest.fn<any>().mockResolvedValue(targetUser);
+    const mockUpdate = jest.fn<any>().mockResolvedValue(updatedUser);
+    const mockCreateNotification = jest.fn<any>().mockResolvedValue(undefined);
+
+    jest.doMock('../services/notificationService', () => ({
+      __esModule: true,
+      default: {
+        createNotification: mockCreateNotification,
+      },
+    }));
+
+    jest.doMock('@prisma/client', () => ({
+      PrismaClient: jest.fn(() => ({
+        user: {
+          findUnique: mockFindUnique,
+          update: mockUpdate,
+        },
+        $transaction: jest.fn(async (callback: any) => callback({
+          user: {
+            update: mockUpdate,
+          },
+          notification: {
+            create: mockCreateNotification,
+          },
+        })),
+      })),
+      NotificationType: {
+        PROFILE_UPDATED: 'PROFILE_UPDATED',
+      },
+    }));
+
+    const userService = await import('../services/userServices');
+    const result = await userService.default.changeUsername(2, 2, 'newname');
+
+    expect(mockFindUnique).toHaveBeenCalledTimes(1);
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: 2 },
+      data: { username: 'newname' },
+    });
+    expect(mockCreateNotification).toHaveBeenCalledWith(
+      2,
+      'PROFILE_UPDATED',
+      { username: 'newname', updatedBy: 2 },
+      expect.any(Object)
+    );
+    expect(result.username).toBe('newname');
+
+    jest.dontMock('../services/notificationService');
+    jest.dontMock('@prisma/client');
+  });
+
+  test('changeUsername allows admin to update another username', async () => {
+    const requestingUser = { id: 1, role: 'ADMIN' };
+    const targetUser = { id: 2, username: 'oldname' };
+    const updatedUser = { id: 2, username: 'newname' } as unknown as User;
+
+    const mockFindUnique = jest
+      .fn<any>()
+      .mockResolvedValueOnce(requestingUser)
+      .mockResolvedValueOnce(targetUser);
+    const mockUpdate = jest.fn<any>().mockResolvedValue(updatedUser);
+    const mockCreateNotification = jest.fn<any>().mockResolvedValue(undefined);
+
+    jest.doMock('../services/notificationService', () => ({
+      __esModule: true,
+      default: {
+        createNotification: mockCreateNotification,
+      },
+    }));
+
+    jest.doMock('@prisma/client', () => ({
+      PrismaClient: jest.fn(() => ({
+        user: {
+          findUnique: mockFindUnique,
+          update: mockUpdate,
+        },
+        $transaction: jest.fn(async (callback: any) => callback({
+          user: {
+            update: mockUpdate,
+          },
+          notification: {
+            create: mockCreateNotification,
+          },
+        })),
+      })),
+      NotificationType: {
+        PROFILE_UPDATED: 'PROFILE_UPDATED',
+      },
+    }));
+
+    const userService = await import('../services/userServices');
+    const result = await userService.default.changeUsername(1, 2, 'newname');
+
+    expect(mockFindUnique).toHaveBeenCalledTimes(2);
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: 2 },
+      data: { username: 'newname' },
+    });
+    expect(mockCreateNotification).toHaveBeenCalledWith(
+      2,
+      'PROFILE_UPDATED',
+      { username: 'newname', updatedBy: 1 },
+      expect.any(Object)
+    );
+    expect(result.username).toBe('newname');
+
+    jest.dontMock('../services/notificationService');
+    jest.dontMock('@prisma/client');
+  });
+
+  test('changeUsername throws when requester lacks permission', async () => {
+    const requestingUser = { id: 1, role: 'CLIENT' };
+
+    const mockFindUnique = jest.fn<any>().mockResolvedValue(requestingUser);
+    const mockCreateNotification = jest.fn<any>();
+
+    jest.doMock('../services/notificationService', () => ({
+      __esModule: true,
+      default: {
+        createNotification: mockCreateNotification,
+      },
+    }));
+
+    jest.doMock('@prisma/client', () => ({
+      PrismaClient: jest.fn(() => ({
+        user: {
+          findUnique: mockFindUnique,
+        },
+        $transaction: jest.fn(async (callback: any) => callback({
+          user: {
+            update: jest.fn(),
+          },
+          notification: {
+            create: mockCreateNotification,
+          },
+        })),
+      })),
+      NotificationType: {
+        PROFILE_UPDATED: 'PROFILE_UPDATED',
+      },
+    }));
+
+    const userService = await import('../services/userServices');
+
+    await expect(userService.default.changeUsername(1, 2, 'newname')).rejects.toThrow();
+
+    jest.dontMock('../services/notificationService');
     jest.dontMock('@prisma/client');
   });
 

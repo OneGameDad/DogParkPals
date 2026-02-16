@@ -3,6 +3,8 @@ export const es = {
     welcome: "Hola a Dog Tinder",
     home: "Spanish Home",
     login: "Spanish Login",
+    navlogout: "Spanish Logout",
+    navregister: "Spanish Register",
     dashboard: "Spanish Dashboard",
     settings: "Spanish Settings",
     exampleData: "Spanish Example Data",

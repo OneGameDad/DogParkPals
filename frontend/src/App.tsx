@@ -22,8 +22,13 @@ function App() {
   return (
     <BrowserRouter>
       <Toaster position="top-right" />
-      <div className="flex flex-col min-h-screen bg-cover bg-center bg-fixed"
-        style={{ backgroundImage: "url('/imgs/background.png')" }}>
+      <div className="flex flex-col min-h-screen"
+        style={{
+          backgroundImage: "url(/imgs/background.png)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed"
+        }}>
         <Navbar />
         {/* The Router Switch */}
         <div className="flex-grow p-8">

@@ -24,12 +24,12 @@ const Navbar = () => {
                     <Link to="/social" className="text-gray-600 hover:underline font-medium">{t('social.title', 'Social')}</Link>
                     <Link to="/profile" className="text-gray-600 hover:underline font-medium">{t('profile.title')}</Link>
                     <Link to="/settings" className="text-gray-600 hover:underline font-medium">{t('settings')}</Link>
-                    <Link to="/logout" className="text-gray-600 hover:underline font-medium">{t('logout')}</Link>
+                    <Link to="/logout" className="text-gray-600 hover:underline font-medium">{t('navlogout')}</Link>
                 </>
             ) : (
                 <>
                     <Link to="/login" className="text-gray-600 hover:underline font-medium">{t('login')}</Link>
-                    <Link to="/register" className="text-gray-600 hover:underline font-medium">{t('register')}</Link>
+                    <Link to="/register" className="text-gray-600 hover:underline font-medium">{t('navregister')}</Link>
                 </>
             )}
         </nav>

@@ -12,6 +12,12 @@ describe('Friend Service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.resetModules();
+    jest.doMock('../services/notificationService', () => ({
+      __esModule: true,
+      default: {
+        createNotification: jest.fn(),
+      },
+    }));
   });
 
   describe('sendFriendRequest', () => {

@@ -34,7 +34,12 @@ export const es = {
       messageReceived: 'You received a message from {name} in Spanish',
       eventCreated: '{name} created a new event in Spanish',
       parkAdded: 'Park "{parkName}" was added in Spanish',
-      friendAccepted: 'You and {name} are now friends in Spanish'
+      friendAccepted: 'You and {name} are now friends in Spanish',
+      dogOwnershipAdded: 'You were added as an owner of "{dogName}" in Spanish',
+      organizationJoinApproved: 'You were approved to join "{organizationName}" in Spanish',
+      organizationRoleUpdated: 'Your role in "{organizationName}" is now {role} in Spanish',
+      eventCreatedAtFavoritePark: 'A new event was created at "{parkName}" in Spanish',
+      eventCreatedByOrganization: 'A new event was created by "{organizationName}" in Spanish'
     },
     auth: {
       login: {

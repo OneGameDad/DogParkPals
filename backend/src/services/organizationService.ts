@@ -1,6 +1,7 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma, NotificationType } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
+import notificationService from './notificationService';
 import {
   createOrganizationSchema,
   updateOrganizationSchema,
@@ -157,6 +158,14 @@ const organizationService = {
           role: validated.role,
         },
       });
+      await notificationService.createNotification(
+        validated.userId,
+        NotificationType.ORGANIZATION_JOIN_APPROVED,
+        {
+          organizationId: validated.organizationId,
+          role: validated.role,
+        }
+      );
       typeSafeLogger.logUserAction('Member added to organization successfully', { organizationId, userId, role });
       return member;
     } catch (error) {
@@ -207,6 +216,14 @@ const organizationService = {
           role: validated.role,
         },
       });
+      await notificationService.createNotification(
+        validated.userId,
+        NotificationType.ORGANIZATION_ROLE_UPDATED,
+        {
+          organizationId: validated.organizationId,
+          role: validated.role,
+        }
+      );
       typeSafeLogger.logUserAction('Member role updated successfully', { organizationId, userId, role });
       return updatedMember;
     } catch (error) {

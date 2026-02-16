@@ -35,6 +35,10 @@ jest.mock('@prisma/client', () => {
     Prisma: {
       PrismaClientKnownRequestError: mockPrismaClientKnownRequestError,
     },
+    NotificationType: {
+      ORGANIZATION_JOIN_APPROVED: 'ORGANIZATION_JOIN_APPROVED',
+      ORGANIZATION_ROLE_UPDATED: 'ORGANIZATION_ROLE_UPDATED',
+    },
   };
 });
 
@@ -79,6 +83,13 @@ jest.mock('../utils/validationSchemas', () => ({
   },
   isMemberSchema: {
     parse: jest.fn((data) => data),
+  },
+}));
+
+jest.mock('../services/notificationService', () => ({
+  __esModule: true,
+  default: {
+    createNotification: jest.fn(),
   },
 }));
 

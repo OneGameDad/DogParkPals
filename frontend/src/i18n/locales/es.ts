@@ -36,6 +36,7 @@ export const es = {
       parkAdded: 'Park "{parkName}" was added in Spanish',
       friendAccepted: 'You and {name} are now friends in Spanish',
       dogOwnershipAdded: 'You were added as an owner of "{dogName}" in Spanish',
+      organizationJoinRequest: '"{name}" requested to join "{organizationName}" in Spanish',
       organizationJoinApproved: 'You were approved to join "{organizationName}" in Spanish',
       organizationRoleUpdated: 'Your role in "{organizationName}" is now {role} in Spanish',
       eventCreatedAtFavoritePark: 'A new event was created at "{parkName}" in Spanish',

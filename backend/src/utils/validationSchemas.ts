@@ -65,6 +65,13 @@ export const resetUserPasswordSchema = z.object({
 
 export type ResetUserPasswordRequest = z.infer<typeof resetUserPasswordSchema>;
 
+export const changeUserRoleSchema = z.object({
+  userId: z.coerce.number().int().positive('User ID must be a positive integer'),
+  role: z.enum(['CLIENT', 'DEVELOPER', 'ADMIN'], 'Invalid role specified'),
+});
+
+export type ChangeUserRoleRequest = z.infer<typeof changeUserRoleSchema>;
+
 export const updateUserProfileSchema = z
   .object({
     first_name: z.string().min(1, 'First name is required').nullable().optional(),

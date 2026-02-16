@@ -1,8 +1,8 @@
 import 'dotenv/config';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserRole } from '@prisma/client';
 import { hashPassword, verifyPassword } from '../utils/password';
 import typeSafeLogger from '../utils/typeSafeLogger';
-import { AuthError, NotFoundError, toAppError } from '../utils/errors';
+import { AuthError, ForbiddenError, NotFoundError, toAppError } from '../utils/errors';
 import path from 'path';
 import fs from "fs";
 
@@ -212,6 +212,44 @@ const userService = {
         code: 'FETCH_USER_FAILED',
       });
       typeSafeLogger.logError('Failed to list users', appError, { page, pageSize });
+      throw appError;
+    }
+  },
+
+  async changeUserRole(adminUserId: number, targetUserId: number, role: UserRole) {
+    typeSafeLogger.logUserAction('Changing user role', { adminUserId, targetUserId, role });
+    try {
+      const adminUser = await prisma.user.findUnique({
+        where: { id: adminUserId },
+        select: { id: true, role: true },
+      });
+      if (!adminUser) {
+        throw NotFoundError('Admin user not found');
+      }
+      if (adminUser.role !== 'ADMIN') {
+        throw ForbiddenError('Admin role required');
+      }
+
+      const targetUser = await prisma.user.findUnique({
+        where: { id: targetUserId },
+        select: { id: true },
+      });
+      if (!targetUser) {
+        throw NotFoundError('User not found');
+      }
+
+      const updatedUser = await prisma.user.update({
+        where: { id: targetUserId },
+        data: { role },
+      });
+      typeSafeLogger.logUserAction('User role updated', { adminUserId, targetUserId, role });
+      return updatedUser;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to change user role',
+        code: 'CHANGE_USER_ROLE_FAILED',
+      });
+      typeSafeLogger.logError('Failed to change user role', appError, { adminUserId, targetUserId, role });
       throw appError;
     }
   },

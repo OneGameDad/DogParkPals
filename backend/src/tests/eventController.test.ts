@@ -158,6 +158,7 @@ describe('Event Controller', () => {
         1,
         123,
         false,
+        undefined,
       );
       expect(awardExperience).toHaveBeenCalledWith(123, XP_REWARDS.CREATE_EVENT, 'create_event');
       expect(res.status).toHaveBeenCalledWith(201);
@@ -196,6 +197,7 @@ describe('Event Controller', () => {
         1,
         123,
         true,
+        undefined,
       );
       expect(awardExperience).toHaveBeenCalledWith(123, XP_REWARDS.CREATE_EVENT, 'create_event');
       expect(res.status).toHaveBeenCalledWith(201);

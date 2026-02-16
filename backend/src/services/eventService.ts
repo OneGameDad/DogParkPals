@@ -1,6 +1,8 @@
 import { PrismaClient, Prisma } from '@prisma/client';
+import type { NotificationType } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
+import notificationService from './notificationService';
 import {
   createEventSchema,
   updateEventSchema,
@@ -22,7 +24,8 @@ const eventService = {
     endTime: Date,
     parkId: number,
     organizerId: number,
-    isPrivate?: boolean
+    isPrivate?: boolean,
+    organizationId?: number
   ) {
     typeSafeLogger.logUserAction('Creating event', { title, organizerId });
     try {
@@ -34,6 +37,7 @@ const eventService = {
         endTime,
         parkId, 
         organizerId, 
+        organizationId,
         private: isPrivate ? 'PRIVATE' : 'PUBLIC'
       });
       const newEvent = await prisma.event.create({
@@ -45,8 +49,29 @@ const eventService = {
           endTime: validated.endTime,
           parkId: validated.parkId,
           organizerId: validated.organizerId,
+          organizationId: validated.organizationId,
           private: validated.private,
         },
+      });
+      const favoriteUsers = await prisma.userFavoritePark.findMany({
+        where: { parkId: newEvent.parkId },
+        select: { userId: true },
+      });
+      const orgMembers = newEvent.organizationId
+        ? await prisma.organizationMember.findMany({
+            where: { organizationId: newEvent.organizationId },
+            select: { userId: true },
+          })
+        : [];
+      const recipientIds = [
+        ...favoriteUsers.map((favorite) => favorite.userId),
+        ...orgMembers.map((member) => member.userId),
+      ].filter((userId) => userId !== newEvent.organizerId);
+      await notificationService.createNotifications(recipientIds, 'EVENT_CREATED' as NotificationType, {
+        eventId: newEvent.id,
+        parkId: newEvent.parkId,
+        organizationId: newEvent.organizationId,
+        title: newEvent.title,
       });
       typeSafeLogger.logUserAction('Event created successfully', { eventId: newEvent.id, title });
       return newEvent;
@@ -164,7 +189,7 @@ const eventService = {
     try {
       const validated = getEventsByOrganizationSchema.parse({ organizationId });
       const events = await prisma.event.findMany({
-        where: { organizerId: validated.organizationId },
+        where: { organizationId: validated.organizationId },
       });
       typeSafeLogger.logUserAction('Events fetched by organization', { organizationId, eventCount: events.length });
       return events;

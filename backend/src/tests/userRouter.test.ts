@@ -12,6 +12,7 @@ const mockGetUserByUsername = jest.fn() as any;
 const mockGetAllUsers = jest.fn() as any;
 const mockDeleteUser = jest.fn() as any;
 const mockChangePassword = jest.fn() as any;
+const mockChangeUserRole = jest.fn() as any;
 const mockUploadProfilePicture = jest.fn() as any;
 const mockDeleteProfilePicture = jest.fn() as any;
 const mockRecordHeartbeat = jest.fn() as any;
@@ -28,6 +29,7 @@ jest.mock('../controllers/userController', () => ({
     getAllUsers: mockGetAllUsers,
     deleteUser: mockDeleteUser,
     changePassword: mockChangePassword,
+    changeUserRole: mockChangeUserRole,
     uploadProfilePicture: mockUploadProfilePicture,
     deleteProfilePicture: mockDeleteProfilePicture,
     recordHeartbeat: mockRecordHeartbeat,
@@ -40,8 +42,14 @@ jest.mock('../middlewares/authMiddleware', () => ({
   __esModule: true,
   requireAuth: (req: Request, res: Response, next: NextFunction) => {
     (req as any).userId = 1;
+    (req as any).user = { id: 1, role: 'ADMIN' };
     next();
   },
+}));
+
+jest.mock('../middlewares/authorizationMiddleware', () => ({
+  __esModule: true,
+  requireRole: () => (_req: Request, _res: Response, next: NextFunction) => next(),
 }));
 
 jest.mock('../middlewares/uploadMiddleware', () => ({
@@ -362,6 +370,21 @@ describe('User Router', () => {
         .send({ oldPassword: 'oldpass123', newPassword: 'newpass123' });
 
       expect(mockChangePassword).toHaveBeenCalled();
+      expect(response.status).toBe(200);
+    });
+  });
+
+  describe('PATCH /role', () => {
+    test('calls changeUserRole controller', async () => {
+      mockChangeUserRole.mockImplementation((_req: Request, res: Response) => {
+        res.status(200).json({ id: 2, role: 'ADMIN' });
+      });
+
+      const response = await request(app)
+        .patch('/role')
+        .send({ userId: 2, role: 'ADMIN' });
+
+      expect(mockChangeUserRole).toHaveBeenCalled();
       expect(response.status).toBe(200);
     });
   });

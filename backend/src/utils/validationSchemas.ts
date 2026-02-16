@@ -378,6 +378,7 @@ export const createEventSchema = z.object({
   startTime: z.coerce.date().refine((date) => date > new Date(), 'Event start time must be in the future'),
   endTime: z.coerce.date(),
   parkId: z.number().int().positive('Park ID must be a positive integer'),
+  organizationId: z.number().int().positive('Organization ID must be a positive integer').optional(),
   organizerId: z.number().int().positive('Organizer ID must be a positive integer'),
   private: z.enum(['PUBLIC', 'PRIVATE']).default('PUBLIC').optional(),
 }).refine((data) => data.endTime.getTime() - data.startTime.getTime() >= 30 * 60 * 1000, {

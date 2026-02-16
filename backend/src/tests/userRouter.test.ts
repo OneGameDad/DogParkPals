@@ -12,6 +12,7 @@ const mockGetUserByUsername = jest.fn() as any;
 const mockGetAllUsers = jest.fn() as any;
 const mockDeleteUser = jest.fn() as any;
 const mockChangePassword = jest.fn() as any;
+const mockChangeUsername = jest.fn() as any;
 const mockChangeUserRole = jest.fn() as any;
 const mockUploadProfilePicture = jest.fn() as any;
 const mockDeleteProfilePicture = jest.fn() as any;
@@ -29,6 +30,7 @@ jest.mock('../controllers/userController', () => ({
     getAllUsers: mockGetAllUsers,
     deleteUser: mockDeleteUser,
     changePassword: mockChangePassword,
+    changeUsername: mockChangeUsername,
     changeUserRole: mockChangeUserRole,
     uploadProfilePicture: mockUploadProfilePicture,
     deleteProfilePicture: mockDeleteProfilePicture,
@@ -370,6 +372,21 @@ describe('User Router', () => {
         .send({ oldPassword: 'oldpass123', newPassword: 'newpass123' });
 
       expect(mockChangePassword).toHaveBeenCalled();
+      expect(response.status).toBe(200);
+    });
+  });
+
+  describe('POST /change-username', () => {
+    test('calls changeUsername controller', async () => {
+      mockChangeUsername.mockImplementation((_req: Request, res: Response) => {
+        res.status(200).json({ id: 1, username: 'newname' });
+      });
+
+      const response = await request(app)
+        .post('/change-username')
+        .send({ newUsername: 'newname' });
+
+      expect(mockChangeUsername).toHaveBeenCalled();
       expect(response.status).toBe(200);
     });
   });

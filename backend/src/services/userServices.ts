@@ -264,6 +264,68 @@ const userService = {
     }
   },
 
+  async changeUsername(requestingUserId: number, targetUserId: number, newUsername: string) {
+    typeSafeLogger.logUserAction('Changing username', { requestingUserId, targetUserId, newUsername });
+    try {
+      if (requestingUserId !== targetUserId) {
+        const requestingUser = await prisma.user.findUnique({
+          where: { id: requestingUserId },
+          select: { id: true, role: true },
+        });
+        if (!requestingUser) {
+          throw NotFoundError('Requesting user not found');
+        }
+        if (requestingUser.role !== 'ADMIN' && requestingUser.role !== 'DEVELOPER') {
+          throw ForbiddenError('Admin or developer role required');
+        }
+      }
+
+      const targetUser = await prisma.user.findUnique({
+        where: { id: targetUserId },
+        select: { id: true, username: true },
+      });
+      if (!targetUser) {
+        throw NotFoundError('User not found');
+      }
+
+      const updatedUser = await prisma.$transaction(async (tx) => {
+        const user = await tx.user.update({
+          where: { id: targetUserId },
+          data: { username: newUsername },
+        });
+        await notificationService.createNotification(
+          targetUserId,
+          NotificationType.PROFILE_UPDATED,
+          {
+            username: newUsername,
+            updatedBy: requestingUserId,
+          },
+          tx
+        );
+        return user;
+      });
+
+      typeSafeLogger.logUserAction('Username changed', {
+        requestingUserId,
+        targetUserId,
+        previousUsername: targetUser.username,
+        newUsername,
+      });
+      return updatedUser;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to change username',
+        code: 'CHANGE_USERNAME_FAILED',
+      });
+      typeSafeLogger.logError('Failed to change username', appError, {
+        requestingUserId,
+        targetUserId,
+        newUsername,
+      });
+      throw appError;
+    }
+  },
+
   async deleteUser(id: number) {
     typeSafeLogger.logUserAction('Deleting user', { id });
     try {
@@ -352,9 +414,18 @@ const userService = {
     if (updates.longitude !== undefined) data.longitude = updates.longitude;
 
     try {
-      const updatedUser = await prisma.user.update({
-        where: { id: userId },
-        data,
+      const updatedUser = await prisma.$transaction(async (tx) => {
+        const user = await tx.user.update({
+          where: { id: userId },
+          data,
+        });
+        await notificationService.createNotification(
+          userId,
+          NotificationType.PROFILE_UPDATED,
+          { fields: Object.keys(data) },
+          tx
+        );
+        return user;
       });
 
       typeSafeLogger.logUserAction('User profile updated', { userId, fields: Object.keys(data) });

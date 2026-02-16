@@ -92,6 +92,13 @@ export const updateUserProfileSchema = z
 
 export type UpdateUserProfileRequest = z.infer<typeof updateUserProfileSchema>;
 
+export const changeUsernameSchema = z.object({
+  newUsername: z.string().min(1, 'Username is required').min(3, 'Username must be at least 3 characters'),
+  userId: z.coerce.number().int().positive('User ID must be a positive integer').optional(),
+});
+
+export type ChangeUsernameRequest = z.infer<typeof changeUsernameSchema>;
+
 export const createParkSchema = z.object({
   name: z.string().min(1, 'Park name is required'),
   latitude: z.number().min(-90, 'Latitude must be between -90 and 90').max(90, 'Latitude must be between -90 and 90'),

@@ -15,6 +15,7 @@ router.post("/presence/heartbeat", requireAuth, (req, res, next) => userControll
 router.get("/presence", requireAuth, (req, res, next) => userController.getUserPresence(req, res, next));
 router.get("/presence/:id", requireAuth, (req, res, next) => userController.getUserPresence(req, res, next));
 router.patch("/profile", requireAuth, (req, res, next) => userController.updateProfile(req, res, next));
+router.post("/change-username", requireAuth, (req, res, next) => userController.changeUsername(req, res, next));
 router.post("/change-password", requireAuth, (req, res, next) => userController.changePassword(req, res, next));
 router.post("/reset-password", requireAuth, (req, res, next) => userController.resetUserPassword(req, res, next));
 router.patch("/role", requireAuth, requireRole('ADMIN'), (req, res, next) => userController.changeUserRole(req, res, next));

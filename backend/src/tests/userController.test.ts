@@ -12,6 +12,7 @@ const mockListUsers = jest.fn<any>();
 const mockDeleteUser = jest.fn<any>();
 const mockChangePassword = jest.fn<any>();
 const mockChangeUserRole = jest.fn<any>();
+const mockChangeUsername = jest.fn<any>();
 const mockResetUserPassword = jest.fn<any>();
 const mockUploadProfilePicture = jest.fn<any>();
 const mockDeleteProfilePicture = jest.fn<any>();
@@ -30,6 +31,7 @@ jest.mock('../services/userServices', () => ({
     deleteUser: mockDeleteUser,
     changePassword: mockChangePassword,
     changeUserRole: mockChangeUserRole,
+    changeUsername: mockChangeUsername,
     resetUserPassword: mockResetUserPassword,
     uploadProfilePicture: mockUploadProfilePicture,
     deleteProfilePicture: mockDeleteProfilePicture,
@@ -280,6 +282,100 @@ describe('User Controller', () => {
       expect(forwardedError.statusCode).toBe(500);
       expect(forwardedError.code).toBe('INTERNAL_ERROR');
       expect(forwardedError.message).toBe('Failed to change user role');
+    });
+  });
+
+  describe('changeUsername', () => {
+    test('forwards forbidden error when unauthenticated', async () => {
+      mockReq.body = { newUsername: 'newname' };
+      (mockReq as any).userId = undefined;
+
+      await userController.changeUsername(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError).toBeInstanceOf(AppError);
+      expect(forwardedError.statusCode).toBe(403);
+      expect(mockChangeUsername).not.toHaveBeenCalled();
+    });
+
+    test('forwards conflict error when username already exists', async () => {
+      mockReq.body = { newUsername: 'taken' };
+      (mockReq as any).userId = 10;
+
+      const existingUser = { id: 11, username: 'taken' } as unknown as User;
+      mockGetUserByUsername.mockResolvedValue(existingUser);
+
+      await userController.changeUsername(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockGetUserByUsername).toHaveBeenCalledWith('taken');
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError).toBeInstanceOf(AppError);
+      expect(forwardedError.statusCode).toBe(409);
+      expect(forwardedError.code).toBe('CONFLICT');
+      expect(mockChangeUsername).not.toHaveBeenCalled();
+    });
+
+    test('updates own username when available', async () => {
+      mockReq.body = { newUsername: 'newname' };
+      (mockReq as any).userId = 10;
+
+      mockGetUserByUsername.mockResolvedValue(null);
+      const updatedUser = { id: 10, username: 'newname', email: 'user@example.com' } as unknown as User;
+      mockChangeUsername.mockResolvedValue(updatedUser);
+
+      await userController.changeUsername(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockChangeUsername).toHaveBeenCalledWith(10, 10, 'newname');
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      const responseCall = mockJson.mock.calls[0][0] as any;
+      expect(responseCall).not.toHaveProperty('password_hash');
+      expect(responseCall.username).toBe('newname');
+    });
+
+    test('allows admin to update another username', async () => {
+      mockReq.body = { newUsername: 'newname', userId: 22 };
+      (mockReq as any).userId = 1;
+      (mockReq as any).user = { id: 1, role: 'ADMIN' };
+
+      mockGetUserByUsername.mockResolvedValue(null);
+      const updatedUser = { id: 22, username: 'newname', email: 'target@example.com' } as unknown as User;
+      mockChangeUsername.mockResolvedValue(updatedUser);
+
+      await userController.changeUsername(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockChangeUsername).toHaveBeenCalledWith(1, 22, 'newname');
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      const responseCall = mockJson.mock.calls[0][0] as any;
+      expect(responseCall.username).toBe('newname');
+    });
+
+    test('forwards forbidden error when non-admin targets another user', async () => {
+      mockReq.body = { newUsername: 'newname', userId: 22 };
+      (mockReq as any).userId = 1;
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+
+      await userController.changeUsername(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError).toBeInstanceOf(AppError);
+      expect(forwardedError.statusCode).toBe(403);
+      expect(mockChangeUsername).not.toHaveBeenCalled();
+    });
+
+    test('forwards 500 error when service throws', async () => {
+      mockReq.body = { newUsername: 'newname' };
+      (mockReq as any).userId = 10;
+
+      mockGetUserByUsername.mockResolvedValue(null);
+      mockChangeUsername.mockRejectedValue(new Error('Database error'));
+
+      await userController.changeUsername(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError).toBeInstanceOf(AppError);
+      expect(forwardedError.statusCode).toBe(500);
+      expect(forwardedError.code).toBe('INTERNAL_ERROR');
+      expect(forwardedError.message).toBe('Failed to change username');
     });
   });
 

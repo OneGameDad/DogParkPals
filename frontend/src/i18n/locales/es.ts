@@ -40,6 +40,7 @@ export const es = {
       organizationJoinApproved: 'You were approved to join "{organizationName}" in Spanish',
       organizationRoleUpdated: 'Your role in "{organizationName}" is now {role} in Spanish',
       userRoleUpdated: 'Your account role is now {role} in Spanish',
+      PROFILE_UPDATED: 'Your profile was updated in Spanish',
       eventCreatedAtFavoritePark: 'A new event was created at "{parkName}" in Spanish',
       eventCreatedByOrganization: 'A new event was created by "{organizationName}" in Spanish'
     },

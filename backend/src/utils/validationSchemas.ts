@@ -168,6 +168,13 @@ export const updateMemberRoleSchema = z.object({
 
 export type UpdateMemberRoleRequest = z.infer<typeof updateMemberRoleSchema>;
 
+export const joinOrganizationSchema = z.object({
+  organizationId: z.number().int().positive('Organization ID must be a positive integer'),
+  userId: z.number().int().positive('User ID must be a positive integer'),
+});
+
+export type JoinOrganizationRequest = z.infer<typeof joinOrganizationSchema>;
+
 export const getMemberSchema = z.object({
   organizationId: z.number().int().positive('Organization ID must be a positive integer'),
   userId: z.number().int().positive('User ID must be a positive integer'),

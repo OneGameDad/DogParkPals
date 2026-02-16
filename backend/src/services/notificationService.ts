@@ -124,16 +124,14 @@ const notificationService = {
       async createNotifications(
       userIds: number[],
       type: NotificationType,
-      payload: object,
-      tx?: PrismaClientOrTx
+      payload: object
     ) {
       try {
-        const client = getClient(tx);
         const uniqueIds = Array.from(new Set(userIds)).filter((id) => Number.isFinite(id));
         if (uniqueIds.length === 0) {
           return 0;
         }
-        await client.notification.createMany({
+        await prisma.notification.createMany({
           data: uniqueIds.map((userId) => ({
             userId,
             type,

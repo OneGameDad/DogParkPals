@@ -41,6 +41,7 @@ export const en = {
       organizationJoinRequest: '"{name}" requested to join "{organizationName}"',
       organizationJoinApproved: 'You were approved to join "{organizationName}"',
       organizationRoleUpdated: 'Your role in "{organizationName}" is now {role}',
+      userRoleUpdated: 'Your account role is now {role}',
       eventCreatedAtFavoritePark: 'A new event was created at "{parkName}"',
       eventCreatedByOrganization: 'A new event was created by "{organizationName}"'
     },

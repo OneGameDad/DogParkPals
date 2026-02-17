@@ -1,9 +1,10 @@
 import { Prisma, PrismaClient } from '@prisma/client';
-import type { NotificationType } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
 import { createFriendRequestSchema, removeFriendSchema, friendshipIdSchema, getFriendsSchema } from '../utils/validationSchemas';
-import notificationService from './notificationService';
+import { createDomainEvent } from '../events/createDomainEvent';
+import { EventTypes } from '../events/eventTypes';
+import { addOutboxEvent } from '../infrastructure/outbox/outboxRepository';
 
 const prisma = new PrismaClient();
 
@@ -31,25 +32,47 @@ const friendService = {
       const involvingDogs = validatedData.requesterDogId || validatedData.addresseeDogId;
       const status = involvingDogs ? 'ACCEPTED' : 'PENDING';
 
-      const friendRequest = await prisma.friendship.create({
-        data: {
-          requesterId: validatedData.requesterId || null,
-          addresseeId: validatedData.addresseeId || null,
-          requesterDogId: validatedData.requesterDogId || null,
-          addresseeDogId: validatedData.addresseeDogId || null,
-          status,
-        },
+      const friendRequest = await prisma.$transaction(async (tx) => {
+        const createdRequest = await tx.friendship.create({
+          data: {
+            requesterId: validatedData.requesterId || null,
+            addresseeId: validatedData.addresseeId || null,
+            requesterDogId: validatedData.requesterDogId || null,
+            addresseeDogId: validatedData.addresseeDogId || null,
+            status,
+          },
+        });
+
+        if (createdRequest.status === 'PENDING' && createdRequest.addresseeId) {
+          const domainEvent = createDomainEvent(
+            EventTypes.FriendRequestSent,
+            {
+              friendshipId: createdRequest.id,
+              requesterId: createdRequest.requesterId,
+              addresseeId: createdRequest.addresseeId,
+              requesterDogId: createdRequest.requesterDogId,
+              addresseeDogId: createdRequest.addresseeDogId,
+            },
+            { actorId: createdRequest.requesterId ?? undefined }
+          );
+          await addOutboxEvent(tx, domainEvent);
+        }
+
+        if (createdRequest.status === 'ACCEPTED') {
+          const domainEvent = createDomainEvent(
+            EventTypes.FriendRequestAccepted,
+            {
+              friendshipId: createdRequest.id,
+              requesterId: createdRequest.requesterId,
+              addresseeId: createdRequest.addresseeId,
+            },
+            { actorId: createdRequest.addresseeId ?? undefined }
+          );
+          await addOutboxEvent(tx, domainEvent);
+        }
+
+        return createdRequest;
       });
-      if (friendRequest.status === 'PENDING' && friendRequest.addresseeId) {
-        await notificationService.createNotification(
-          friendRequest.addresseeId,
-          'FRIENDSHIP_REQUEST' as NotificationType,
-          {
-            friendshipId: friendRequest.id,
-            requesterId: friendRequest.requesterId,
-          }
-        );
-      }
       typeSafeLogger.logUserAction('Friend request sent successfully', { 
         requesterId, 
         addresseeId, 
@@ -79,20 +102,27 @@ const friendService = {
       // Validate input data
       const validatedData = friendshipIdSchema.parse({ friendshipId });
 
-      const updatedRequest = await prisma.friendship.update({
-        where: { id: validatedData.friendshipId },
-        data: { status: 'ACCEPTED' },
+      const updatedRequest = await prisma.$transaction(async (tx) => {
+        const request = await tx.friendship.update({
+          where: { id: validatedData.friendshipId },
+          data: { status: 'ACCEPTED' },
+        });
+
+        if (request.requesterId) {
+          const domainEvent = createDomainEvent(
+            EventTypes.FriendRequestAccepted,
+            {
+              friendshipId: request.id,
+              requesterId: request.requesterId,
+              addresseeId: request.addresseeId,
+            },
+            { actorId: request.addresseeId ?? undefined }
+          );
+          await addOutboxEvent(tx, domainEvent);
+        }
+
+        return request;
       });
-      if (updatedRequest.requesterId) {
-        await notificationService.createNotification(
-          updatedRequest.requesterId,
-          'FRIENDSHIP_ACCEPTED' as NotificationType,
-          {
-            friendshipId: updatedRequest.id,
-            addresseeId: updatedRequest.addresseeId,
-          }
-        );
-      }
       typeSafeLogger.logUserAction('Friend request accepted', { friendshipId });
       return updatedRequest;
     } catch (error) {
@@ -195,10 +225,41 @@ const friendService = {
         );
       }
 
-      const deletedFriendship = await prisma.friendship.deleteMany({
-        where: {
-          OR: orFilters,
-        },
+      const deletedFriendship = await prisma.$transaction(async (tx) => {
+        const friendships = await tx.friendship.findMany({
+          where: {
+            OR: orFilters,
+          },
+          select: {
+            requesterId: true,
+            addresseeId: true,
+            requesterDogId: true,
+            addresseeDogId: true,
+          },
+        });
+
+        const deleted = await tx.friendship.deleteMany({
+          where: {
+            OR: orFilters,
+          },
+        });
+
+        for (const friendship of friendships) {
+          const domainEvent = createDomainEvent(
+            EventTypes.FriendRemoved,
+            {
+              userId: friendship.requesterId ?? null,
+              friendId: friendship.addresseeId ?? null,
+              dogId: friendship.requesterDogId ?? null,
+              friendDogId: friendship.addresseeDogId ?? null,
+              removedBy: validatedData.userId ?? undefined,
+            },
+            { actorId: validatedData.userId ?? undefined }
+          );
+          await addOutboxEvent(tx, domainEvent);
+        }
+
+        return deleted;
       });
       typeSafeLogger.logUserAction('Friend removed successfully', { userId, friendId, dogId, friendDogId });
       return deletedFriendship;

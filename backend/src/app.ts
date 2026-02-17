@@ -63,6 +63,11 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.get("/status", (_req, res) => {
+  typeSafeLogger.info("Status endpoint hit");
+  res.json({ status: "ok" });
+});
+
 // Generic API routes
 app.use("/api/dogs", dogRouter);
 app.use("/api/parks", parkRouter);

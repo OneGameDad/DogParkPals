@@ -1,9 +1,11 @@
 import 'dotenv/config';
-import { PrismaClient, UserRole, NotificationType } from '@prisma/client';
+import { PrismaClient, UserRole } from '@prisma/client';
 import { hashPassword, verifyPassword } from '../utils/password';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { AuthError, ForbiddenError, NotFoundError, toAppError } from '../utils/errors';
-import notificationService from './notificationService';
+import { createDomainEvent } from '../events/createDomainEvent';
+import { EventTypes } from '../events/eventTypes';
+import { addOutboxEvent } from '../infrastructure/outbox/outboxRepository';
 import path from 'path';
 import fs from "fs";
 
@@ -244,12 +246,16 @@ const userService = {
           where: { id: targetUserId },
           data: { role },
         });
-        await notificationService.createNotification(
-          targetUserId,
-          NotificationType.USER_ROLE_UPDATED,
-          { role },
-          tx
+        const domainEvent = createDomainEvent(
+          EventTypes.UserRoleUpdated,
+          {
+            targetUserId,
+            role,
+            adminUserId,
+          },
+          { actorId: adminUserId }
         );
+        await addOutboxEvent(tx, domainEvent);
         return user;
       });
       typeSafeLogger.logUserAction('User role updated', { adminUserId, targetUserId, role });
@@ -293,15 +299,17 @@ const userService = {
           where: { id: targetUserId },
           data: { username: newUsername },
         });
-        await notificationService.createNotification(
-          targetUserId,
-          NotificationType.PROFILE_UPDATED,
+        const domainEvent = createDomainEvent(
+          EventTypes.UserProfileUpdated,
           {
-            username: newUsername,
+            userId: targetUserId,
+            fields: ['username'],
             updatedBy: requestingUserId,
+            username: newUsername,
           },
-          tx
+          { actorId: requestingUserId }
         );
+        await addOutboxEvent(tx, domainEvent);
         return user;
       });
 
@@ -419,12 +427,15 @@ const userService = {
           where: { id: userId },
           data,
         });
-        await notificationService.createNotification(
-          userId,
-          NotificationType.PROFILE_UPDATED,
-          { fields: Object.keys(data) },
-          tx
+        const domainEvent = createDomainEvent(
+          EventTypes.UserProfileUpdated,
+          {
+            userId,
+            fields: Object.keys(data),
+          },
+          { actorId: userId }
         );
+        await addOutboxEvent(tx, domainEvent);
         return user;
       });
 
@@ -443,10 +454,22 @@ const userService = {
   async uploadProfilePicture(userId: number, filePath: string) {
     typeSafeLogger.logUserAction('Uploading profile picture', { userId, filePath });
     try {
-      const updatedUser = await prisma.user.update({
-        where: { id: userId },
-        data: { profilePictureUrl: filePath },
-        select: { profilePictureUrl: true },
+      const updatedUser = await prisma.$transaction(async (tx) => {
+        const user = await tx.user.update({
+          where: { id: userId },
+          data: { profilePictureUrl: filePath },
+          select: { profilePictureUrl: true },
+        });
+        const domainEvent = createDomainEvent(
+          EventTypes.UserProfilePictureUploaded,
+          {
+            userId,
+            profilePictureUrl: user.profilePictureUrl,
+          },
+          { actorId: userId }
+        );
+        await addOutboxEvent(tx, domainEvent);
+        return user;
       });
       typeSafeLogger.logUserAction('Profile picture uploaded', { userId, filePath });
       return updatedUser;
@@ -472,9 +495,22 @@ const userService = {
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
-      const updatedUser = await prisma.user.update({
-        where: { id: userId },
-        data: { profilePictureUrl: null },
+      const previousUrl = existingUser.profilePictureUrl;
+      const updatedUser = await prisma.$transaction(async (tx) => {
+        const user = await tx.user.update({
+          where: { id: userId },
+          data: { profilePictureUrl: null },
+        });
+        const domainEvent = createDomainEvent(
+          EventTypes.UserProfilePictureDeleted,
+          {
+            userId,
+            previousUrl,
+          },
+          { actorId: userId }
+        );
+        await addOutboxEvent(tx, domainEvent);
+        return user;
       });
       typeSafeLogger.logUserAction('Profile picture deleted', { userId });
       return updatedUser;

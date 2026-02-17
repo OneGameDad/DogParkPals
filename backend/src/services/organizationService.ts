@@ -1,7 +1,9 @@
-import { PrismaClient, Prisma, NotificationType } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
-import notificationService from './notificationService';
+import { createDomainEvent } from '../events/createDomainEvent';
+import { EventTypes } from '../events/eventTypes';
+import { addOutboxEvent } from '../infrastructure/outbox/outboxRepository';
 import {
   createOrganizationSchema,
   updateOrganizationSchema,
@@ -133,8 +135,21 @@ const organizationService = {
     const validated = getOrganizationByIdSchema.parse({ organizationId });
     typeSafeLogger.logUserAction('Deleting organization', { organizationId: validated.organizationId });
     try {
-      await prisma.organization.delete({
-        where: { id: validated.organizationId },
+      await prisma.$transaction(async (tx) => {
+        const members = await tx.organizationMember.findMany({
+          where: { organizationId: validated.organizationId },
+          select: { userId: true },
+        });
+
+        await tx.organization.delete({
+          where: { id: validated.organizationId },
+        });
+
+        const domainEvent = createDomainEvent(EventTypes.OrganizationDeleted, {
+          organizationId: validated.organizationId,
+          memberIds: members.map((member) => member.userId),
+        });
+        await addOutboxEvent(tx, domainEvent);
       });
       typeSafeLogger.logUserAction('Organization deleted successfully', { organizationId });
     } catch (error) {
@@ -161,40 +176,15 @@ const organizationService = {
           },
         });
 
-        const [org, privilegedMembers] = await Promise.all([
-          tx.organization.findUnique({
-            where: { id: validated.organizationId },
-            select: { ownerId: true },
-          }),
-          tx.organizationMember.findMany({
-            where: {
-              organizationId: validated.organizationId,
-              role: { in: ['OWNER', 'MODERATOR'] },
-            },
-            select: { userId: true },
-          }),
-        ]);
-
-        const recipientIds = new Set<number>();
-        privilegedMembers.forEach((member) => recipientIds.add(member.userId));
-        if (org?.ownerId) {
-          recipientIds.add(org.ownerId);
-        }
-        recipientIds.delete(validated.userId);
-
-        const recipients = Array.from(recipientIds);
-        if (recipients.length > 0) {
-          await tx.notification.createMany({
-            data: recipients.map((recipientId) => ({
-              userId: recipientId,
-              type: NotificationType.ORGANIZATION_JOIN_REQUEST,
-              payload: {
-                organizationId: validated.organizationId,
-                requesterId: validated.userId,
-              },
-            })),
-          });
-        }
+        const domainEvent = createDomainEvent(
+          EventTypes.OrganizationJoinRequested,
+          {
+            organizationId: validated.organizationId,
+            requesterId: validated.userId,
+          },
+          { actorId: validated.userId }
+        );
+        await addOutboxEvent(tx, domainEvent);
 
         return createdMember;
       });
@@ -223,15 +213,15 @@ const organizationService = {
             role: validated.role,
           },
         });
-        await notificationService.createNotification(
-          validated.userId,
-          NotificationType.ORGANIZATION_JOIN_APPROVED,
+        const domainEvent = createDomainEvent(
+          EventTypes.OrganizationJoinApproved,
           {
             organizationId: validated.organizationId,
+            userId: validated.userId,
             role: validated.role,
-          },
-          tx
+          }
         );
+        await addOutboxEvent(tx, domainEvent);
         return createdMember;
       });
       typeSafeLogger.logUserAction('Member added to organization successfully', { organizationId, userId, role });
@@ -250,13 +240,21 @@ const organizationService = {
     const validated = removeMemberSchema.parse({ organizationId, userId });
     typeSafeLogger.logUserAction('Removing member from organization', { organizationId: validated.organizationId, userId: validated.userId });
     try {
-      await prisma.organizationMember.delete({
-        where: {
-          userId_organizationId: {
-            userId: validated.userId,
-            organizationId: validated.organizationId,
+      await prisma.$transaction(async (tx) => {
+        await tx.organizationMember.delete({
+          where: {
+            userId_organizationId: {
+              userId: validated.userId,
+              organizationId: validated.organizationId,
+            },
           },
-        },
+        });
+
+        const domainEvent = createDomainEvent(EventTypes.OrganizationMemberRemoved, {
+          organizationId: validated.organizationId,
+          userId: validated.userId,
+        });
+        await addOutboxEvent(tx, domainEvent);
       });
       typeSafeLogger.logUserAction('Member removed from organization successfully', { organizationId, userId });
     } catch (error) {
@@ -284,14 +282,12 @@ const organizationService = {
           role: validated.role,
         },
       });
-      await notificationService.createNotification(
-        validated.userId,
-        NotificationType.ORGANIZATION_ROLE_UPDATED,
-        {
-          organizationId: validated.organizationId,
-          role: validated.role,
-        }
-      );
+      const domainEvent = createDomainEvent(EventTypes.OrganizationRoleUpdated, {
+        organizationId: validated.organizationId,
+        userId: validated.userId,
+        role: validated.role,
+      });
+      await addOutboxEvent(prisma, domainEvent);
       typeSafeLogger.logUserAction('Member role updated successfully', { organizationId, userId, role });
       return updatedMember;
     } catch (error) {

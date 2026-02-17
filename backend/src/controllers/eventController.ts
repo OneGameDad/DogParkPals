@@ -5,8 +5,7 @@ import { toAppError, ConflictError, NotFoundError, ForbiddenError, isAppError } 
 import { parseValidation } from "../utils/validator";
 import organizationService from "../services/organizationService";
 import type { Event } from "@prisma/client";
-import { awardAchievement, awardExperience, XP_REWARDS } from "../services/xpService";
-import { AchievementType } from "@prisma/client";
+import { awardExperience, XP_REWARDS } from "../services/xpService";
 import {
   createEventSchema,
   updateEventSchema,
@@ -298,7 +297,6 @@ const eventController = {
 
         typeSafeLogger.logUserAction("User attended event", { eventId, userId });
         await awardExperience(userId, XP_REWARDS.JOIN_EVENT, 'join_event');
-        await awardAchievement(userId, "Pup Pal", AchievementType.BADGE);
         res.status(200).json({ message: "Attended event successfully" });
         return;
       }
@@ -315,7 +313,6 @@ const eventController = {
 
       typeSafeLogger.logUserAction("User attended event", { eventId, userId });
       await awardExperience(userId, XP_REWARDS.JOIN_EVENT, 'join_event');
-      await awardAchievement(userId, "Pup Pal", AchievementType.BADGE);
       res.status(200).json({ message: "Attended event successfully" });
     } catch (error) {
       if (isAppError(error)) {

@@ -413,6 +413,8 @@ describe("Notification Flows", () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("notifications");
     expect(Array.isArray(res.body.notifications)).toBe(true);
+    const notificationTypes = res.body.notifications.map((notif: any) => notif.type);
+    expect(notificationTypes).toContain("DOG_CREATED");
   });
 
   test("get notifications with pagination works", async () => {

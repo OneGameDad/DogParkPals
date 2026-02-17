@@ -3,6 +3,9 @@ import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
 import friendService from './friendService';
 import { addEnemySchema, removeEnemySchema, checkEnemySchema, getUserIdSchema } from '../utils/validationSchemas';
+import { createDomainEvent } from '../events/createDomainEvent';
+import { EventTypes } from '../events/eventTypes';
+import { addOutboxEvent } from '../infrastructure/outbox/outboxRepository';
 
 const prisma = new PrismaClient();
 
@@ -45,8 +48,23 @@ const enemyService = {
       }
       
       // 4. If NOT friends, proceed to add enemy directly
-      const enemy = await prisma.enemies.create({
-        data: { ownerId: validatedData.userId, enemyUserId: validatedData.enemyUserId }
+      const enemy = await prisma.$transaction(async (tx) => {
+        const createdEnemy = await tx.enemies.create({
+          data: { ownerId: validatedData.userId, enemyUserId: validatedData.enemyUserId }
+        });
+
+        const domainEvent = createDomainEvent(
+          EventTypes.EnemyAdded,
+          {
+            enemyId: createdEnemy.id,
+            ownerId: createdEnemy.ownerId,
+            enemyUserId: createdEnemy.enemyUserId ?? validatedData.enemyUserId,
+          },
+          { actorId: createdEnemy.ownerId }
+        );
+        await addOutboxEvent(tx, domainEvent);
+
+        return createdEnemy;
       });
       
       typeSafeLogger.logUserAction('Enemy added successfully', { userId, enemyUserId });
@@ -84,6 +102,21 @@ const enemyService = {
       
       // Atomic transaction: remove friend + add enemy
       const enemy = await prisma.$transaction(async (tx) => {
+        const friendships = await tx.friendship.findMany({
+          where: {
+            OR: [
+              { requesterId: validatedData.userId, addresseeId: validatedData.enemyUserId },
+              { requesterId: validatedData.enemyUserId, addresseeId: validatedData.userId },
+            ],
+          },
+          select: {
+            requesterId: true,
+            addresseeId: true,
+            requesterDogId: true,
+            addresseeDogId: true,
+          },
+        });
+
         await tx.friendship.deleteMany({
           where: {
             OR: [
@@ -92,10 +125,36 @@ const enemyService = {
             ]
           }
         });
+
+        for (const friendship of friendships) {
+          const domainEvent = createDomainEvent(
+            EventTypes.FriendRemoved,
+            {
+              userId: friendship.requesterId ?? null,
+              friendId: friendship.addresseeId ?? null,
+              dogId: friendship.requesterDogId ?? null,
+              friendDogId: friendship.addresseeDogId ?? null,
+              removedBy: validatedData.userId,
+            },
+            { actorId: validatedData.userId }
+          );
+          await addOutboxEvent(tx, domainEvent);
+        }
         
         const enemy = await tx.enemies.create({
           data: { ownerId: validatedData.userId, enemyUserId: validatedData.enemyUserId }
         });
+
+        const domainEvent = createDomainEvent(
+          EventTypes.EnemyAdded,
+          {
+            enemyId: enemy.id,
+            ownerId: enemy.ownerId,
+            enemyUserId: enemy.enemyUserId ?? validatedData.enemyUserId,
+          },
+          { actorId: enemy.ownerId }
+        );
+        await addOutboxEvent(tx, domainEvent);
         
         return enemy;
       });
@@ -150,11 +209,23 @@ const enemyService = {
       }
       
       typeSafeLogger.logUserAction('Removing enemy for user', { userId: validatedData.userId, enemyUserId: validatedData.enemyUserId });
-      await prisma.enemies.deleteMany({
-        where: {
-          ownerId: validatedData.userId,
-          enemyUserId: validatedData.enemyUserId,
-        },
+      await prisma.$transaction(async (tx) => {
+        await tx.enemies.deleteMany({
+          where: {
+            ownerId: validatedData.userId,
+            enemyUserId: validatedData.enemyUserId,
+          },
+        });
+
+        const domainEvent = createDomainEvent(
+          EventTypes.EnemyRemoved,
+          {
+            ownerId: validatedData.userId,
+            enemyUserId: validatedData.enemyUserId,
+          },
+          { actorId: validatedData.userId }
+        );
+        await addOutboxEvent(tx, domainEvent);
       });
       typeSafeLogger.logUserAction('Enemy removed successfully', { userId: validatedData.userId, enemyUserId: validatedData.enemyUserId });
     } catch (error) {

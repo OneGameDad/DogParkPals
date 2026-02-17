@@ -17,6 +17,10 @@ const mockPrisma: any = {
     findMany: jest.fn(),
   },
   $queryRaw: jest.fn(),
+  outboxEvent: {
+    create: jest.fn(),
+  },
+  $transaction: jest.fn(async (callback: any) => callback(mockPrisma)),
 };
 
 const mockParkData = {
@@ -67,6 +71,20 @@ jest.mock('../utils/validationSchemas', () => ({
   updateParkSchema: {
     parse: jest.fn((data) => data),
   },
+}));
+
+const mockCreateDomainEvent = jest.fn((type, payload, options) => ({
+  id: 'test-event-id',
+  type,
+  occurredAt: '2026-02-17T00:00:00.000Z',
+  actorId: options?.actorId,
+  payload,
+  version: 1,
+  traceId: options?.traceId,
+}));
+
+jest.mock('../events/createDomainEvent', () => ({
+  createDomainEvent: mockCreateDomainEvent,
 }));
 
 // Import AFTER all mocks are defined
@@ -343,6 +361,8 @@ describe('Park Service', () => {
 
   describe('deletePark', () => {
     test('should delete park successfully', async () => {
+      mockPrisma.park.findUnique.mockResolvedValue({ id: 1, name: 'Central Dog Park' });
+      mockPrisma.userFavoritePark.findMany.mockResolvedValue([{ userId: 2 }, { userId: 3 }]);
       mockPrisma.park.delete.mockResolvedValue(mockParkData);
 
       await parkService.deletePark(1);
@@ -350,15 +370,25 @@ describe('Park Service', () => {
       expect(mockPrisma.park.delete).toHaveBeenCalledWith({
         where: { id: 1 },
       });
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'park.deleted',
+        }),
+      });
     });
 
     test('should throw error when park not found', async () => {
+      mockPrisma.park.findUnique.mockResolvedValue(null);
+      mockPrisma.userFavoritePark.findMany.mockResolvedValue([]);
       mockPrisma.park.delete.mockRejectedValue(new Error('Park not found'));
 
       await expect(parkService.deletePark(999)).rejects.toThrow();
     });
 
     test('should throw error when deletion fails', async () => {
+      mockPrisma.park.findUnique.mockResolvedValue({ id: 1, name: 'Central Dog Park' });
+      mockPrisma.userFavoritePark.findMany.mockResolvedValue([]);
       mockPrisma.park.delete.mockRejectedValue(new Error('Deletion failed'));
 
       await expect(parkService.deletePark(1)).rejects.toThrow();
@@ -513,6 +543,13 @@ describe('Park Service', () => {
         expect(mockPrisma.checkIn.create).toHaveBeenCalledWith({
           data: { userId: 1, parkId: 1, dogId: 123 },
         });
+        expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            id: 'test-event-id',
+            type: 'park.checked_in',
+            actorId: 1,
+          }),
+        });
         expect(result).toEqual(mockCheckInData);
       });
   
@@ -547,6 +584,13 @@ describe('Park Service', () => {
         expect(mockPrisma.checkIn.update).toHaveBeenCalledWith({
           where: { id: 1 },
           data: { checkedOutAt: expect.any(Date) },
+        });
+        expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            id: 'test-event-id',
+            type: 'park.checked_out',
+            actorId: 1,
+          }),
         });
         expect(result.checkedOutAt).not.toBeNull();
       });
@@ -661,6 +705,12 @@ describe('Park Service', () => {
         expect(mockPrisma.checkIn.update).toHaveBeenCalledWith({
           where: { id: 1 },
           data: { checkedOutAt: expect.any(Date) },
+        });
+        expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            id: 'test-event-id',
+            type: 'park.auto_checked_out',
+          }),
         });
         expect(result.checkedOutAt).not.toBeNull();
       });

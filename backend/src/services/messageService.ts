@@ -1,6 +1,9 @@
 import { PrismaClient, MessageStatus } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
+import { createDomainEvent } from '../events/createDomainEvent';
+import { EventTypes } from '../events/eventTypes';
+import { addOutboxEvent } from '../infrastructure/outbox/outboxRepository';
 
 const prisma = new PrismaClient();
 
@@ -8,8 +11,23 @@ const messageService = {
   async sendMessage(senderId: number, receiverId: number, content: string) {
     typeSafeLogger.logUserAction('Sending message', { senderId, receiverId });
     try {
-      const message = await prisma.messages.create({
-      data: { senderId, receiverId, content, status: 'SENT' },
+      const message = await prisma.$transaction(async (tx) => {
+        const createdMessage = await tx.messages.create({
+          data: { senderId, receiverId, content, status: 'SENT' },
+        });
+
+        const domainEvent = createDomainEvent(
+          EventTypes.MessageSent,
+          {
+            messageId: createdMessage.id,
+            senderId: createdMessage.senderId,
+            receiverId: createdMessage.receiverId,
+          },
+          { actorId: createdMessage.senderId }
+        );
+        await addOutboxEvent(tx, domainEvent);
+
+        return createdMessage;
       });
       return message;
     } catch (error) {

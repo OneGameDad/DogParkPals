@@ -1,8 +1,9 @@
 import { PrismaClient, Prisma } from '@prisma/client';
-import type { NotificationType } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
-import notificationService from './notificationService';
+import { createDomainEvent } from '../events/createDomainEvent';
+import { EventTypes } from '../events/eventTypes';
+import { addOutboxEvent } from '../infrastructure/outbox/outboxRepository';
 import {
   createEventSchema,
   updateEventSchema,
@@ -40,38 +41,36 @@ const eventService = {
         organizationId,
         private: isPrivate ? 'PRIVATE' : 'PUBLIC'
       });
-      const newEvent = await prisma.event.create({
-        data: {
-          title: validated.title,
-          description: validated.description,
-          date: validated.date,
-          startTime: validated.startTime,
-          endTime: validated.endTime,
-          parkId: validated.parkId,
-          organizerId: validated.organizerId,
-          organizationId: validated.organizationId,
-          private: validated.private,
-        },
-      });
-      const favoriteUsers = await prisma.userFavoritePark.findMany({
-        where: { parkId: newEvent.parkId },
-        select: { userId: true },
-      });
-      const orgMembers = newEvent.organizationId
-        ? await prisma.organizationMember.findMany({
-            where: { organizationId: newEvent.organizationId },
-            select: { userId: true },
-          })
-        : [];
-      const recipientIds = [
-        ...favoriteUsers.map((favorite) => favorite.userId),
-        ...orgMembers.map((member) => member.userId),
-      ].filter((userId) => userId !== newEvent.organizerId);
-      await notificationService.createNotifications(recipientIds, 'EVENT_CREATED' as NotificationType, {
-        eventId: newEvent.id,
-        parkId: newEvent.parkId,
-        organizationId: newEvent.organizationId,
-        title: newEvent.title,
+      const newEvent = await prisma.$transaction(async (tx) => {
+        const createdEvent = await tx.event.create({
+          data: {
+            title: validated.title,
+            description: validated.description,
+            date: validated.date,
+            startTime: validated.startTime,
+            endTime: validated.endTime,
+            parkId: validated.parkId,
+            organizerId: validated.organizerId,
+            organizationId: validated.organizationId,
+            private: validated.private,
+          },
+        });
+
+        const eventPayload = {
+          eventId: createdEvent.id,
+          parkId: createdEvent.parkId,
+          organizerId: createdEvent.organizerId,
+          organizationId: createdEvent.organizationId,
+          title: createdEvent.title,
+        };
+
+        const domainEvent = createDomainEvent(EventTypes.EventCreated, eventPayload, {
+          actorId: createdEvent.organizerId,
+        });
+
+        await addOutboxEvent(tx, domainEvent);
+
+        return createdEvent;
       });
       typeSafeLogger.logUserAction('Event created successfully', { eventId: newEvent.id, title });
       return newEvent;
@@ -135,8 +134,30 @@ const eventService = {
     typeSafeLogger.logUserAction('Deleting event', { eventId });
     try {
       const validated = deleteEventSchema.parse({ eventId });
-      await prisma.event.delete({
-        where: { id: validated.eventId },
+      await prisma.$transaction(async (tx) => {
+        const event = await tx.event.findUnique({
+          where: { id: validated.eventId },
+          select: { id: true, title: true, organizerId: true, organizationId: true, parkId: true },
+        });
+
+        const attendees = await tx.eventAttendance.findMany({
+          where: { eventId: validated.eventId },
+          select: { userId: true },
+        });
+
+        await tx.event.delete({
+          where: { id: validated.eventId },
+        });
+
+        const domainEvent = createDomainEvent(EventTypes.EventDeleted, {
+          eventId: validated.eventId,
+          organizerId: event?.organizerId,
+          organizationId: event?.organizationId ?? null,
+          parkId: event?.parkId ?? null,
+          title: event?.title,
+          attendeeIds: attendees.map((attendee) => attendee.userId),
+        });
+        await addOutboxEvent(tx, domainEvent);
       });
       typeSafeLogger.logUserAction('Event deleted successfully', { eventId });
     } catch (error) {
@@ -264,11 +285,25 @@ const eventService = {
   async attendEvent(eventId: number, userId: number) {
     typeSafeLogger.logUserAction('Attending event', { eventId, userId });
     try {
-      const attendance = await prisma.eventAttendance.create({
-        data: {
-          eventId,
-          userId,
-        },
+      const attendance = await prisma.$transaction(async (tx) => {
+        const createdAttendance = await tx.eventAttendance.create({
+          data: {
+            eventId,
+            userId,
+          },
+        });
+
+        const domainEvent = createDomainEvent(
+          EventTypes.EventAttended,
+          {
+            eventId,
+            userId,
+          },
+          { actorId: userId }
+        );
+        await addOutboxEvent(tx, domainEvent);
+
+        return createdAttendance;
       });
       typeSafeLogger.logUserAction('Attending event successful', { eventId, userId });
       return attendance;

@@ -39,6 +39,13 @@ As this is an MVP it is limited in scope to only included the public dog parks i
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:3000
 
+### RabbitMQ (Management UI)
+
+- URL: http://localhost:15672
+- Default credentials: `guest` / `guest` (unless you configure different credentials)
+- To change credentials, update the RabbitMQ service settings in docker-compose.yml
+- Failed event messages retry up to `EVENT_QUEUE_MAX_RETRIES`, then move to `EVENT_QUEUE_DLQ_NAME`
+
 ### Docker Commands
 
 ```bash
@@ -72,6 +79,54 @@ docker exec -it dogparkpals-backend npx prisma migrate deploy
 docker exec -it dogparkpals-backend npx prisma studio
 ```
 
+## Local Ops Checklist
+
+Quick reference for running DogParkPals locally with Docker and validating the event-driven pipeline.
+
+### Prereqs
+- Docker + Docker Compose
+- `docker-secrets` created from `docker-secrets-example`
+
+### Start stack
+- `docker compose up -d`
+- `docker compose logs -f backend`
+- `docker compose logs -f rabbitmq`
+
+### Health checks
+- Backend: `http://localhost:3000/health`
+- Status: `http://localhost:3000/status`
+- Frontend: `http://localhost:5173`
+- RabbitMQ UI: `http://localhost:15672` (default `guest`/`guest`)
+
+### Event bus sanity
+- Ensure `EVENT_BUS_ENABLED` is not `false` in `docker-secrets`.
+- Check outbox publisher logs for publish success.
+- Verify DLQ size in RabbitMQ UI if retries are exhausted.
+
+### Common checks
+- Run migrations (db-init should do this):
+   - `docker exec -it dogparkpals-backend npx prisma migrate deploy`
+- Seed data:
+   - `./scripts/docker-seed.sh`
+- Reset all data:
+   - `./scripts/docker-reset.sh`
+
+### Backup event emission (docker task)
+- Emit backup started:
+   - `docker compose run --rm backup-events started --backupId=backup-local --target=db --storage=local`
+- Emit backup succeeded:
+   - `docker compose run --rm backup-events succeeded --backupId=backup-local --sizeBytes=123456 --durationMs=120000`
+- Emit backup failed:
+   - `docker compose run --rm backup-events failed --backupId=backup-local --error="backup failed"`
+
+### Failure signals to watch
+- Outbox publish failures logged as `job.failed` events (see backend logs).
+- Event consumer start failures logged as `job.failed` events.
+- Auto-checkout job failures logged as `job.failed` events.
+
+### Shutdown
+- `docker compose down`
+
 ## Local Development Setup (Without Docker)
 
 ### Backend Setup (Local SQLite)
@@ -86,7 +141,7 @@ docker exec -it dogparkpals-backend npx prisma studio
 - Start dev server:
   - `npm run dev` (TypeScript watch mode) or `npm run build && node dist/server.js` (production)
   - Server listens on `http://localhost:3000`
-  - Health check: `GET /health`
+   - Health check: `GET /health` or `GET /status`
  
 ### Frontend Setup (Local Development)
 - Install dependencies:
@@ -143,6 +198,7 @@ docker exec -it dogparkpals-backend npx prisma studio
 - Prisma 6 (ORM)
 - Jest (Backend unit tests)
 - Supertest (Backend integration tests)
+- RabbitMQ (Queue & Messaging)
 
 Reasoning: All commonly used tech, requested or required in many job advertisements. They also are well documented and supported.
 
@@ -253,7 +309,8 @@ The database is built with SQLite and managed by Prisma ORM. Below is an overvie
 | Localization (English, Finnish, Spanish)          | 1      |
 | Remote Auth (Google Login)                        | 1      |
 | Multibrowser Support                              | 1      |
-| Total:                                            | 19     |
+| Health check & status page system w/ backups, etc | 1      |
+| Total:                                            | 20     |
 
 ## Individual Contributions
 
@@ -289,3 +346,5 @@ The database is built with SQLite and managed by Prisma ORM. Below is an overvie
 - Friends
 - Enemies
 - Testing Framework
+- Backend Refactor (Event-Driven Architecture)
+- Setup RabbitMQ

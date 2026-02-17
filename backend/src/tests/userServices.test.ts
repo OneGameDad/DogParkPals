@@ -1,6 +1,20 @@
 import { expect, describe, test, beforeEach, jest } from '@jest/globals';
 import type { User } from '@prisma/client';
 
+const mockCreateDomainEvent = jest.fn((type, payload, options) => ({
+  id: 'test-event-id',
+  type,
+  occurredAt: '2026-02-17T00:00:00.000Z',
+  actorId: options?.actorId,
+  payload,
+  version: 1,
+  traceId: options?.traceId,
+}));
+
+jest.mock('../events/createDomainEvent', () => ({
+  createDomainEvent: mockCreateDomainEvent,
+}));
+
 describe('User Services', () => {
   const testPassword = 'TestP@ssw0rd!';
   const testFirstName = 'Test';
@@ -234,14 +248,7 @@ describe('User Services', () => {
       updatedAt: new Date(),
     });
 
-    const mockCreateNotification = jest.fn<any>().mockResolvedValue(undefined);
-
-    jest.doMock('../services/notificationService', () => ({
-      __esModule: true,
-      default: {
-        createNotification: mockCreateNotification,
-      },
-    }));
+    const mockOutboxCreate = jest.fn<any>().mockResolvedValue(undefined);
 
     jest.doMock('@prisma/client', () => ({
       PrismaClient: jest.fn(() => ({
@@ -252,14 +259,11 @@ describe('User Services', () => {
           user: {
             update: mockUpdate,
           },
-          notification: {
-            create: mockCreateNotification,
+          outboxEvent: {
+            create: mockOutboxCreate,
           },
         })),
       })),
-      NotificationType: {
-        PROFILE_UPDATED: 'PROFILE_UPDATED',
-      },
     }));
 
     const userService = await import('../services/userServices');
@@ -284,22 +288,13 @@ describe('User Services', () => {
         longitude: -73.9,
       },
     });
-    expect(mockCreateNotification).toHaveBeenCalledWith(
-      1,
-      'PROFILE_UPDATED',
-      {
-        fields: [
-          'first_name',
-          'last_name',
-          'profilePictureUrl',
-          'latitude',
-          'longitude',
-        ],
-      },
-      expect.any(Object)
-    );
-
-    jest.dontMock('../services/notificationService');
+    expect(mockOutboxCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        id: 'test-event-id',
+        type: 'user.profile.updated',
+        actorId: 1,
+      }),
+    });
     jest.dontMock('@prisma/client');
   });
 
@@ -324,14 +319,7 @@ describe('User Services', () => {
       .mockResolvedValueOnce(targetUser);
     const mockUpdate = jest.fn<any>().mockResolvedValue(updatedUser);
 
-    const mockCreateNotification = jest.fn<any>().mockResolvedValue(undefined);
-
-    jest.doMock('../services/notificationService', () => ({
-      __esModule: true,
-      default: {
-        createNotification: mockCreateNotification,
-      },
-    }));
+    const mockOutboxCreate = jest.fn<any>().mockResolvedValue(undefined);
 
     jest.doMock('@prisma/client', () => ({
       PrismaClient: jest.fn(() => ({
@@ -343,15 +331,11 @@ describe('User Services', () => {
           user: {
             update: mockUpdate,
           },
-          notification: {
-            create: mockCreateNotification,
+          outboxEvent: {
+            create: mockOutboxCreate,
           },
         })),
       })),
-      NotificationType: {
-        USER_ROLE_UPDATED: 'USER_ROLE_UPDATED',
-        PROFILE_UPDATED: 'PROFILE_UPDATED',
-      },
     }));
 
     const userService = await import('../services/userServices');
@@ -362,28 +346,21 @@ describe('User Services', () => {
       where: { id: 2 },
       data: { role: 'ADMIN' },
     });
-    expect(mockCreateNotification).toHaveBeenCalledWith(
-      2,
-      'USER_ROLE_UPDATED',
-      { role: 'ADMIN' },
-      expect.any(Object)
-    );
+    expect(mockOutboxCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        id: 'test-event-id',
+        type: 'user.role.updated',
+        actorId: 1,
+      }),
+    });
     expect(result.role).toBe('ADMIN');
 
-    jest.dontMock('../services/notificationService');
     jest.dontMock('@prisma/client');
   });
 
   test('changeUserRole throws when admin is not found', async () => {
     const mockFindUnique = jest.fn<any>().mockResolvedValueOnce(null);
-    const mockCreateNotification = jest.fn<any>();
-
-    jest.doMock('../services/notificationService', () => ({
-      __esModule: true,
-      default: {
-        createNotification: mockCreateNotification,
-      },
-    }));
+    const mockOutboxCreate = jest.fn<any>();
 
     jest.doMock('@prisma/client', () => ({
       PrismaClient: jest.fn(() => ({
@@ -394,35 +371,23 @@ describe('User Services', () => {
           user: {
             update: jest.fn(),
           },
-          notification: {
-            create: mockCreateNotification,
+          outboxEvent: {
+            create: mockOutboxCreate,
           },
         })),
       })),
-      NotificationType: {
-        USER_ROLE_UPDATED: 'USER_ROLE_UPDATED',
-        PROFILE_UPDATED: 'PROFILE_UPDATED',
-      },
     }));
 
     const userService = await import('../services/userServices');
 
     await expect(userService.default.changeUserRole(1, 2, 'ADMIN')).rejects.toThrow();
 
-    jest.dontMock('../services/notificationService');
     jest.dontMock('@prisma/client');
   });
 
   test('changeUserRole throws when admin lacks permission', async () => {
     const mockFindUnique = jest.fn<any>().mockResolvedValueOnce({ id: 1, role: 'CLIENT' });
-    const mockCreateNotification = jest.fn<any>();
-
-    jest.doMock('../services/notificationService', () => ({
-      __esModule: true,
-      default: {
-        createNotification: mockCreateNotification,
-      },
-    }));
+    const mockOutboxCreate = jest.fn<any>();
 
     jest.doMock('@prisma/client', () => ({
       PrismaClient: jest.fn(() => ({
@@ -433,22 +398,17 @@ describe('User Services', () => {
           user: {
             update: jest.fn(),
           },
-          notification: {
-            create: mockCreateNotification,
+          outboxEvent: {
+            create: mockOutboxCreate,
           },
         })),
       })),
-      NotificationType: {
-        USER_ROLE_UPDATED: 'USER_ROLE_UPDATED',
-        PROFILE_UPDATED: 'PROFILE_UPDATED',
-      },
     }));
 
     const userService = await import('../services/userServices');
 
     await expect(userService.default.changeUserRole(1, 2, 'ADMIN')).rejects.toThrow();
 
-    jest.dontMock('../services/notificationService');
     jest.dontMock('@prisma/client');
   });
 
@@ -463,14 +423,7 @@ describe('User Services', () => {
       lastSeenAt: new Date(),
     });
 
-    const mockCreateNotification = jest.fn<any>().mockResolvedValue(undefined);
-
-    jest.doMock('../services/notificationService', () => ({
-      __esModule: true,
-      default: {
-        createNotification: mockCreateNotification,
-      },
-    }));
+    const mockOutboxCreate = jest.fn<any>().mockResolvedValue(undefined);
 
     jest.doMock('@prisma/client', () => ({
       PrismaClient: jest.fn(() => ({
@@ -481,14 +434,11 @@ describe('User Services', () => {
           user: {
             update: mockUpdate,
           },
-          notification: {
-            create: mockCreateNotification,
+          outboxEvent: {
+            create: mockOutboxCreate,
           },
         })),
       })),
-      NotificationType: {
-        PROFILE_UPDATED: 'PROFILE_UPDATED',
-      },
     }));
 
     const userService = await import('../services/userServices');
@@ -502,14 +452,13 @@ describe('User Services', () => {
         first_name: 'OnlyFirstName',
       },
     });
-    expect(mockCreateNotification).toHaveBeenCalledWith(
-      1,
-      'PROFILE_UPDATED',
-      { fields: ['first_name'] },
-      expect.any(Object)
-    );
-
-    jest.dontMock('../services/notificationService');
+    expect(mockOutboxCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        id: 'test-event-id',
+        type: 'user.profile.updated',
+        actorId: 1,
+      }),
+    });
     jest.dontMock('@prisma/client');
   });
 
@@ -519,14 +468,7 @@ describe('User Services', () => {
 
     const mockFindUnique = jest.fn<any>().mockResolvedValue(targetUser);
     const mockUpdate = jest.fn<any>().mockResolvedValue(updatedUser);
-    const mockCreateNotification = jest.fn<any>().mockResolvedValue(undefined);
-
-    jest.doMock('../services/notificationService', () => ({
-      __esModule: true,
-      default: {
-        createNotification: mockCreateNotification,
-      },
-    }));
+    const mockOutboxCreate = jest.fn<any>().mockResolvedValue(undefined);
 
     jest.doMock('@prisma/client', () => ({
       PrismaClient: jest.fn(() => ({
@@ -538,14 +480,11 @@ describe('User Services', () => {
           user: {
             update: mockUpdate,
           },
-          notification: {
-            create: mockCreateNotification,
+          outboxEvent: {
+            create: mockOutboxCreate,
           },
         })),
       })),
-      NotificationType: {
-        PROFILE_UPDATED: 'PROFILE_UPDATED',
-      },
     }));
 
     const userService = await import('../services/userServices');
@@ -556,15 +495,15 @@ describe('User Services', () => {
       where: { id: 2 },
       data: { username: 'newname' },
     });
-    expect(mockCreateNotification).toHaveBeenCalledWith(
-      2,
-      'PROFILE_UPDATED',
-      { username: 'newname', updatedBy: 2 },
-      expect.any(Object)
-    );
+    expect(mockOutboxCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        id: 'test-event-id',
+        type: 'user.profile.updated',
+        actorId: 2,
+      }),
+    });
     expect(result.username).toBe('newname');
 
-    jest.dontMock('../services/notificationService');
     jest.dontMock('@prisma/client');
   });
 
@@ -578,14 +517,7 @@ describe('User Services', () => {
       .mockResolvedValueOnce(requestingUser)
       .mockResolvedValueOnce(targetUser);
     const mockUpdate = jest.fn<any>().mockResolvedValue(updatedUser);
-    const mockCreateNotification = jest.fn<any>().mockResolvedValue(undefined);
-
-    jest.doMock('../services/notificationService', () => ({
-      __esModule: true,
-      default: {
-        createNotification: mockCreateNotification,
-      },
-    }));
+    const mockOutboxCreate = jest.fn<any>().mockResolvedValue(undefined);
 
     jest.doMock('@prisma/client', () => ({
       PrismaClient: jest.fn(() => ({
@@ -597,14 +529,11 @@ describe('User Services', () => {
           user: {
             update: mockUpdate,
           },
-          notification: {
-            create: mockCreateNotification,
+          outboxEvent: {
+            create: mockOutboxCreate,
           },
         })),
       })),
-      NotificationType: {
-        PROFILE_UPDATED: 'PROFILE_UPDATED',
-      },
     }));
 
     const userService = await import('../services/userServices');
@@ -615,15 +544,15 @@ describe('User Services', () => {
       where: { id: 2 },
       data: { username: 'newname' },
     });
-    expect(mockCreateNotification).toHaveBeenCalledWith(
-      2,
-      'PROFILE_UPDATED',
-      { username: 'newname', updatedBy: 1 },
-      expect.any(Object)
-    );
+    expect(mockOutboxCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        id: 'test-event-id',
+        type: 'user.profile.updated',
+        actorId: 1,
+      }),
+    });
     expect(result.username).toBe('newname');
 
-    jest.dontMock('../services/notificationService');
     jest.dontMock('@prisma/client');
   });
 
@@ -631,14 +560,7 @@ describe('User Services', () => {
     const requestingUser = { id: 1, role: 'CLIENT' };
 
     const mockFindUnique = jest.fn<any>().mockResolvedValue(requestingUser);
-    const mockCreateNotification = jest.fn<any>();
-
-    jest.doMock('../services/notificationService', () => ({
-      __esModule: true,
-      default: {
-        createNotification: mockCreateNotification,
-      },
-    }));
+    const mockOutboxCreate = jest.fn<any>();
 
     jest.doMock('@prisma/client', () => ({
       PrismaClient: jest.fn(() => ({
@@ -649,21 +571,17 @@ describe('User Services', () => {
           user: {
             update: jest.fn(),
           },
-          notification: {
-            create: mockCreateNotification,
+          outboxEvent: {
+            create: mockOutboxCreate,
           },
         })),
       })),
-      NotificationType: {
-        PROFILE_UPDATED: 'PROFILE_UPDATED',
-      },
     }));
 
     const userService = await import('../services/userServices');
 
     await expect(userService.default.changeUsername(1, 2, 'newname')).rejects.toThrow();
 
-    jest.dontMock('../services/notificationService');
     jest.dontMock('@prisma/client');
   });
 
@@ -671,12 +589,23 @@ describe('User Services', () => {
     const mockUpdate = jest.fn().mockResolvedValue({
       profilePictureUrl: 'uploads/profile.jpg',
     });
+    const mockOutboxCreate = jest.fn();
+    const mockTransaction = jest.fn(async (callback: any) =>
+      callback({
+        user: { update: mockUpdate },
+        outboxEvent: { create: mockOutboxCreate },
+      })
+    );
 
     jest.doMock('@prisma/client', () => ({
       PrismaClient: jest.fn(() => ({
         user: {
           update: mockUpdate,
         },
+        outboxEvent: {
+          create: mockOutboxCreate,
+        },
+        $transaction: mockTransaction,
       })),
     }));
 
@@ -692,6 +621,13 @@ describe('User Services', () => {
       data: { profilePictureUrl: 'uploads/profile.jpg' },
       select: { profilePictureUrl: true },
     });
+    expect(mockOutboxCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        id: 'test-event-id',
+        type: 'user.profile.picture.uploaded',
+        actorId: 1,
+      }),
+    });
 
     expect(result.profilePictureUrl).toBe('uploads/profile.jpg');
 
@@ -700,10 +636,19 @@ describe('User Services', () => {
 
   test('uploadProfilePicture throws AppError when prisma fails', async () => {
     const mockUpdate = jest.fn().mockRejectedValue(new Error('DB fail'));
+    const mockOutboxCreate = jest.fn();
+    const mockTransaction = jest.fn(async (callback: any) =>
+      callback({
+        user: { update: mockUpdate },
+        outboxEvent: { create: mockOutboxCreate },
+      })
+    );
 
     jest.doMock('@prisma/client', () => ({
       PrismaClient: jest.fn(() => ({
         user: { update: mockUpdate },
+        outboxEvent: { create: mockOutboxCreate },
+        $transaction: mockTransaction,
       })),
       Prisma: {
         PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error {},
@@ -759,6 +704,13 @@ describe('User Services', () => {
     const mockUpdate = jest.fn().mockResolvedValue({
       profilePictureUrl: null,
     });
+    const mockOutboxCreate = jest.fn();
+    const mockTransaction = jest.fn(async (callback: any) =>
+      callback({
+        user: { update: mockUpdate },
+        outboxEvent: { create: mockOutboxCreate },
+      })
+    );
 
     jest.doMock('fs', () => ({
       existsSync: jest.fn().mockReturnValue(true),
@@ -771,6 +723,10 @@ describe('User Services', () => {
           findUnique: mockFindUnique,
           update: mockUpdate,
         },
+        outboxEvent: {
+          create: mockOutboxCreate,
+        },
+        $transaction: mockTransaction,
       })),
     }));
 
@@ -784,6 +740,13 @@ describe('User Services', () => {
     expect(mockUpdate).toHaveBeenCalledWith({
       where: { id: 1 },
       data: { profilePictureUrl: null },
+    });
+    expect(mockOutboxCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        id: 'test-event-id',
+        type: 'user.profile.picture.deleted',
+        actorId: 1,
+      }),
     });
 
     expect(result.profilePictureUrl).toBeNull();

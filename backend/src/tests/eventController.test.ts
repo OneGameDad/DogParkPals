@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 import type { Request, Response, NextFunction } from 'express';
 import type { Event } from '@prisma/client';
-import { awardAchievement, awardExperience, XP_REWARDS } from '../services/xpService';
+import { awardExperience, XP_REWARDS } from '../services/xpService';
 
 // Mocks
 const mockEventService = {
@@ -76,15 +76,12 @@ jest.mock('../utils/typeSafeLogger', () => ({
 
 const mockParseValidation = jest.fn();
 
-const getXpServiceMock = () => jest.requireMock('../services/xpService');
-
 jest.mock('../utils/validator', () => ({
   parseValidation: mockParseValidation,
 }));
 
 jest.mock('../services/xpService', () => ({
   awardExperience: jest.fn(),
-  awardAchievement: jest.fn(),
   XP_REWARDS: {
     CREATE_EVENT: 5,
     JOIN_EVENT: 5,
@@ -658,7 +655,6 @@ describe('Event Controller', () => {
 
       expect(mockEventService.attendEvent).toHaveBeenCalledWith(1, 123);
       expect(awardExperience).toHaveBeenCalledWith(123, XP_REWARDS.JOIN_EVENT, 'join_event');
-      expect(getXpServiceMock().awardAchievement).toHaveBeenCalledWith(123, 'Pup Pal', expect.any(String));
       expect(res.status).toHaveBeenCalledWith(200);
       expect(next).not.toHaveBeenCalled();
     });
@@ -675,7 +671,6 @@ describe('Event Controller', () => {
 
       expect(mockEventService.attendEvent).toHaveBeenCalledWith(1, 123);
       expect(awardExperience).toHaveBeenCalledWith(123, XP_REWARDS.JOIN_EVENT, 'join_event');
-      expect(getXpServiceMock().awardAchievement).toHaveBeenCalledWith(123, 'Pup Pal', expect.any(String));
       expect(res.status).toHaveBeenCalledWith(200);
       expect(next).not.toHaveBeenCalled();
     });

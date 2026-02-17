@@ -1,9 +1,11 @@
-import { PrismaClient, DogBreed, DogGender, DogPlaystyle, DogSize, NotificationType } from '@prisma/client';
+import { PrismaClient, DogBreed, DogGender, DogPlaystyle, DogSize } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
 import { parseValidation } from '../utils/validator';
 import { addDogSchema, updateDogSchema } from '../utils/validationSchemas';
-import notificationService from './notificationService';
+import { createDomainEvent } from '../events/createDomainEvent';
+import { EventTypes } from '../events/eventTypes';
+import { addOutboxEvent } from '../infrastructure/outbox/outboxRepository';
 import fs from "fs";
 import path from "path";
 
@@ -22,18 +24,29 @@ const dogService = {
         ? new Date(validated.dateOfBirth) 
         : validated.dateOfBirth;
 
-      const newDog = await prisma.dog.create({
-        data: {
-          name: validated.name,
-          breed: validated.breed as DogBreed,
-          gender: validated.gender as DogGender,
-          dateOfBirth,
-          playstyle: validated.playstyle as DogPlaystyle,
-          size: validated.size as DogSize,
-          description: validated.description,
-          profilePictureUrl: validated.profilePictureUrl,
-          vaccinationRecordUrl: validated.vaccinationRecordUrl,
-        },
+      const newDog = await prisma.$transaction(async (tx) => {
+        const createdDog = await tx.dog.create({
+          data: {
+            name: validated.name,
+            breed: validated.breed as DogBreed,
+            gender: validated.gender as DogGender,
+            dateOfBirth,
+            playstyle: validated.playstyle as DogPlaystyle,
+            size: validated.size as DogSize,
+            description: validated.description,
+            profilePictureUrl: validated.profilePictureUrl,
+            vaccinationRecordUrl: validated.vaccinationRecordUrl,
+          },
+        });
+
+        const domainEvent = createDomainEvent(EventTypes.DogCreated, {
+          dogId: createdDog.id,
+          name: createdDog.name,
+          ownerIds: [],
+        });
+        await addOutboxEvent(tx, domainEvent);
+
+        return createdDog;
       });
       typeSafeLogger.logUserAction('Dog added successfully', { dogId: newDog.id, name: validated.name });
       return newDog;
@@ -174,8 +187,27 @@ const dogService = {
   async deleteDog(dogId: number) {
     typeSafeLogger.logUserAction('Deleting dog', { dogId });
     try {
-      await prisma.dog.delete({
-        where: { id: dogId },
+      await prisma.$transaction(async (tx) => {
+        const existingDog = await tx.dog.findUnique({
+          where: { id: dogId },
+          select: { id: true, name: true },
+        });
+
+        const owners = await tx.dogOwner.findMany({
+          where: { dogId },
+          select: { userId: true },
+        });
+
+        await tx.dog.delete({
+          where: { id: dogId },
+        });
+
+        const domainEvent = createDomainEvent(EventTypes.DogDeleted, {
+          dogId,
+          name: existingDog?.name,
+          ownerIds: owners.map((owner) => owner.userId),
+        });
+        await addOutboxEvent(tx, domainEvent);
       });
       typeSafeLogger.logUserAction('Dog deleted successfully', { dogId });
     } catch (error) {
@@ -191,14 +223,23 @@ const dogService = {
   async addOwnerToDog(dogId: number, userId: number) {
     typeSafeLogger.logUserAction('Adding owner to dog', { dogId, userId });
     try {
-      await prisma.dogOwner.create({
-        data: {
-          dogId,
-          userId,
-        },
-      });
-      await notificationService.createNotification(userId, NotificationType.DOG_OWNERSHIP_ADDED, {
-        dogId,
+      await prisma.$transaction(async (tx) => {
+        await tx.dogOwner.create({
+          data: {
+            dogId,
+            userId,
+          },
+        });
+
+        const domainEvent = createDomainEvent(
+          EventTypes.DogOwnershipAdded,
+          {
+            dogId,
+            userId,
+          },
+          { actorId: userId }
+        );
+        await addOutboxEvent(tx, domainEvent);
       });
       typeSafeLogger.logUserAction('Owner added to dog successfully', { dogId, userId });
     } catch (error) {
@@ -214,13 +255,26 @@ const dogService = {
   async removeOwnerFromDog(dogId: number, userId: number) {
     typeSafeLogger.logUserAction('Removing owner from dog', { dogId, userId });
     try {
-      await prisma.dogOwner.delete({
-        where: {
-          userId_dogId: {
+      await prisma.$transaction(async (tx) => {
+        await tx.dogOwner.delete({
+          where: {
+            userId_dogId: {
+              dogId,
+              userId,
+            },
+          },
+        });
+
+        const domainEvent = createDomainEvent(
+          EventTypes.DogOwnershipRemoved,
+          {
             dogId,
             userId,
+            removedBy: userId,
           },
-        },
+          { actorId: userId }
+        );
+        await addOutboxEvent(tx, domainEvent);
       });
       typeSafeLogger.logUserAction('Owner removed from dog successfully', { dogId, userId });
     } catch (error) {
@@ -260,11 +314,19 @@ const dogService = {
   async uploadDogPhoto(dogId: number, filePath: string) {
     typeSafeLogger.logUserAction('Uploading dog photo', { dogId, filePath });
     try {
-      const updatedDog = await prisma.dog.update({
-        where: { id: dogId },
-        data: {
-          profilePictureUrl: filePath,
-        },
+      const updatedDog = await prisma.$transaction(async (tx) => {
+        const dog = await tx.dog.update({
+          where: { id: dogId },
+          data: {
+            profilePictureUrl: filePath,
+          },
+        });
+        const domainEvent = createDomainEvent(EventTypes.DogPhotoUploaded, {
+          dogId,
+          profilePictureUrl: dog.profilePictureUrl ?? filePath,
+        });
+        await addOutboxEvent(tx, domainEvent);
+        return dog;
       });
       typeSafeLogger.logUserAction('Dog photo uploaded successfully', { dogId, filePath });
       return updatedDog;
@@ -281,11 +343,19 @@ const dogService = {
   async uploadDocument(dogId: number, filePath: string) {
     typeSafeLogger.logUserAction('Uploading dog document', { dogId, filePath });
     try {
-      const updatedDog = await prisma.dog.update({
-        where: { id: dogId },
-        data: {
-          vaccinationRecordUrl: filePath,
-        },
+      const updatedDog = await prisma.$transaction(async (tx) => {
+        const dog = await tx.dog.update({
+          where: { id: dogId },
+          data: {
+            vaccinationRecordUrl: filePath,
+          },
+        });
+        const domainEvent = createDomainEvent(EventTypes.DogDocumentUploaded, {
+          dogId,
+          vaccinationRecordUrl: dog.vaccinationRecordUrl ?? filePath,
+        });
+        await addOutboxEvent(tx, domainEvent);
+        return dog;
       });
       typeSafeLogger.logUserAction('Dog document uploaded successfully', { dogId, filePath });
       return updatedDog;
@@ -312,11 +382,20 @@ const dogService = {
           fs.unlinkSync(filePath);
         }
       }
-      const updatedDog = await prisma.dog.update({
-        where: { id: dogId },
-        data: {
-          profilePictureUrl: null,
-        },
+      const previousUrl = existingDog?.profilePictureUrl ?? null;
+      const updatedDog = await prisma.$transaction(async (tx) => {
+        const dog = await tx.dog.update({
+          where: { id: dogId },
+          data: {
+            profilePictureUrl: null,
+          },
+        });
+        const domainEvent = createDomainEvent(EventTypes.DogPhotoDeleted, {
+          dogId,
+          previousUrl,
+        });
+        await addOutboxEvent(tx, domainEvent);
+        return dog;
       });
       typeSafeLogger.logUserAction('Dog photo deleted successfully', { dogId });
       return updatedDog;
@@ -343,11 +422,20 @@ const dogService = {
           fs.unlinkSync(filePath);
         }
       }
-      const updatedDog = await prisma.dog.update({
-        where: { id: dogId },
-        data: {
-          vaccinationRecordUrl: null,
-        },
+      const previousUrl = existingDog?.vaccinationRecordUrl ?? null;
+      const updatedDog = await prisma.$transaction(async (tx) => {
+        const dog = await tx.dog.update({
+          where: { id: dogId },
+          data: {
+            vaccinationRecordUrl: null,
+          },
+        });
+        const domainEvent = createDomainEvent(EventTypes.DogDocumentDeleted, {
+          dogId,
+          previousUrl,
+        });
+        await addOutboxEvent(tx, domainEvent);
+        return dog;
       });
       typeSafeLogger.logUserAction('Dog document deleted successfully', { dogId });
       return updatedDog;

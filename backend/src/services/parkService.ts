@@ -3,6 +3,9 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { NotFoundError, toAppError } from '../utils/errors';
 import { createParkSchema, updateParkSchema } from '../utils/validationSchemas';
+import { createDomainEvent } from '../events/createDomainEvent';
+import { EventTypes } from '../events/eventTypes';
+import { addOutboxEvent } from '../infrastructure/outbox/outboxRepository';
 
 const prisma = new PrismaClient();
 
@@ -164,8 +167,27 @@ const parkService = {
   async deletePark(parkId: number) {
     typeSafeLogger.logUserAction('Deleting park', { parkId });
     try {
-      await prisma.park.delete({
-        where: { id: parkId },
+      await prisma.$transaction(async (tx) => {
+        const park = await tx.park.findUnique({
+          where: { id: parkId },
+          select: { id: true, name: true },
+        });
+
+        const favorites = await tx.userFavoritePark.findMany({
+          where: { parkId },
+          select: { userId: true },
+        });
+
+        await tx.park.delete({
+          where: { id: parkId },
+        });
+
+        const domainEvent = createDomainEvent(EventTypes.ParkDeleted, {
+          parkId,
+          name: park?.name,
+          favoriteUserIds: favorites.map((favorite) => favorite.userId),
+        });
+        await addOutboxEvent(tx, domainEvent);
       });
       typeSafeLogger.logUserAction('Park deleted successfully', { parkId });
     } catch (error) {
@@ -270,12 +292,28 @@ const parkService = {
     }
 
     try {
-      const newCheckIn = await prisma.checkIn.create({
-        data: {
-          userId,
-          parkId,
-          dogId,
-        },
+      const newCheckIn = await prisma.$transaction(async (tx) => {
+        const createdCheckIn = await tx.checkIn.create({
+          data: {
+            userId,
+            parkId,
+            dogId,
+          },
+        });
+
+        const domainEvent = createDomainEvent(
+          EventTypes.ParkCheckedIn,
+          {
+            checkInId: createdCheckIn.id,
+            userId: createdCheckIn.userId,
+            parkId: createdCheckIn.parkId,
+            dogId: createdCheckIn.dogId,
+          },
+          { actorId: createdCheckIn.userId }
+        );
+        await addOutboxEvent(tx, domainEvent);
+
+        return createdCheckIn;
       });
       typeSafeLogger.logUserAction('Check-in created successfully', { checkInId: newCheckIn.id });
       return newCheckIn;
@@ -292,21 +330,36 @@ const parkService = {
   async checkOut (userId: number, parkId: number) {
     typeSafeLogger.logUserAction("User attempting to check out", { userId, parkId });
     try {
-      const activeCheckIn = await prisma.checkIn.findFirst({
-        where: {
-          userId,
-          parkId,
-          checkedOutAt: null,
-        },
-      });
-      if (!activeCheckIn) {
-        throw NotFoundError("No active check-in found for this park");
-      }
-      const updatedCheckIn = await prisma.checkIn.update({
-        where: { id: activeCheckIn.id },
-        data: {
-          checkedOutAt: new Date(),
-        },
+      const updatedCheckIn = await prisma.$transaction(async (tx) => {
+        const activeCheckIn = await tx.checkIn.findFirst({
+          where: {
+            userId,
+            parkId,
+            checkedOutAt: null,
+          },
+        });
+        if (!activeCheckIn) {
+          throw NotFoundError("No active check-in found for this park");
+        }
+        const updated = await tx.checkIn.update({
+          where: { id: activeCheckIn.id },
+          data: {
+            checkedOutAt: new Date(),
+          },
+        });
+
+        const domainEvent = createDomainEvent(
+          EventTypes.ParkCheckedOut,
+          {
+            checkInId: updated.id,
+            userId: updated.userId,
+            parkId: updated.parkId,
+          },
+          { actorId: updated.userId }
+        );
+        await addOutboxEvent(tx, domainEvent);
+
+        return updated;
       });
       typeSafeLogger.logUserAction("User checked out successfully", {
         checkInId: updatedCheckIn.id,
@@ -359,9 +412,22 @@ const parkService = {
   },
 
   async autoCheckOut(checkInId: number) {
-    return prisma.checkIn.update({
-      where: { id: checkInId },
-      data: { checkedOutAt: new Date() },
+    return prisma.$transaction(async (tx) => {
+      const updated = await tx.checkIn.update({
+        where: { id: checkInId },
+        data: { checkedOutAt: new Date() },
+      });
+
+      const domainEvent = createDomainEvent(
+        EventTypes.ParkAutoCheckedOut,
+        {
+          checkInId: updated.id,
+          checkedOutAt: updated.checkedOutAt?.toISOString() ?? new Date().toISOString(),
+        }
+      );
+      await addOutboxEvent(tx, domainEvent);
+
+      return updated;
     });
   }
 };

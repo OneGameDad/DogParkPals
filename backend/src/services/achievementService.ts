@@ -1,7 +1,9 @@
-import { PrismaClient, Prisma, AchievementType, NotificationType } from '@prisma/client';
+import { PrismaClient, Prisma, AchievementType } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { NotFoundError, toAppError, ConflictError } from '../utils/errors';
-import notificationService from './notificationService';
+import { createDomainEvent } from '../events/createDomainEvent';
+import { EventTypes } from '../events/eventTypes';
+import { addOutboxEvent } from '../infrastructure/outbox/outboxRepository';
 
 const prisma = new PrismaClient();
 
@@ -253,21 +255,23 @@ const achievementService = {
               id: true,
               username: true,
               email: true,
-            }
-          }
-        }
+            },
+          },
+        },
       });
 
-      await notificationService.createNotification(
+      const eventPayload = {
         userId,
-        NotificationType.ACHIEVEMENT_EARNED,
-        {
-          achievementId: achievement.id,
-          name: achievement.name,
-          type: achievement.type,
-        },
-        client
-      );
+        achievementId: achievement.id,
+        name: achievement.name,
+        type: achievement.type,
+      };
+
+      const domainEvent = createDomainEvent(EventTypes.AchievementAwarded, eventPayload, {
+        actorId: userId,
+      });
+
+      await addOutboxEvent(client, domainEvent);
       
       typeSafeLogger.logUserAction('Achievement awarded to user successfully', { 
         userId, 

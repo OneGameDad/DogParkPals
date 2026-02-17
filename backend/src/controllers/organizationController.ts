@@ -5,8 +5,7 @@ import { ensureString } from "../utils/queryHelpers";
 import { toAppError, ConflictError, NotFoundError, ForbiddenError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import { sanitizeOrganization } from "../utils/organizationSanitizer";
-import { awardAchievement, awardExperience, XP_REWARDS } from "../services/xpService";
-import { AchievementType } from "@prisma/client";
+import { awardExperience, XP_REWARDS } from "../services/xpService";
 import {
   createOrganizationSchema,
   updateOrganizationSchema,
@@ -61,7 +60,6 @@ const organizationController = {
             // Add the creator as OWNER of the organization
             await organizationService.addMember(newOrg.id, userId, 'OWNER');
             await awardExperience(userId, XP_REWARDS.JOIN_ORGANIZATION, 'join_organization');
-            await awardAchievement(userId, "Pack Leader", AchievementType.BADGE);
             
             typeSafeLogger.logUserAction("Organization created", { organizationId: newOrg.id, name, ownerId: userId });
             const sanitized = sanitizeOrganization(newOrg, true, 'OWNER');
@@ -211,7 +209,6 @@ const organizationController = {
 
             await organizationService.addMember(orgId, userId, role);
             await awardExperience(userId, XP_REWARDS.JOIN_ORGANIZATION, 'join_organization');
-            await awardAchievement(userId, "Pack Member", AchievementType.BADGE);
             typeSafeLogger.logUserAction("Member added to organization", { organizationId: orgId, userId, role });
             res.status(201).send();
         } catch (error) {

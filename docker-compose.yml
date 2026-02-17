@@ -75,6 +75,20 @@ services:
       timeout: 5s
       retries: 5
 
+  rabbitmq-exporter:
+    image: kbudde/rabbitmq-exporter:latest
+    container_name: dogparkpals-rabbitmq-exporter
+    ports:
+      - "9419:9419"
+    environment:
+      - RABBIT_URL=http://rabbitmq:15672
+      - RABBIT_USER=guest
+      - RABBIT_PASSWORD=guest
+      - PUBLISH_PORT=9419
+    depends_on:
+      - rabbitmq
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus:latest
     container_name: dogparkpals-prometheus

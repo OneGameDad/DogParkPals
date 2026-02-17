@@ -16,7 +16,8 @@ const enemyService = {
       
       // 1. Check if they're currently friends
       const existingFriend = await friendService.getFriend(validatedData.userId);
-      const areFriends = existingFriend.users.some(friend => friend.id === validatedData.enemyUserId);
+      const friendList = existingFriend.users as Array<{ id: number }>;
+      const areFriends = friendList.some((friend) => friend.id === validatedData.enemyUserId);
       
       // 2. If they ARE friends, block and require confirmation
       if (areFriends) {
@@ -73,7 +74,8 @@ const enemyService = {
       
       // This should ALWAYS check friendship status again for safety
       const existingFriend = await friendService.getFriend(validatedData.userId);
-      const areFriends = existingFriend.users.some(friend => friend.id === validatedData.enemyUserId);
+      const friendList = existingFriend.users as Array<{ id: number }>;
+      const areFriends = friendList.some((friend) => friend.id === validatedData.enemyUserId);
       
       if (!areFriends) {
         typeSafeLogger.warn('User is not a friend, cannot confirm enemy addition', { userId, enemyUserId });
@@ -194,7 +196,7 @@ const enemyService = {
     try {
       typeSafeLogger.info('Fetching all enemy relationships');
       const enemies = await prisma.enemies.findMany({
-        include: { enemyUser: true, user: true },
+        include: { enemyUser: true, owner: true },
       });
       typeSafeLogger.logUserAction('All enemy relationships fetched successfully', { enemyCount: enemies.length });
       return enemies;

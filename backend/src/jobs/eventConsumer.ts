@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import { isEventBusEnabled, addOutboxEvent } from '../infrastructure/outbox/outboxRepository';
 import { createDomainEvent } from '../events/createDomainEvent';
 import { EventTypes } from '../events/eventTypes';
+import { jobExecutions } from '../config/metrics';
 
 const queueClient = createQueueClient();
 const prisma = new PrismaClient();
@@ -16,7 +17,9 @@ export async function startEventConsumer() {
   }
   try {
     await queueClient.subscribe(dispatchEvent);
+    jobExecutions.inc({ job_name: 'eventConsumer', status: 'started' });
   } catch (error) {
+    jobExecutions.inc({ job_name: 'eventConsumer', status: 'failure' });
     typeSafeLogger.logError('Failed to start event consumer', error);
     const message = error instanceof Error ? error.message : 'Unknown event consumer error';
     const domainEvent = createDomainEvent(EventTypes.JobFailed, {

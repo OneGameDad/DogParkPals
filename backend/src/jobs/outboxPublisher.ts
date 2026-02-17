@@ -5,6 +5,7 @@ import { addOutboxEvent, isEventBusEnabled, listPendingOutboxEvents, markOutboxE
 import type { DomainEventUnion } from '../events/eventTypes';
 import { createDomainEvent } from '../events/createDomainEvent';
 import { EventTypes } from '../events/eventTypes';
+import { outboxEventsPublished, outboxEventsFailed, jobExecutions, jobDuration } from '../config/metrics';
 
 const prisma = new PrismaClient();
 const queueClient = createQueueClient();
@@ -29,10 +30,16 @@ async function processOutboxOnce(batchSize: number) {
 
       await queueClient.publish(event);
       await markOutboxEventPublished(prisma, record.id);
+      
+      // Track successful publish
+      outboxEventsPublished.inc({ event_type: record.type });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown publish error';
       await markOutboxEventFailed(prisma, record.id, message);
       typeSafeLogger.logError('Outbox publish failed', error, { eventId: record.id, eventType: record.type });
+
+      // Track failed publish
+      outboxEventsFailed.inc({ event_type: record.type });
 
       const domainEvent = createDomainEvent(EventTypes.JobFailed, {
         jobName: 'outboxPublisher.publish',
@@ -60,9 +67,20 @@ export function startOutboxPublisher(options: { intervalMs?: number; batchSize?:
     if (!isRunning) return;
     if (isProcessing) return;
     isProcessing = true;
+    const startTime = Date.now();
     try {
       await processOutboxOnce(batchSize);
+      
+      // Track successful cycle
+      const duration = (Date.now() - startTime) / 1000;
+      jobDuration.observe({ job_name: 'outboxPublisher' }, duration);
+      jobExecutions.inc({ job_name: 'outboxPublisher', status: 'success' });
     } catch (error) {
+      // Track failed cycle
+      const duration = (Date.now() - startTime) / 1000;
+      jobDuration.observe({ job_name: 'outboxPublisher' }, duration);
+      jobExecutions.inc({ job_name: 'outboxPublisher', status: 'failure' });
+      
       typeSafeLogger.logError('Outbox publisher cycle failed', error);
       const message = error instanceof Error ? error.message : 'Unknown publisher cycle error';
       const domainEvent = createDomainEvent(EventTypes.JobFailed, {

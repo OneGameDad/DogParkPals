@@ -22,6 +22,9 @@ const mockPrisma: any = {
   notification: {
     create: jest.fn(),
   },
+  outboxEvent: {
+    create: jest.fn(),
+  },
 };
 
 const mockAchievementData = {
@@ -54,9 +57,6 @@ jest.mock('@prisma/client', () => {
       TROPHY: 'TROPHY',
       CERTIFICATE: 'CERTIFICATE',
     },
-    NotificationType: {
-      ACHIEVEMENT_EARNED: 'ACHIEVEMENT_EARNED',
-    },
   };
 });
 
@@ -69,6 +69,20 @@ jest.mock('../utils/typeSafeLogger', () => ({
     info: jest.fn(),
     warn: jest.fn(),
   },
+}));
+
+const mockCreateDomainEvent = jest.fn((type, payload, options) => ({
+  id: 'test-achievement-event-id',
+  type,
+  occurredAt: '2026-02-17T00:00:00.000Z',
+  actorId: options?.actorId,
+  payload,
+  version: 1,
+  traceId: options?.traceId,
+}));
+
+jest.mock('../events/createDomainEvent', () => ({
+  createDomainEvent: mockCreateDomainEvent,
 }));
 
 // Import AFTER all mocks are defined
@@ -351,16 +365,12 @@ describe('Achievement Service', () => {
           }
         }
       });
-      expect(mockPrisma.notification.create).toHaveBeenCalledWith({
-        data: {
-          userId: 1,
-          type: 'ACHIEVEMENT_EARNED',
-          payload: {
-            achievementId: mockAchievementData.id,
-            name: mockAchievementData.name,
-            type: mockAchievementData.type,
-          },
-        },
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-achievement-event-id',
+          type: 'achievement.awarded',
+          actorId: 1,
+        }),
       });
     });
 

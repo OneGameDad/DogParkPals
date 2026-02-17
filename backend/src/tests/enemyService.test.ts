@@ -11,6 +11,9 @@ const mockPrisma: any = {
   friendship: {
     deleteMany: jest.fn(),
   },
+  outboxEvent: {
+    create: jest.fn(),
+  },
   $transaction: jest.fn(),
 };
 
@@ -75,6 +78,20 @@ jest.mock('../utils/validationSchemas', () => ({
   },
 }));
 
+const mockCreateDomainEvent = jest.fn((type, payload, options) => ({
+  id: 'test-event-id',
+  type,
+  occurredAt: '2026-02-17T00:00:00.000Z',
+  actorId: options?.actorId,
+  payload,
+  version: 1,
+  traceId: options?.traceId,
+}));
+
+jest.mock('../events/createDomainEvent', () => ({
+  createDomainEvent: mockCreateDomainEvent,
+}));
+
 // Import AFTER all mocks are defined
 import enemyService from '../services/enemyService';
 
@@ -88,6 +105,9 @@ describe('Enemy Service', () => {
       mockGetFriend.mockResolvedValue({ users: [], dogs: [] });
       mockPrisma.enemies.count.mockResolvedValue(0);
       mockPrisma.enemies.create.mockResolvedValue(mockEnemyData);
+      mockPrisma.$transaction.mockImplementation(async (callback: any) => {
+        return await callback(mockPrisma);
+      });
 
       const result = await enemyService.addEnemy(1, 2);
 
@@ -96,6 +116,13 @@ describe('Enemy Service', () => {
       expect(result.enemy).toEqual(mockEnemyData);
       expect(mockPrisma.enemies.create).toHaveBeenCalledWith({
         data: { ownerId: 1, enemyUserId: 2 },
+      });
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'enemy.added',
+          actorId: 1,
+        }),
       });
     });
 
@@ -155,6 +182,13 @@ describe('Enemy Service', () => {
       expect(mockPrisma.enemies.create).toHaveBeenCalledWith({
         data: { ownerId: 1, enemyUserId: 2 },
       });
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'enemy.added',
+          actorId: 1,
+        }),
+      });
     });
 
     test('should throw error when user is not a friend', async () => {
@@ -209,6 +243,9 @@ describe('Enemy Service', () => {
     test('should remove enemy successfully', async () => {
       mockPrisma.enemies.count.mockResolvedValue(1);
       mockPrisma.enemies.deleteMany.mockResolvedValue({ count: 1 });
+      mockPrisma.$transaction.mockImplementation(async (callback: any) => {
+        return await callback(mockPrisma);
+      });
 
       await enemyService.removeEnemy(1, 2);
 
@@ -217,6 +254,13 @@ describe('Enemy Service', () => {
           ownerId: 1,
           enemyUserId: 2,
         },
+      });
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'enemy.removed',
+          actorId: 1,
+        }),
       });
     });
 

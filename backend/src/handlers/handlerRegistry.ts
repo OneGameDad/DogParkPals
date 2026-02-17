@@ -25,6 +25,8 @@ import { handleMessageSentLogging } from './logging/onMessageSent';
 import { handleParkCheckedInLogging } from './logging/onParkCheckedIn';
 import { handleParkCheckedOutLogging } from './logging/onParkCheckedOut';
 import { handleParkAutoCheckedOutLogging } from './logging/onParkAutoCheckedOut';
+import { handleEnemyAddedLogging } from './logging/onEnemyAdded';
+import { handleEnemyRemovedLogging } from './logging/onEnemyRemoved';
 
 export type EventHandler = (event: DomainEventUnion) => Promise<void>;
 
@@ -86,5 +88,11 @@ export const handlerRegistry: Record<EventType, RegisteredHandler[]> = {
   ],
   [EventTypes.ParkAutoCheckedOut]: [
     { name: 'logging.parkAutoCheckedOut', handler: handleParkAutoCheckedOutLogging },
+  ],
+  [EventTypes.EnemyAdded]: [
+    { name: 'logging.enemyAdded', handler: handleEnemyAddedLogging },
+  ],
+  [EventTypes.EnemyRemoved]: [
+    { name: 'logging.enemyRemoved', handler: handleEnemyRemovedLogging },
   ],
 };

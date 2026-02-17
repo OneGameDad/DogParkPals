@@ -15,6 +15,8 @@ export const EventTypes = {
   ParkCheckedIn: 'park.checked_in',
   ParkCheckedOut: 'park.checked_out',
   ParkAutoCheckedOut: 'park.auto_checked_out',
+  EnemyAdded: 'enemy.added',
+  EnemyRemoved: 'enemy.removed',
 } as const;
 
 export type EventType = (typeof EventTypes)[keyof typeof EventTypes];
@@ -107,6 +109,17 @@ export type ParkAutoCheckedOutPayload = {
   checkedOutAt: string;
 };
 
+export type EnemyAddedPayload = {
+  enemyId: number;
+  ownerId: number;
+  enemyUserId: number;
+};
+
+export type EnemyRemovedPayload = {
+  ownerId: number;
+  enemyUserId: number;
+};
+
 export type EventPayloadMap = {
   [EventTypes.EventCreated]: EventCreatedPayload;
   [EventTypes.AchievementAwarded]: AchievementAwardedPayload;
@@ -122,6 +135,8 @@ export type EventPayloadMap = {
   [EventTypes.ParkCheckedIn]: ParkCheckedInPayload;
   [EventTypes.ParkCheckedOut]: ParkCheckedOutPayload;
   [EventTypes.ParkAutoCheckedOut]: ParkAutoCheckedOutPayload;
+  [EventTypes.EnemyAdded]: EnemyAddedPayload;
+  [EventTypes.EnemyRemoved]: EnemyRemovedPayload;
 };
 
 export type DomainEvent<TType extends EventType = EventType> = {

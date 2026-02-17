@@ -50,7 +50,7 @@ networks:
 
 **File**: `backend/Dockerfile`
 
-**Approach**: Single-stage build with tsx runtime
+**Approach**: Single-stage build with compiled TypeScript output
 
 ```dockerfile
 FROM node:20-alpine
@@ -62,34 +62,20 @@ COPY prisma ./prisma/
 RUN npm ci
 COPY . .
 RUN npx prisma generate
+RUN npm run build
 RUN mkdir -p uploads
 
 EXPOSE 3000
-CMD ["npx", "tsx", "src/server.ts"]
+CMD ["node", "dist/server.js"]
 ```
 
 **Key Decisions**:
 
-1. **Using tsx instead of compiled JavaScript**: The codebase has existing TypeScript compilation errors that would prevent `tsc` from building successfully. Using tsx allows the server to run in development mode within the container.
+1. **Compile TypeScript in the image**: The backend now builds cleanly with `tsc`, so the container compiles and runs `dist/server.js` instead of executing TypeScript at runtime.
 
-2. **Single-stage vs Multi-stage**: Initially attempted multi-stage build with compilation, but abandoned due to TypeScript errors. Single-stage is simpler for development containers.
+2. **Single-stage build**: Keeps the Dockerfile straightforward while ensuring Prisma client generation and TypeScript build happen during image creation.
 
-3. **Including devDependencies**: Necessary because tsx is a dev dependency, and we're not compiling the code.
-
-**TypeScript Errors Encountered**:
-```
-src/controllers/achievementController.ts(33,38): error TS2345
-src/controllers/dogController.ts(46,7): error TS2717
-src/controllers/eventController.ts(103,9): error TS18048
-src/middlewares/authMiddleware.ts(11,7): error TS2717
-... 90+ similar errors
-```
-
-**Root Causes**:
-- Type mismatches between Express Request types and custom user properties
-- Query parameters typed as `string | string[]` but functions expect `string`
-- Optional chaining issues with `req.user` properties
-- Inconsistent type definitions between controllers and middlewares
+3. **Prisma generate in build**: Ensures generated client matches the schema inside the image.
 
 ### Frontend Container
 
@@ -246,7 +232,7 @@ All sensitive credentials are stored in `docker-secrets` file:
 
 ```bash
 # docker-secrets (NOT committed to git)
-DATABASE_URL="file:./prod.db"
+DATABASE_URL="file:./data/prod.db"
 JWT_SECRET=<generated-secret>
 GOOGLE_CLIENT_ID=<your-client-id>
 GOOGLE_CLIENT_SECRET=<your-secret>

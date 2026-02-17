@@ -9,11 +9,12 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - DATABASE_URL=file:./prisma/prod.db
     env_file:
       - ./docker-secrets
     volumes:
       - ./backend/uploads:/app/uploads
-      - backend-db:/app/prisma
+      - backend-db:/app/data
     depends_on:
       db-init:
         condition: service_completed_successfully
@@ -37,10 +38,12 @@ services:
       context: ./backend
       dockerfile: Dockerfile.db-init
     container_name: dogparkpals-db-init
+    environment:
+      - DATABASE_URL=file:./data/prod.db
     env_file:
       - ./docker-secrets
     volumes:
-      - backend-db:/app/prisma
+      - backend-db:/app/data
     command: sh -c "npx prisma migrate deploy && npx prisma generate"
 
   backup-events:
@@ -48,10 +51,12 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: dogparkpals-backup-events
+    environment:
+      - DATABASE_URL=file:./data/prod.db
     env_file:
       - ./docker-secrets
     volumes:
-      - backend-db:/app/prisma
+      - backend-db:/app/data
     entrypoint: ["npx", "tsx", "src/jobs/backupEventCli.ts"]
     depends_on:
       db-init:

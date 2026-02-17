@@ -37,6 +37,7 @@ import searchRouter from "./routes/searchRouter";
 import typeSafeLogger from "./utils/typeSafeLogger";
 import { requestIdMiddleware } from "./middlewares/requestId";
 import { errorHandler } from "./middlewares/errorHandler";
+import { register } from "./config/metrics";
 
 const app = express();
 
@@ -66,6 +67,15 @@ app.get("/health", (_req, res) => {
 app.get("/status", (_req, res) => {
   typeSafeLogger.info("Status endpoint hit");
   res.json({ status: "ok" });
+});
+
+app.get("/metrics", async (_req, res) => {
+  try {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  } catch (err) {
+    res.status(500).end(err);
+  }
 });
 
 // Generic API routes

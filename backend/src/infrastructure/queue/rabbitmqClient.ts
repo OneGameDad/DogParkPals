@@ -27,9 +27,10 @@ export class RabbitMqClient implements QueueClient {
     if (this.channel) return;
 
     this.connection = await connect(this.url);
-    this.channel = await this.connection.createChannel();
-    await this.channel!.assertQueue(this.queueName, { durable: true });
-    await this.channel!.assertQueue(this.dlqName, { durable: true });
+    const channel = await this.connection.createChannel();
+    this.channel = channel;
+    await channel.assertQueue(this.queueName, { durable: true });
+    await channel.assertQueue(this.dlqName, { durable: true });
   }
 
   async publish(event: DomainEventUnion): Promise<void> {

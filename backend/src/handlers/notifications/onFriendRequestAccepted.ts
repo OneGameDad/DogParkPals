@@ -8,7 +8,7 @@ export async function handleFriendRequestAcceptedNotifications(event: DomainEven
 
   const { friendshipId, requesterId, addresseeId } = event.payload;
 
-  if (!requesterId) return;
+  if (!requesterId || !addresseeId) return;
 
   await notificationService.createNotification(requesterId, NotificationType.FRIENDSHIP_ACCEPTED, {
     friendshipId,

@@ -2,6 +2,7 @@ import type { AchievementType, OrgRole, UserRole } from '@prisma/client';
 
 export const EventTypes = {
   EventCreated: 'event.created',
+  EventAttended: 'event.attended',
   AchievementAwarded: 'achievement.awarded',
   UserRoleUpdated: 'user.role.updated',
   UserProfileUpdated: 'user.profile.updated',
@@ -31,6 +32,10 @@ export const EventTypes = {
   EnemyRemoved: 'enemy.removed',
   FriendRemoved: 'friend.removed',
   EventDeleted: 'event.deleted',
+  JobFailed: 'job.failed',
+  BackupStarted: 'backup.started',
+  BackupSucceeded: 'backup.succeeded',
+  BackupFailed: 'backup.failed',
 } as const;
 
 export type EventType = (typeof EventTypes)[keyof typeof EventTypes];
@@ -41,6 +46,11 @@ export type EventCreatedPayload = {
   organizerId: number;
   organizationId?: number | null;
   title: string;
+};
+
+export type EventAttendedPayload = {
+  eventId: number;
+  userId: number;
 };
 
 export type AchievementAwardedPayload = {
@@ -219,8 +229,38 @@ export type EventDeletedPayload = {
   attendeeIds: number[];
 };
 
+export type JobFailedPayload = {
+  jobName: string;
+  errorMessage: string;
+  errorStack?: string;
+  context?: Record<string, unknown>;
+};
+
+export type BackupStartedPayload = {
+  backupId: string;
+  target?: string;
+  storage?: string;
+};
+
+export type BackupSucceededPayload = {
+  backupId: string;
+  target?: string;
+  storage?: string;
+  sizeBytes?: number;
+  durationMs?: number;
+};
+
+export type BackupFailedPayload = {
+  backupId: string;
+  target?: string;
+  storage?: string;
+  errorMessage: string;
+  errorStack?: string;
+};
+
 export type EventPayloadMap = {
   [EventTypes.EventCreated]: EventCreatedPayload;
+  [EventTypes.EventAttended]: EventAttendedPayload;
   [EventTypes.AchievementAwarded]: AchievementAwardedPayload;
   [EventTypes.UserRoleUpdated]: UserRoleUpdatedPayload;
   [EventTypes.UserProfileUpdated]: UserProfileUpdatedPayload;
@@ -250,6 +290,10 @@ export type EventPayloadMap = {
   [EventTypes.EnemyRemoved]: EnemyRemovedPayload;
   [EventTypes.FriendRemoved]: FriendRemovedPayload;
   [EventTypes.EventDeleted]: EventDeletedPayload;
+  [EventTypes.JobFailed]: JobFailedPayload;
+  [EventTypes.BackupStarted]: BackupStartedPayload;
+  [EventTypes.BackupSucceeded]: BackupSucceededPayload;
+  [EventTypes.BackupFailed]: BackupFailedPayload;
 };
 
 export type DomainEvent<TType extends EventType = EventType> = {

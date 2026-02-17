@@ -2,6 +2,7 @@ import type { DomainEventUnion, EventType } from '../events/eventTypes';
 import { EventTypes } from '../events/eventTypes';
 import { handleEventCreatedNotifications } from './notifications/onEventCreated';
 import { handleEventCreatedLogging } from './logging/onEventCreated';
+import { handleEventAttendedAchievements } from './achievements/onEventAttended';
 import { handleAchievementAwardedNotifications } from './notifications/onAchievementAwarded';
 import { handleAchievementAwardedLogging } from './logging/onAchievementAwarded';
 import { handleUserRoleUpdatedNotifications } from './notifications/onUserRoleUpdated';
@@ -16,16 +17,19 @@ import { handleFriendRequestSentNotifications } from './notifications/onFriendRe
 import { handleFriendRequestSentLogging } from './logging/onFriendRequestSent';
 import { handleFriendRequestAcceptedNotifications } from './notifications/onFriendRequestAccepted';
 import { handleFriendRequestAcceptedLogging } from './logging/onFriendRequestAccepted';
+import { handleFriendRequestAcceptedAchievements } from './achievements/onFriendRequestAccepted';
 import { handleOrganizationJoinRequestedNotifications } from './notifications/onOrganizationJoinRequested';
 import { handleOrganizationJoinRequestedLogging } from './logging/onOrganizationJoinRequested';
 import { handleOrganizationJoinApprovedNotifications } from './notifications/onOrganizationJoinApproved';
 import { handleOrganizationJoinApprovedLogging } from './logging/onOrganizationJoinApproved';
+import { handleOrganizationJoinApprovedAchievements } from './achievements/onOrganizationJoinApproved';
 import { handleOrganizationRoleUpdatedNotifications } from './notifications/onOrganizationRoleUpdated';
 import { handleOrganizationRoleUpdatedLogging } from './logging/onOrganizationRoleUpdated';
 import { handleOrganizationMemberRemovedNotifications } from './notifications/onOrganizationMemberRemoved';
 import { handleOrganizationDeletedNotifications } from './notifications/onOrganizationDeleted';
 import { handleDogOwnershipAddedNotifications } from './notifications/onDogOwnershipAdded';
 import { handleDogOwnershipAddedLogging } from './logging/onDogOwnershipAdded';
+import { handleDogOwnershipAddedAchievements } from './achievements/onDogOwnershipAdded';
 import { handleDogOwnershipRemovedNotifications } from './notifications/onDogOwnershipRemoved';
 import { handleDogCreatedNotifications } from './notifications/onDogCreated';
 import { handleDogDeletedNotifications } from './notifications/onDogDeleted';
@@ -44,9 +48,14 @@ import { handleParkCheckedInNotifications } from './notifications/onParkCheckedI
 import { handleParkDeletedNotifications } from './notifications/onParkDeleted';
 import { handleEventDeletedNotifications } from './notifications/onEventDeleted';
 import { handleEnemyAddedLogging } from './logging/onEnemyAdded';
+import { handleEnemyAddedAchievements } from './achievements/onEnemyAdded';
 import { handleEnemyRemovedLogging } from './logging/onEnemyRemoved';
 import { handleEnemyRemovedNotifications } from './notifications/onEnemyRemoved';
 import { handleFriendRemovedNotifications } from './notifications/onFriendRemoved';
+import { handleJobFailedLogging } from './logging/onJobFailed';
+import { handleBackupStartedLogging } from './logging/onBackupStarted';
+import { handleBackupSucceededLogging } from './logging/onBackupSucceeded';
+import { handleBackupFailedLogging } from './logging/onBackupFailed';
 
 export type EventHandler = (event: DomainEventUnion) => Promise<void>;
 
@@ -59,6 +68,9 @@ export const handlerRegistry: Record<EventType, RegisteredHandler[]> = {
   [EventTypes.EventCreated]: [
     { name: 'notifications.eventCreated', handler: handleEventCreatedNotifications },
     { name: 'logging.eventCreated', handler: handleEventCreatedLogging },
+  ],
+  [EventTypes.EventAttended]: [
+    { name: 'achievements.eventAttended', handler: handleEventAttendedAchievements },
   ],
   [EventTypes.AchievementAwarded]: [
     { name: 'notifications.achievementAwarded', handler: handleAchievementAwardedNotifications },
@@ -86,6 +98,7 @@ export const handlerRegistry: Record<EventType, RegisteredHandler[]> = {
   ],
   [EventTypes.FriendRequestAccepted]: [
     { name: 'notifications.friendRequestAccepted', handler: handleFriendRequestAcceptedNotifications },
+    { name: 'achievements.friendRequestAccepted', handler: handleFriendRequestAcceptedAchievements },
     { name: 'logging.friendRequestAccepted', handler: handleFriendRequestAcceptedLogging },
   ],
   [EventTypes.OrganizationJoinRequested]: [
@@ -94,6 +107,7 @@ export const handlerRegistry: Record<EventType, RegisteredHandler[]> = {
   ],
   [EventTypes.OrganizationJoinApproved]: [
     { name: 'notifications.organizationJoinApproved', handler: handleOrganizationJoinApprovedNotifications },
+    { name: 'achievements.organizationJoinApproved', handler: handleOrganizationJoinApprovedAchievements },
     { name: 'logging.organizationJoinApproved', handler: handleOrganizationJoinApprovedLogging },
   ],
   [EventTypes.OrganizationRoleUpdated]: [
@@ -108,6 +122,7 @@ export const handlerRegistry: Record<EventType, RegisteredHandler[]> = {
   ],
   [EventTypes.DogOwnershipAdded]: [
     { name: 'notifications.dogOwnershipAdded', handler: handleDogOwnershipAddedNotifications },
+    { name: 'achievements.dogOwnershipAdded', handler: handleDogOwnershipAddedAchievements },
     { name: 'logging.dogOwnershipAdded', handler: handleDogOwnershipAddedLogging },
   ],
   [EventTypes.DogOwnershipRemoved]: [
@@ -154,6 +169,7 @@ export const handlerRegistry: Record<EventType, RegisteredHandler[]> = {
     { name: 'notifications.eventDeleted', handler: handleEventDeletedNotifications },
   ],
   [EventTypes.EnemyAdded]: [
+    { name: 'achievements.enemyAdded', handler: handleEnemyAddedAchievements },
     { name: 'logging.enemyAdded', handler: handleEnemyAddedLogging },
   ],
   [EventTypes.EnemyRemoved]: [
@@ -162,5 +178,17 @@ export const handlerRegistry: Record<EventType, RegisteredHandler[]> = {
   ],
   [EventTypes.FriendRemoved]: [
     { name: 'notifications.friendRemoved', handler: handleFriendRemovedNotifications },
+  ],
+  [EventTypes.JobFailed]: [
+    { name: 'logging.jobFailed', handler: handleJobFailedLogging },
+  ],
+  [EventTypes.BackupStarted]: [
+    { name: 'logging.backupStarted', handler: handleBackupStartedLogging },
+  ],
+  [EventTypes.BackupSucceeded]: [
+    { name: 'logging.backupSucceeded', handler: handleBackupSucceededLogging },
+  ],
+  [EventTypes.BackupFailed]: [
+    { name: 'logging.backupFailed', handler: handleBackupFailedLogging },
   ],
 };

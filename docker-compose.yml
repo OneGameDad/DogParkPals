@@ -43,6 +43,21 @@ services:
       - backend-db:/app/prisma
     command: sh -c "npx prisma migrate deploy && npx prisma generate"
 
+  backup-events:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dogparkpals-backup-events
+    env_file:
+      - ./docker-secrets
+    volumes:
+      - backend-db:/app/prisma
+    entrypoint: ["npx", "tsx", "src/jobs/backupEventCli.ts"]
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    restart: "no"
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: dogparkpals-rabbitmq

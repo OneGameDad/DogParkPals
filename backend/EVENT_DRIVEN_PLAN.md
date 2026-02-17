@@ -43,7 +43,7 @@
 - Add metrics: publish failures, handler errors, queue depth.
 - Configure alerts for DLQ growth.
 
-## 10) Rollout and cleanup
+## 10) Rollout and cleanup (completed)
 - Feature-flag event-driven behavior per flow.
 - Monitor, then remove legacy coupling logic.
 - Document the final event catalog and handler ownership.
@@ -53,6 +53,10 @@ Completion criteria (local Docker):
 - Feature flags removed or defaulted on for all event-driven paths.
 - Event catalog documented and handlers mapped to owners.
 - Integration tests pass with queue enabled in docker-compose.
+
+Status:
+- Event catalog is documented in `backend/EVENT_CATALOG.md`.
+- Local ops checklist is documented in the root `README.md`.
 
 ## 11) Local Docker extension playbooks
 

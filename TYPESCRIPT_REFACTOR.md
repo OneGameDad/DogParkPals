@@ -280,6 +280,44 @@ const userId = req.user!.id;
 
 ---
 
+### 8. Validator Type Safety Reconsideration (REVERTED)
+
+**Initial Change** (commit `5f83ec8`): Changed validator parameter from `unknown` to `any`
+
+**Problem Identified**: 
+The change from `unknown` to `any` in `parseValidation()` significantly weakens type safety:
+
+```typescript
+// Initial problematic change
+export const parseValidation = <T,>(schema: z.ZodSchema<T>, data: any): T => {
+  // ...
+}
+```
+
+**Why This Was Wrong**:
+- **Type Safety Loss**: `any` bypasses TypeScript's type checking entirely
+- **Purpose Violation**: `unknown` is specifically designed for validation functions receiving untrusted input
+- **Best Practice**: Validation functions should force callers to validate data before use
+- **Zod Compatibility**: Zod's `safeParse()` accepts `unknown` natively - no need for `any`
+
+**Correct Implementation** (reverted):
+```typescript
+export const parseValidation = <T,>(schema: z.ZodSchema<T>, data: unknown): T => {
+  const result = schema.safeParse(data);
+  // ...
+}
+```
+
+**Justification for Revert**:
+- `unknown` forces explicit type checking, which is the entire purpose of a validation layer
+- Zod schemas handle `unknown` types correctly
+- Using `any` defeats TypeScript's type system
+- No functional benefit to using `any` - only downsides
+
+**Status**: ✅ Reverted to `unknown` in commit following code review
+
+---
+
 ## Error Reduction Timeline
 
 | Step | Action | Errors Before | Errors After | Errors Fixed |

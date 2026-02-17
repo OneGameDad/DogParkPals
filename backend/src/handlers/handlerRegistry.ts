@@ -8,6 +8,8 @@ import { handleUserRoleUpdatedNotifications } from './notifications/onUserRoleUp
 import { handleUserRoleUpdatedLogging } from './logging/onUserRoleUpdated';
 import { handleUserProfileUpdatedNotifications } from './notifications/onUserProfileUpdated';
 import { handleUserProfileUpdatedLogging } from './logging/onUserProfileUpdated';
+import { handleUserProfilePictureUploadedNotifications } from './notifications/onUserProfilePictureUploaded';
+import { handleUserProfilePictureDeletedNotifications } from './notifications/onUserProfilePictureDeleted';
 import { handleUserProfilePictureUploadedLogging } from './logging/onUserProfilePictureUploaded';
 import { handleUserProfilePictureDeletedLogging } from './logging/onUserProfilePictureDeleted';
 import { handleFriendRequestSentNotifications } from './notifications/onFriendRequestSent';
@@ -20,8 +22,15 @@ import { handleOrganizationJoinApprovedNotifications } from './notifications/onO
 import { handleOrganizationJoinApprovedLogging } from './logging/onOrganizationJoinApproved';
 import { handleOrganizationRoleUpdatedNotifications } from './notifications/onOrganizationRoleUpdated';
 import { handleOrganizationRoleUpdatedLogging } from './logging/onOrganizationRoleUpdated';
+import { handleOrganizationMemberRemovedNotifications } from './notifications/onOrganizationMemberRemoved';
+import { handleOrganizationDeletedNotifications } from './notifications/onOrganizationDeleted';
 import { handleDogOwnershipAddedNotifications } from './notifications/onDogOwnershipAdded';
 import { handleDogOwnershipAddedLogging } from './logging/onDogOwnershipAdded';
+import { handleDogOwnershipRemovedNotifications } from './notifications/onDogOwnershipRemoved';
+import { handleDogCreatedNotifications } from './notifications/onDogCreated';
+import { handleDogDeletedNotifications } from './notifications/onDogDeleted';
+import { handleDogPhotoUploadedNotifications } from './notifications/onDogPhotoUploaded';
+import { handleDogPhotoDeletedNotifications } from './notifications/onDogPhotoDeleted';
 import { handleDogPhotoUploadedLogging } from './logging/onDogPhotoUploaded';
 import { handleDogPhotoDeletedLogging } from './logging/onDogPhotoDeleted';
 import { handleDogDocumentUploadedLogging } from './logging/onDogDocumentUploaded';
@@ -31,8 +40,12 @@ import { handleMessageSentLogging } from './logging/onMessageSent';
 import { handleParkCheckedInLogging } from './logging/onParkCheckedIn';
 import { handleParkCheckedOutLogging } from './logging/onParkCheckedOut';
 import { handleParkAutoCheckedOutLogging } from './logging/onParkAutoCheckedOut';
+import { handleParkDeletedNotifications } from './notifications/onParkDeleted';
+import { handleEventDeletedNotifications } from './notifications/onEventDeleted';
 import { handleEnemyAddedLogging } from './logging/onEnemyAdded';
 import { handleEnemyRemovedLogging } from './logging/onEnemyRemoved';
+import { handleEnemyRemovedNotifications } from './notifications/onEnemyRemoved';
+import { handleFriendRemovedNotifications } from './notifications/onFriendRemoved';
 
 export type EventHandler = (event: DomainEventUnion) => Promise<void>;
 
@@ -59,9 +72,11 @@ export const handlerRegistry: Record<EventType, RegisteredHandler[]> = {
     { name: 'logging.userProfileUpdated', handler: handleUserProfileUpdatedLogging },
   ],
   [EventTypes.UserProfilePictureUploaded]: [
+    { name: 'notifications.userProfilePictureUploaded', handler: handleUserProfilePictureUploadedNotifications },
     { name: 'logging.userProfilePictureUploaded', handler: handleUserProfilePictureUploadedLogging },
   ],
   [EventTypes.UserProfilePictureDeleted]: [
+    { name: 'notifications.userProfilePictureDeleted', handler: handleUserProfilePictureDeletedNotifications },
     { name: 'logging.userProfilePictureDeleted', handler: handleUserProfilePictureDeletedLogging },
   ],
   [EventTypes.FriendRequestSent]: [
@@ -84,14 +99,31 @@ export const handlerRegistry: Record<EventType, RegisteredHandler[]> = {
     { name: 'notifications.organizationRoleUpdated', handler: handleOrganizationRoleUpdatedNotifications },
     { name: 'logging.organizationRoleUpdated', handler: handleOrganizationRoleUpdatedLogging },
   ],
+  [EventTypes.OrganizationMemberRemoved]: [
+    { name: 'notifications.organizationMemberRemoved', handler: handleOrganizationMemberRemovedNotifications },
+  ],
+  [EventTypes.OrganizationDeleted]: [
+    { name: 'notifications.organizationDeleted', handler: handleOrganizationDeletedNotifications },
+  ],
   [EventTypes.DogOwnershipAdded]: [
     { name: 'notifications.dogOwnershipAdded', handler: handleDogOwnershipAddedNotifications },
     { name: 'logging.dogOwnershipAdded', handler: handleDogOwnershipAddedLogging },
   ],
+  [EventTypes.DogOwnershipRemoved]: [
+    { name: 'notifications.dogOwnershipRemoved', handler: handleDogOwnershipRemovedNotifications },
+  ],
+  [EventTypes.DogCreated]: [
+    { name: 'notifications.dogCreated', handler: handleDogCreatedNotifications },
+  ],
+  [EventTypes.DogDeleted]: [
+    { name: 'notifications.dogDeleted', handler: handleDogDeletedNotifications },
+  ],
   [EventTypes.DogPhotoUploaded]: [
+    { name: 'notifications.dogPhotoUploaded', handler: handleDogPhotoUploadedNotifications },
     { name: 'logging.dogPhotoUploaded', handler: handleDogPhotoUploadedLogging },
   ],
   [EventTypes.DogPhotoDeleted]: [
+    { name: 'notifications.dogPhotoDeleted', handler: handleDogPhotoDeletedNotifications },
     { name: 'logging.dogPhotoDeleted', handler: handleDogPhotoDeletedLogging },
   ],
   [EventTypes.DogDocumentUploaded]: [
@@ -113,10 +145,20 @@ export const handlerRegistry: Record<EventType, RegisteredHandler[]> = {
   [EventTypes.ParkAutoCheckedOut]: [
     { name: 'logging.parkAutoCheckedOut', handler: handleParkAutoCheckedOutLogging },
   ],
+  [EventTypes.ParkDeleted]: [
+    { name: 'notifications.parkDeleted', handler: handleParkDeletedNotifications },
+  ],
+  [EventTypes.EventDeleted]: [
+    { name: 'notifications.eventDeleted', handler: handleEventDeletedNotifications },
+  ],
   [EventTypes.EnemyAdded]: [
     { name: 'logging.enemyAdded', handler: handleEnemyAddedLogging },
   ],
   [EventTypes.EnemyRemoved]: [
+    { name: 'notifications.enemyRemoved', handler: handleEnemyRemovedNotifications },
     { name: 'logging.enemyRemoved', handler: handleEnemyRemovedLogging },
+  ],
+  [EventTypes.FriendRemoved]: [
+    { name: 'notifications.friendRemoved', handler: handleFriendRemovedNotifications },
   ],
 };

@@ -589,12 +589,23 @@ describe('User Services', () => {
     const mockUpdate = jest.fn().mockResolvedValue({
       profilePictureUrl: 'uploads/profile.jpg',
     });
+    const mockOutboxCreate = jest.fn();
+    const mockTransaction = jest.fn(async (callback: any) =>
+      callback({
+        user: { update: mockUpdate },
+        outboxEvent: { create: mockOutboxCreate },
+      })
+    );
 
     jest.doMock('@prisma/client', () => ({
       PrismaClient: jest.fn(() => ({
         user: {
           update: mockUpdate,
         },
+        outboxEvent: {
+          create: mockOutboxCreate,
+        },
+        $transaction: mockTransaction,
       })),
     }));
 
@@ -610,6 +621,13 @@ describe('User Services', () => {
       data: { profilePictureUrl: 'uploads/profile.jpg' },
       select: { profilePictureUrl: true },
     });
+    expect(mockOutboxCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        id: 'test-event-id',
+        type: 'user.profile.picture.uploaded',
+        actorId: 1,
+      }),
+    });
 
     expect(result.profilePictureUrl).toBe('uploads/profile.jpg');
 
@@ -618,10 +636,19 @@ describe('User Services', () => {
 
   test('uploadProfilePicture throws AppError when prisma fails', async () => {
     const mockUpdate = jest.fn().mockRejectedValue(new Error('DB fail'));
+    const mockOutboxCreate = jest.fn();
+    const mockTransaction = jest.fn(async (callback: any) =>
+      callback({
+        user: { update: mockUpdate },
+        outboxEvent: { create: mockOutboxCreate },
+      })
+    );
 
     jest.doMock('@prisma/client', () => ({
       PrismaClient: jest.fn(() => ({
         user: { update: mockUpdate },
+        outboxEvent: { create: mockOutboxCreate },
+        $transaction: mockTransaction,
       })),
       Prisma: {
         PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error {},
@@ -677,6 +704,13 @@ describe('User Services', () => {
     const mockUpdate = jest.fn().mockResolvedValue({
       profilePictureUrl: null,
     });
+    const mockOutboxCreate = jest.fn();
+    const mockTransaction = jest.fn(async (callback: any) =>
+      callback({
+        user: { update: mockUpdate },
+        outboxEvent: { create: mockOutboxCreate },
+      })
+    );
 
     jest.doMock('fs', () => ({
       existsSync: jest.fn().mockReturnValue(true),
@@ -689,6 +723,10 @@ describe('User Services', () => {
           findUnique: mockFindUnique,
           update: mockUpdate,
         },
+        outboxEvent: {
+          create: mockOutboxCreate,
+        },
+        $transaction: mockTransaction,
       })),
     }));
 
@@ -702,6 +740,13 @@ describe('User Services', () => {
     expect(mockUpdate).toHaveBeenCalledWith({
       where: { id: 1 },
       data: { profilePictureUrl: null },
+    });
+    expect(mockOutboxCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        id: 'test-event-id',
+        type: 'user.profile.picture.deleted',
+        actorId: 1,
+      }),
     });
 
     expect(result.profilePictureUrl).toBeNull();

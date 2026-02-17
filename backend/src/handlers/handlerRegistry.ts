@@ -8,6 +8,8 @@ import { handleUserRoleUpdatedNotifications } from './notifications/onUserRoleUp
 import { handleUserRoleUpdatedLogging } from './logging/onUserRoleUpdated';
 import { handleUserProfileUpdatedNotifications } from './notifications/onUserProfileUpdated';
 import { handleUserProfileUpdatedLogging } from './logging/onUserProfileUpdated';
+import { handleUserProfilePictureUploadedLogging } from './logging/onUserProfilePictureUploaded';
+import { handleUserProfilePictureDeletedLogging } from './logging/onUserProfilePictureDeleted';
 import { handleFriendRequestSentNotifications } from './notifications/onFriendRequestSent';
 import { handleFriendRequestSentLogging } from './logging/onFriendRequestSent';
 import { handleFriendRequestAcceptedNotifications } from './notifications/onFriendRequestAccepted';
@@ -20,6 +22,10 @@ import { handleOrganizationRoleUpdatedNotifications } from './notifications/onOr
 import { handleOrganizationRoleUpdatedLogging } from './logging/onOrganizationRoleUpdated';
 import { handleDogOwnershipAddedNotifications } from './notifications/onDogOwnershipAdded';
 import { handleDogOwnershipAddedLogging } from './logging/onDogOwnershipAdded';
+import { handleDogPhotoUploadedLogging } from './logging/onDogPhotoUploaded';
+import { handleDogPhotoDeletedLogging } from './logging/onDogPhotoDeleted';
+import { handleDogDocumentUploadedLogging } from './logging/onDogDocumentUploaded';
+import { handleDogDocumentDeletedLogging } from './logging/onDogDocumentDeleted';
 import { handleMessageSentNotifications } from './notifications/onMessageSent';
 import { handleMessageSentLogging } from './logging/onMessageSent';
 import { handleParkCheckedInLogging } from './logging/onParkCheckedIn';
@@ -52,6 +58,12 @@ export const handlerRegistry: Record<EventType, RegisteredHandler[]> = {
     { name: 'notifications.userProfileUpdated', handler: handleUserProfileUpdatedNotifications },
     { name: 'logging.userProfileUpdated', handler: handleUserProfileUpdatedLogging },
   ],
+  [EventTypes.UserProfilePictureUploaded]: [
+    { name: 'logging.userProfilePictureUploaded', handler: handleUserProfilePictureUploadedLogging },
+  ],
+  [EventTypes.UserProfilePictureDeleted]: [
+    { name: 'logging.userProfilePictureDeleted', handler: handleUserProfilePictureDeletedLogging },
+  ],
   [EventTypes.FriendRequestSent]: [
     { name: 'notifications.friendRequestSent', handler: handleFriendRequestSentNotifications },
     { name: 'logging.friendRequestSent', handler: handleFriendRequestSentLogging },
@@ -75,6 +87,18 @@ export const handlerRegistry: Record<EventType, RegisteredHandler[]> = {
   [EventTypes.DogOwnershipAdded]: [
     { name: 'notifications.dogOwnershipAdded', handler: handleDogOwnershipAddedNotifications },
     { name: 'logging.dogOwnershipAdded', handler: handleDogOwnershipAddedLogging },
+  ],
+  [EventTypes.DogPhotoUploaded]: [
+    { name: 'logging.dogPhotoUploaded', handler: handleDogPhotoUploadedLogging },
+  ],
+  [EventTypes.DogPhotoDeleted]: [
+    { name: 'logging.dogPhotoDeleted', handler: handleDogPhotoDeletedLogging },
+  ],
+  [EventTypes.DogDocumentUploaded]: [
+    { name: 'logging.dogDocumentUploaded', handler: handleDogDocumentUploadedLogging },
+  ],
+  [EventTypes.DogDocumentDeleted]: [
+    { name: 'logging.dogDocumentDeleted', handler: handleDogDocumentDeletedLogging },
   ],
   [EventTypes.MessageSent]: [
     { name: 'notifications.messageSent', handler: handleMessageSentNotifications },

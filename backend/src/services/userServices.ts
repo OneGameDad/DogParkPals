@@ -454,10 +454,22 @@ const userService = {
   async uploadProfilePicture(userId: number, filePath: string) {
     typeSafeLogger.logUserAction('Uploading profile picture', { userId, filePath });
     try {
-      const updatedUser = await prisma.user.update({
-        where: { id: userId },
-        data: { profilePictureUrl: filePath },
-        select: { profilePictureUrl: true },
+      const updatedUser = await prisma.$transaction(async (tx) => {
+        const user = await tx.user.update({
+          where: { id: userId },
+          data: { profilePictureUrl: filePath },
+          select: { profilePictureUrl: true },
+        });
+        const domainEvent = createDomainEvent(
+          EventTypes.UserProfilePictureUploaded,
+          {
+            userId,
+            profilePictureUrl: user.profilePictureUrl,
+          },
+          { actorId: userId }
+        );
+        await addOutboxEvent(tx, domainEvent);
+        return user;
       });
       typeSafeLogger.logUserAction('Profile picture uploaded', { userId, filePath });
       return updatedUser;
@@ -483,9 +495,22 @@ const userService = {
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
-      const updatedUser = await prisma.user.update({
-        where: { id: userId },
-        data: { profilePictureUrl: null },
+      const previousUrl = existingUser.profilePictureUrl;
+      const updatedUser = await prisma.$transaction(async (tx) => {
+        const user = await tx.user.update({
+          where: { id: userId },
+          data: { profilePictureUrl: null },
+        });
+        const domainEvent = createDomainEvent(
+          EventTypes.UserProfilePictureDeleted,
+          {
+            userId,
+            previousUrl,
+          },
+          { actorId: userId }
+        );
+        await addOutboxEvent(tx, domainEvent);
+        return user;
       });
       typeSafeLogger.logUserAction('Profile picture deleted', { userId });
       return updatedUser;

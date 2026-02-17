@@ -5,12 +5,18 @@ export const EventTypes = {
   AchievementAwarded: 'achievement.awarded',
   UserRoleUpdated: 'user.role.updated',
   UserProfileUpdated: 'user.profile.updated',
+  UserProfilePictureUploaded: 'user.profile.picture.uploaded',
+  UserProfilePictureDeleted: 'user.profile.picture.deleted',
   FriendRequestSent: 'friend.request.sent',
   FriendRequestAccepted: 'friend.request.accepted',
   OrganizationJoinRequested: 'organization.join.requested',
   OrganizationJoinApproved: 'organization.join.approved',
   OrganizationRoleUpdated: 'organization.role.updated',
   DogOwnershipAdded: 'dog.ownership.added',
+  DogPhotoUploaded: 'dog.photo.uploaded',
+  DogPhotoDeleted: 'dog.photo.deleted',
+  DogDocumentUploaded: 'dog.document.uploaded',
+  DogDocumentDeleted: 'dog.document.deleted',
   MessageSent: 'message.sent',
   ParkCheckedIn: 'park.checked_in',
   ParkCheckedOut: 'park.checked_out',
@@ -49,6 +55,16 @@ export type UserProfileUpdatedPayload = {
   username?: string;
 };
 
+export type UserProfilePictureUploadedPayload = {
+  userId: number;
+  profilePictureUrl: string;
+};
+
+export type UserProfilePictureDeletedPayload = {
+  userId: number;
+  previousUrl: string;
+};
+
 export type FriendRequestSentPayload = {
   friendshipId: number;
   requesterId?: number | null;
@@ -83,6 +99,26 @@ export type OrganizationRoleUpdatedPayload = {
 export type DogOwnershipAddedPayload = {
   dogId: number;
   userId: number;
+};
+
+export type DogPhotoUploadedPayload = {
+  dogId: number;
+  profilePictureUrl: string;
+};
+
+export type DogPhotoDeletedPayload = {
+  dogId: number;
+  previousUrl?: string | null;
+};
+
+export type DogDocumentUploadedPayload = {
+  dogId: number;
+  vaccinationRecordUrl: string;
+};
+
+export type DogDocumentDeletedPayload = {
+  dogId: number;
+  previousUrl?: string | null;
 };
 
 export type MessageSentPayload = {
@@ -125,12 +161,18 @@ export type EventPayloadMap = {
   [EventTypes.AchievementAwarded]: AchievementAwardedPayload;
   [EventTypes.UserRoleUpdated]: UserRoleUpdatedPayload;
   [EventTypes.UserProfileUpdated]: UserProfileUpdatedPayload;
+  [EventTypes.UserProfilePictureUploaded]: UserProfilePictureUploadedPayload;
+  [EventTypes.UserProfilePictureDeleted]: UserProfilePictureDeletedPayload;
   [EventTypes.FriendRequestSent]: FriendRequestSentPayload;
   [EventTypes.FriendRequestAccepted]: FriendRequestAcceptedPayload;
   [EventTypes.OrganizationJoinRequested]: OrganizationJoinRequestedPayload;
   [EventTypes.OrganizationJoinApproved]: OrganizationJoinApprovedPayload;
   [EventTypes.OrganizationRoleUpdated]: OrganizationRoleUpdatedPayload;
   [EventTypes.DogOwnershipAdded]: DogOwnershipAddedPayload;
+  [EventTypes.DogPhotoUploaded]: DogPhotoUploadedPayload;
+  [EventTypes.DogPhotoDeleted]: DogPhotoDeletedPayload;
+  [EventTypes.DogDocumentUploaded]: DogDocumentUploadedPayload;
+  [EventTypes.DogDocumentDeleted]: DogDocumentDeletedPayload;
   [EventTypes.MessageSent]: MessageSentPayload;
   [EventTypes.ParkCheckedIn]: ParkCheckedInPayload;
   [EventTypes.ParkCheckedOut]: ParkCheckedOutPayload;

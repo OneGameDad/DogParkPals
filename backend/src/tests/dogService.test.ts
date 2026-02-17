@@ -474,6 +474,12 @@ describe('Dog Service', () => {
           profilePictureUrl: '/uploads/photo.jpg',
         },
       });
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'dog.photo.uploaded',
+        }),
+      });
       expect(result.profilePictureUrl).toBe('/uploads/photo.jpg');
     });
 
@@ -498,6 +504,12 @@ describe('Dog Service', () => {
         data: {
           vaccinationRecordUrl: '/uploads/vax.pdf',
         },
+      });
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'dog.document.uploaded',
+        }),
       });
       expect(result.vaccinationRecordUrl).toBe('/uploads/vax.pdf');
     });
@@ -531,6 +543,12 @@ describe('Dog Service', () => {
           profilePictureUrl: null,
         },
       });
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'dog.photo.deleted',
+        }),
+      });
       expect(result.profilePictureUrl).toBeNull();
     });
 
@@ -546,6 +564,12 @@ describe('Dog Service', () => {
       const result = await dogService.deleteDogPhoto(1);
 
       expect(mockPrisma.dog.update).toHaveBeenCalled();
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'dog.photo.deleted',
+        }),
+      });
       expect(result.profilePictureUrl).toBeNull();
     });
 
@@ -561,6 +585,12 @@ describe('Dog Service', () => {
       const result = await dogService.deleteDogPhoto(1);
 
       expect(mockPrisma.dog.update).toHaveBeenCalled();
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'dog.photo.deleted',
+        }),
+      });
       expect(result.profilePictureUrl).toBeNull();
     });
 
@@ -596,6 +626,12 @@ describe('Dog Service', () => {
           vaccinationRecordUrl: null,
         },
       });
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'dog.document.deleted',
+        }),
+      });
       expect(result.vaccinationRecordUrl).toBeNull();
     });
 
@@ -611,6 +647,12 @@ describe('Dog Service', () => {
       const result = await dogService.deleteDocument(1);
 
       expect(mockPrisma.dog.update).toHaveBeenCalled();
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'dog.document.deleted',
+        }),
+      });
       expect(result.vaccinationRecordUrl).toBeNull();
     });
 
@@ -626,6 +668,12 @@ describe('Dog Service', () => {
       const result = await dogService.deleteDocument(1);
 
       expect(mockPrisma.dog.update).toHaveBeenCalled();
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'dog.document.deleted',
+        }),
+      });
       expect(result.vaccinationRecordUrl).toBeNull();
     });
 

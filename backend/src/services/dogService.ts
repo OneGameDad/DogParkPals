@@ -271,11 +271,19 @@ const dogService = {
   async uploadDogPhoto(dogId: number, filePath: string) {
     typeSafeLogger.logUserAction('Uploading dog photo', { dogId, filePath });
     try {
-      const updatedDog = await prisma.dog.update({
-        where: { id: dogId },
-        data: {
-          profilePictureUrl: filePath,
-        },
+      const updatedDog = await prisma.$transaction(async (tx) => {
+        const dog = await tx.dog.update({
+          where: { id: dogId },
+          data: {
+            profilePictureUrl: filePath,
+          },
+        });
+        const domainEvent = createDomainEvent(EventTypes.DogPhotoUploaded, {
+          dogId,
+          profilePictureUrl: dog.profilePictureUrl ?? filePath,
+        });
+        await addOutboxEvent(tx, domainEvent);
+        return dog;
       });
       typeSafeLogger.logUserAction('Dog photo uploaded successfully', { dogId, filePath });
       return updatedDog;
@@ -292,11 +300,19 @@ const dogService = {
   async uploadDocument(dogId: number, filePath: string) {
     typeSafeLogger.logUserAction('Uploading dog document', { dogId, filePath });
     try {
-      const updatedDog = await prisma.dog.update({
-        where: { id: dogId },
-        data: {
-          vaccinationRecordUrl: filePath,
-        },
+      const updatedDog = await prisma.$transaction(async (tx) => {
+        const dog = await tx.dog.update({
+          where: { id: dogId },
+          data: {
+            vaccinationRecordUrl: filePath,
+          },
+        });
+        const domainEvent = createDomainEvent(EventTypes.DogDocumentUploaded, {
+          dogId,
+          vaccinationRecordUrl: dog.vaccinationRecordUrl ?? filePath,
+        });
+        await addOutboxEvent(tx, domainEvent);
+        return dog;
       });
       typeSafeLogger.logUserAction('Dog document uploaded successfully', { dogId, filePath });
       return updatedDog;
@@ -323,11 +339,20 @@ const dogService = {
           fs.unlinkSync(filePath);
         }
       }
-      const updatedDog = await prisma.dog.update({
-        where: { id: dogId },
-        data: {
-          profilePictureUrl: null,
-        },
+      const previousUrl = existingDog?.profilePictureUrl ?? null;
+      const updatedDog = await prisma.$transaction(async (tx) => {
+        const dog = await tx.dog.update({
+          where: { id: dogId },
+          data: {
+            profilePictureUrl: null,
+          },
+        });
+        const domainEvent = createDomainEvent(EventTypes.DogPhotoDeleted, {
+          dogId,
+          previousUrl,
+        });
+        await addOutboxEvent(tx, domainEvent);
+        return dog;
       });
       typeSafeLogger.logUserAction('Dog photo deleted successfully', { dogId });
       return updatedDog;
@@ -354,11 +379,20 @@ const dogService = {
           fs.unlinkSync(filePath);
         }
       }
-      const updatedDog = await prisma.dog.update({
-        where: { id: dogId },
-        data: {
-          vaccinationRecordUrl: null,
-        },
+      const previousUrl = existingDog?.vaccinationRecordUrl ?? null;
+      const updatedDog = await prisma.$transaction(async (tx) => {
+        const dog = await tx.dog.update({
+          where: { id: dogId },
+          data: {
+            vaccinationRecordUrl: null,
+          },
+        });
+        const domainEvent = createDomainEvent(EventTypes.DogDocumentDeleted, {
+          dogId,
+          previousUrl,
+        });
+        await addOutboxEvent(tx, domainEvent);
+        return dog;
       });
       typeSafeLogger.logUserAction('Dog document deleted successfully', { dogId });
       return updatedDog;

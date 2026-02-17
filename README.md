@@ -39,6 +39,12 @@ As this is an MVP it is limited in scope to only included the public dog parks i
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:3000
 
+### RabbitMQ (Management UI)
+
+- URL: http://localhost:15672
+- Default credentials: `guest` / `guest` (unless you configure different credentials)
+- To change credentials, update the RabbitMQ service settings in docker-compose.yml
+
 ### Docker Commands
 
 ```bash

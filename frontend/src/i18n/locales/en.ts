@@ -3,6 +3,8 @@ export const en = {
     welcome: "Welcome to Dog Tinder",
     home: "Home",
     login: "Login",
+    navlogout: "Logout",
+    navregister: "Register",
     dashboard: "Dashboard",
     settings: "Settings",
     exampleData: "Example Data",

@@ -464,7 +464,7 @@ const userService = {
           EventTypes.UserProfilePictureUploaded,
           {
             userId,
-            profilePictureUrl: user.profilePictureUrl,
+            profilePictureUrl: user.profilePictureUrl!,
           },
           { actorId: userId }
         );

@@ -120,6 +120,11 @@ describe('Friend Service', () => {
           },
         })
       );
+      expect(mockOutboxCreate).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          type: 'friend.request.accepted',
+        }),
+      });
 
       jest.dontMock('@prisma/client');
     });

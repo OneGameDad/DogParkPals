@@ -668,6 +668,11 @@ describe('Event Service', () => {
       expect(mockEventAttendanceCreate).toHaveBeenCalledWith({
         data: { eventId: 2, userId: 1 },
       });
+      expect(mockOutboxCreate).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          type: 'event.attended',
+        }),
+      });
       expect(result).toEqual(attendance);
     });
 

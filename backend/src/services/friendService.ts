@@ -58,6 +58,19 @@ const friendService = {
           await addOutboxEvent(tx, domainEvent);
         }
 
+        if (createdRequest.status === 'ACCEPTED') {
+          const domainEvent = createDomainEvent(
+            EventTypes.FriendRequestAccepted,
+            {
+              friendshipId: createdRequest.id,
+              requesterId: createdRequest.requesterId,
+              addresseeId: createdRequest.addresseeId,
+            },
+            { actorId: createdRequest.addresseeId ?? undefined }
+          );
+          await addOutboxEvent(tx, domainEvent);
+        }
+
         return createdRequest;
       });
       typeSafeLogger.logUserAction('Friend request sent successfully', { 

@@ -285,11 +285,25 @@ const eventService = {
   async attendEvent(eventId: number, userId: number) {
     typeSafeLogger.logUserAction('Attending event', { eventId, userId });
     try {
-      const attendance = await prisma.eventAttendance.create({
-        data: {
-          eventId,
-          userId,
-        },
+      const attendance = await prisma.$transaction(async (tx) => {
+        const createdAttendance = await tx.eventAttendance.create({
+          data: {
+            eventId,
+            userId,
+          },
+        });
+
+        const domainEvent = createDomainEvent(
+          EventTypes.EventAttended,
+          {
+            eventId,
+            userId,
+          },
+          { actorId: userId }
+        );
+        await addOutboxEvent(tx, domainEvent);
+
+        return createdAttendance;
       });
       typeSafeLogger.logUserAction('Attending event successful', { eventId, userId });
       return attendance;

@@ -6,14 +6,15 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install all dependencies (including dev dependencies for tsx)
+# Install all dependencies
 RUN npm ci
 
 # Copy source code
 COPY . .
 
-# Generate Prisma Client
+# Generate Prisma Client and build TypeScript
 RUN npx prisma generate
+RUN npm run build
 
 # Create uploads directory
 RUN mkdir -p uploads
@@ -21,5 +22,5 @@ RUN mkdir -p uploads
 # Expose port
 EXPOSE 3000
 
-# Start application with tsx (no build step needed)
-CMD ["npx", "tsx", "src/server.ts"]
+# Start application from compiled output
+CMD ["node", "dist/server.js"]

@@ -34,7 +34,7 @@ export const ids = {
   dogs: { dogA: 301, dogB: 302, dogC: 303, dogD: 304 },
   events: { event1: 401, event2: 402 },
   messages: { msg1: 501, msg2: 502, msg3: 503 },
-  notifications: { n1: 601, n2: 602, n3: 603 },
+  notifications: { n1: 601, n2: 602, n3: 603, n4: 604, n5: 605 },
 };
 
 // Test secrets and token helpers
@@ -181,6 +181,8 @@ export async function seedNotifications() {
       { id: ids.notifications.n1, userId: ids.users.userA, type: NotificationType.MESSAGE_RECEIVED, payload: { messageId: ids.messages.msg1 }, read: false },
       { id: ids.notifications.n2, userId: ids.users.userA, type: NotificationType.FRIENDSHIP_REQUEST, payload: { fromUserId: ids.users.userC }, read: true, readAt: new Date() },
       { id: ids.notifications.n3, userId: ids.users.userB, type: NotificationType.ORGANIZATION_INVITE, payload: { organizationId: ids.orgs.org1 }, read: false },
+      { id: ids.notifications.n4, userId: ids.users.userA, type: NotificationType.DOG_CREATED, payload: { dogId: ids.dogs.dogA, name: 'Rex' }, read: false },
+      { id: ids.notifications.n5, userId: ids.users.userA, type: NotificationType.PARK_DELETED, payload: { parkId: ids.parks.park1, name: 'Central Bark' }, read: false },
     ],
   });
 }

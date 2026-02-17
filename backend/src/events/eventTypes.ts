@@ -12,7 +12,12 @@ export const EventTypes = {
   OrganizationJoinRequested: 'organization.join.requested',
   OrganizationJoinApproved: 'organization.join.approved',
   OrganizationRoleUpdated: 'organization.role.updated',
+  OrganizationMemberRemoved: 'organization.member.removed',
+  OrganizationDeleted: 'organization.deleted',
   DogOwnershipAdded: 'dog.ownership.added',
+  DogOwnershipRemoved: 'dog.ownership.removed',
+  DogCreated: 'dog.created',
+  DogDeleted: 'dog.deleted',
   DogPhotoUploaded: 'dog.photo.uploaded',
   DogPhotoDeleted: 'dog.photo.deleted',
   DogDocumentUploaded: 'dog.document.uploaded',
@@ -21,8 +26,11 @@ export const EventTypes = {
   ParkCheckedIn: 'park.checked_in',
   ParkCheckedOut: 'park.checked_out',
   ParkAutoCheckedOut: 'park.auto_checked_out',
+  ParkDeleted: 'park.deleted',
   EnemyAdded: 'enemy.added',
   EnemyRemoved: 'enemy.removed',
+  FriendRemoved: 'friend.removed',
+  EventDeleted: 'event.deleted',
 } as const;
 
 export type EventType = (typeof EventTypes)[keyof typeof EventTypes];
@@ -96,9 +104,38 @@ export type OrganizationRoleUpdatedPayload = {
   role: OrgRole;
 };
 
+export type OrganizationMemberRemovedPayload = {
+  organizationId: number;
+  userId: number;
+  removedBy?: number;
+};
+
+export type OrganizationDeletedPayload = {
+  organizationId: number;
+  deletedBy?: number;
+};
+
 export type DogOwnershipAddedPayload = {
   dogId: number;
   userId: number;
+};
+
+export type DogOwnershipRemovedPayload = {
+  dogId: number;
+  userId: number;
+  removedBy?: number;
+};
+
+export type DogCreatedPayload = {
+  dogId: number;
+  name: string;
+  ownerId?: number;
+};
+
+export type DogDeletedPayload = {
+  dogId: number;
+  name?: string;
+  deletedBy?: number;
 };
 
 export type DogPhotoUploadedPayload = {
@@ -145,6 +182,12 @@ export type ParkAutoCheckedOutPayload = {
   checkedOutAt: string;
 };
 
+export type ParkDeletedPayload = {
+  parkId: number;
+  name?: string;
+  deletedBy?: number;
+};
+
 export type EnemyAddedPayload = {
   enemyId: number;
   ownerId: number;
@@ -154,6 +197,22 @@ export type EnemyAddedPayload = {
 export type EnemyRemovedPayload = {
   ownerId: number;
   enemyUserId: number;
+};
+
+export type FriendRemovedPayload = {
+  userId?: number | null;
+  friendId?: number | null;
+  dogId?: number | null;
+  friendDogId?: number | null;
+  removedBy?: number;
+};
+
+export type EventDeletedPayload = {
+  eventId: number;
+  organizerId?: number;
+  organizationId?: number | null;
+  parkId?: number | null;
+  title?: string;
 };
 
 export type EventPayloadMap = {
@@ -168,7 +227,12 @@ export type EventPayloadMap = {
   [EventTypes.OrganizationJoinRequested]: OrganizationJoinRequestedPayload;
   [EventTypes.OrganizationJoinApproved]: OrganizationJoinApprovedPayload;
   [EventTypes.OrganizationRoleUpdated]: OrganizationRoleUpdatedPayload;
+  [EventTypes.OrganizationMemberRemoved]: OrganizationMemberRemovedPayload;
+  [EventTypes.OrganizationDeleted]: OrganizationDeletedPayload;
   [EventTypes.DogOwnershipAdded]: DogOwnershipAddedPayload;
+  [EventTypes.DogOwnershipRemoved]: DogOwnershipRemovedPayload;
+  [EventTypes.DogCreated]: DogCreatedPayload;
+  [EventTypes.DogDeleted]: DogDeletedPayload;
   [EventTypes.DogPhotoUploaded]: DogPhotoUploadedPayload;
   [EventTypes.DogPhotoDeleted]: DogPhotoDeletedPayload;
   [EventTypes.DogDocumentUploaded]: DogDocumentUploadedPayload;
@@ -177,8 +241,11 @@ export type EventPayloadMap = {
   [EventTypes.ParkCheckedIn]: ParkCheckedInPayload;
   [EventTypes.ParkCheckedOut]: ParkCheckedOutPayload;
   [EventTypes.ParkAutoCheckedOut]: ParkAutoCheckedOutPayload;
+  [EventTypes.ParkDeleted]: ParkDeletedPayload;
   [EventTypes.EnemyAdded]: EnemyAddedPayload;
   [EventTypes.EnemyRemoved]: EnemyRemovedPayload;
+  [EventTypes.FriendRemoved]: FriendRemovedPayload;
+  [EventTypes.EventDeleted]: EventDeletedPayload;
 };
 
 export type DomainEvent<TType extends EventType = EventType> = {

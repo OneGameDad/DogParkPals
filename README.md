@@ -150,6 +150,7 @@ docker exec -it dogparkpals-backend npx prisma studio
 - Prisma 6 (ORM)
 - Jest (Backend unit tests)
 - Supertest (Backend integration tests)
+- RabbitMQ (Queue & Messaging)
 
 Reasoning: All commonly used tech, requested or required in many job advertisements. They also are well documented and supported.
 

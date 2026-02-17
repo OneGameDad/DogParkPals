@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import type { DomainEvent, EventPayloadMap, EventType } from './eventTypes';
 
-type CreateEventOptions = {
+export type CreateEventOptions = {
   actorId?: number;
   traceId?: string;
   occurredAt?: Date;

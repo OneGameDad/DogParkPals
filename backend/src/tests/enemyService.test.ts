@@ -1,4 +1,5 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
+import type { CreateEventOptions } from '../events/createDomainEvent';
 
 // Mock Prisma before importing the service
 const mockPrisma: any = {
@@ -79,7 +80,7 @@ jest.mock('../utils/validationSchemas', () => ({
   },
 }));
 
-const mockCreateDomainEvent = jest.fn((type, payload, options) => ({
+const mockCreateDomainEvent = jest.fn((type: string, payload: any, options: CreateEventOptions = {}) => ({
   id: 'test-event-id',
   type,
   occurredAt: '2026-02-17T00:00:00.000Z',

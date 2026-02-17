@@ -62,6 +62,7 @@ import {
   UserRole,
   OrgRole,
   AchievementType,
+  NotificationType,
 } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -564,6 +565,7 @@ async function seedProduction() {
 
     // Seed Dogs (one per user)
     console.log("\n🐕 Creating dogs and assigning to users...");
+    const createdDogs = [];
     for (let i = 0; i < DOGS.length; i++) {
       const dogData = DOGS[i];
       const owner = createdUsers[dogData.ownerIndex];
@@ -572,6 +574,7 @@ async function seedProduction() {
       const dog = await prisma.dog.create({
         data: dogCreateData,
       });
+      createdDogs.push(dog);
 
       // Create dog ownership record (upsert by composite key)
       await prisma.dogOwner.upsert({
@@ -657,6 +660,51 @@ async function seedProduction() {
       } else {
         console.log(`  ↺ Achievement exists: ${achievement.name} (${achievement.type})`);
       }
+    }
+
+    console.log("\n🔔 Creating sample notifications...");
+    const primaryUser = createdUsers[0];
+    const secondaryUser = createdUsers[1];
+    const primaryDog = createdDogs[0];
+    const primaryPark = createdParks[0];
+
+    if (primaryUser && primaryDog && primaryPark) {
+      await prisma.notification.createMany({
+        data: [
+          {
+            userId: primaryUser.id,
+            type: NotificationType.DOG_CREATED,
+            payload: { dogId: primaryDog.id, name: primaryDog.name },
+          },
+          {
+            userId: primaryUser.id,
+            type: NotificationType.USER_PHOTO_UPLOADED,
+            payload: { profilePictureUrl: "https://example.com/seed-user.jpg" },
+          },
+          {
+            userId: primaryUser.id,
+            type: NotificationType.PARK_DELETED,
+            payload: { parkId: primaryPark.id, name: primaryPark.name },
+          },
+        ],
+      });
+    }
+
+    if (secondaryUser && primaryDog) {
+      await prisma.notification.createMany({
+        data: [
+          {
+            userId: secondaryUser.id,
+            type: NotificationType.DOG_PHOTO_REMOVED,
+            payload: { dogId: primaryDog.id },
+          },
+          {
+            userId: secondaryUser.id,
+            type: NotificationType.FRIEND_REMOVED,
+            payload: { userId: secondaryUser.id, friendId: primaryUser?.id },
+          },
+        ],
+      });
     }
 
     console.log("\n✅ Production seed completed successfully!\n");

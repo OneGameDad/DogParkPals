@@ -167,8 +167,27 @@ const parkService = {
   async deletePark(parkId: number) {
     typeSafeLogger.logUserAction('Deleting park', { parkId });
     try {
-      await prisma.park.delete({
-        where: { id: parkId },
+      await prisma.$transaction(async (tx) => {
+        const park = await tx.park.findUnique({
+          where: { id: parkId },
+          select: { id: true, name: true },
+        });
+
+        const favorites = await tx.userFavoritePark.findMany({
+          where: { parkId },
+          select: { userId: true },
+        });
+
+        await tx.park.delete({
+          where: { id: parkId },
+        });
+
+        const domainEvent = createDomainEvent(EventTypes.ParkDeleted, {
+          parkId,
+          name: park?.name,
+          favoriteUserIds: favorites.map((favorite) => favorite.userId),
+        });
+        await addOutboxEvent(tx, domainEvent);
       });
       typeSafeLogger.logUserAction('Park deleted successfully', { parkId });
     } catch (error) {

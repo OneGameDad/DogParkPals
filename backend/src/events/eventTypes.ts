@@ -112,6 +112,7 @@ export type OrganizationMemberRemovedPayload = {
 
 export type OrganizationDeletedPayload = {
   organizationId: number;
+  memberIds: number[];
   deletedBy?: number;
 };
 
@@ -129,12 +130,13 @@ export type DogOwnershipRemovedPayload = {
 export type DogCreatedPayload = {
   dogId: number;
   name: string;
-  ownerId?: number;
+  ownerIds?: number[];
 };
 
 export type DogDeletedPayload = {
   dogId: number;
   name?: string;
+  ownerIds: number[];
   deletedBy?: number;
 };
 
@@ -185,6 +187,7 @@ export type ParkAutoCheckedOutPayload = {
 export type ParkDeletedPayload = {
   parkId: number;
   name?: string;
+  favoriteUserIds: number[];
   deletedBy?: number;
 };
 
@@ -213,6 +216,7 @@ export type EventDeletedPayload = {
   organizationId?: number | null;
   parkId?: number | null;
   title?: string;
+  attendeeIds: number[];
 };
 
 export type EventPayloadMap = {

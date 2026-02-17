@@ -134,8 +134,30 @@ const eventService = {
     typeSafeLogger.logUserAction('Deleting event', { eventId });
     try {
       const validated = deleteEventSchema.parse({ eventId });
-      await prisma.event.delete({
-        where: { id: validated.eventId },
+      await prisma.$transaction(async (tx) => {
+        const event = await tx.event.findUnique({
+          where: { id: validated.eventId },
+          select: { id: true, title: true, organizerId: true, organizationId: true, parkId: true },
+        });
+
+        const attendees = await tx.eventAttendance.findMany({
+          where: { eventId: validated.eventId },
+          select: { userId: true },
+        });
+
+        await tx.event.delete({
+          where: { id: validated.eventId },
+        });
+
+        const domainEvent = createDomainEvent(EventTypes.EventDeleted, {
+          eventId: validated.eventId,
+          organizerId: event?.organizerId,
+          organizationId: event?.organizationId ?? null,
+          parkId: event?.parkId ?? null,
+          title: event?.title,
+          attendeeIds: attendees.map((attendee) => attendee.userId),
+        });
+        await addOutboxEvent(tx, domainEvent);
       });
       typeSafeLogger.logUserAction('Event deleted successfully', { eventId });
     } catch (error) {

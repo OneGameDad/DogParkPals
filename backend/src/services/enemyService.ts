@@ -102,6 +102,21 @@ const enemyService = {
       
       // Atomic transaction: remove friend + add enemy
       const enemy = await prisma.$transaction(async (tx) => {
+        const friendships = await tx.friendship.findMany({
+          where: {
+            OR: [
+              { requesterId: validatedData.userId, addresseeId: validatedData.enemyUserId },
+              { requesterId: validatedData.enemyUserId, addresseeId: validatedData.userId },
+            ],
+          },
+          select: {
+            requesterId: true,
+            addresseeId: true,
+            requesterDogId: true,
+            addresseeDogId: true,
+          },
+        });
+
         await tx.friendship.deleteMany({
           where: {
             OR: [
@@ -110,6 +125,21 @@ const enemyService = {
             ]
           }
         });
+
+        for (const friendship of friendships) {
+          const domainEvent = createDomainEvent(
+            EventTypes.FriendRemoved,
+            {
+              userId: friendship.requesterId ?? null,
+              friendId: friendship.addresseeId ?? null,
+              dogId: friendship.requesterDogId ?? null,
+              friendDogId: friendship.addresseeDogId ?? null,
+              removedBy: validatedData.userId,
+            },
+            { actorId: validatedData.userId }
+          );
+          await addOutboxEvent(tx, domainEvent);
+        }
         
         const enemy = await tx.enemies.create({
           data: { ownerId: validatedData.userId, enemyUserId: validatedData.enemyUserId }

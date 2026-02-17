@@ -135,8 +135,21 @@ const organizationService = {
     const validated = getOrganizationByIdSchema.parse({ organizationId });
     typeSafeLogger.logUserAction('Deleting organization', { organizationId: validated.organizationId });
     try {
-      await prisma.organization.delete({
-        where: { id: validated.organizationId },
+      await prisma.$transaction(async (tx) => {
+        const members = await tx.organizationMember.findMany({
+          where: { organizationId: validated.organizationId },
+          select: { userId: true },
+        });
+
+        await tx.organization.delete({
+          where: { id: validated.organizationId },
+        });
+
+        const domainEvent = createDomainEvent(EventTypes.OrganizationDeleted, {
+          organizationId: validated.organizationId,
+          memberIds: members.map((member) => member.userId),
+        });
+        await addOutboxEvent(tx, domainEvent);
       });
       typeSafeLogger.logUserAction('Organization deleted successfully', { organizationId });
     } catch (error) {
@@ -227,13 +240,21 @@ const organizationService = {
     const validated = removeMemberSchema.parse({ organizationId, userId });
     typeSafeLogger.logUserAction('Removing member from organization', { organizationId: validated.organizationId, userId: validated.userId });
     try {
-      await prisma.organizationMember.delete({
-        where: {
-          userId_organizationId: {
-            userId: validated.userId,
-            organizationId: validated.organizationId,
+      await prisma.$transaction(async (tx) => {
+        await tx.organizationMember.delete({
+          where: {
+            userId_organizationId: {
+              userId: validated.userId,
+              organizationId: validated.organizationId,
+            },
           },
-        },
+        });
+
+        const domainEvent = createDomainEvent(EventTypes.OrganizationMemberRemoved, {
+          organizationId: validated.organizationId,
+          userId: validated.userId,
+        });
+        await addOutboxEvent(tx, domainEvent);
       });
       typeSafeLogger.logUserAction('Member removed from organization successfully', { organizationId, userId });
     } catch (error) {

@@ -212,10 +212,41 @@ const friendService = {
         );
       }
 
-      const deletedFriendship = await prisma.friendship.deleteMany({
-        where: {
-          OR: orFilters,
-        },
+      const deletedFriendship = await prisma.$transaction(async (tx) => {
+        const friendships = await tx.friendship.findMany({
+          where: {
+            OR: orFilters,
+          },
+          select: {
+            requesterId: true,
+            addresseeId: true,
+            requesterDogId: true,
+            addresseeDogId: true,
+          },
+        });
+
+        const deleted = await tx.friendship.deleteMany({
+          where: {
+            OR: orFilters,
+          },
+        });
+
+        for (const friendship of friendships) {
+          const domainEvent = createDomainEvent(
+            EventTypes.FriendRemoved,
+            {
+              userId: friendship.requesterId ?? null,
+              friendId: friendship.addresseeId ?? null,
+              dogId: friendship.requesterDogId ?? null,
+              friendDogId: friendship.addresseeDogId ?? null,
+              removedBy: validatedData.userId ?? undefined,
+            },
+            { actorId: validatedData.userId ?? undefined }
+          );
+          await addOutboxEvent(tx, domainEvent);
+        }
+
+        return deleted;
       });
       typeSafeLogger.logUserAction('Friend removed successfully', { userId, friendId, dogId, friendDogId });
       return deletedFriendship;

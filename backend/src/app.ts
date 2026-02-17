@@ -1,3 +1,4 @@
+/// <reference path="./types/express.d.ts" />
 /**
  * Express Application Configuration
  * 

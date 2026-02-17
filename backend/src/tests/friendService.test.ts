@@ -404,13 +404,32 @@ describe('Friend Service', () => {
     test('should successfully remove a friendship (requester removes addressee)', async () => {
       const mockDeleteResult = { count: 1 };
 
+      const mockFindMany = jest.fn<() => Promise<any[]>>().mockResolvedValue([
+        {
+          requesterId: mockUserId,
+          addresseeId: mockFriendId,
+          requesterDogId: null,
+          addresseeDogId: null,
+        },
+      ]);
       const mockDeleteMany = jest.fn<() => Promise<{ count: number }>>().mockResolvedValue(mockDeleteResult);
+      const mockOutboxCreate = jest.fn();
 
       jest.doMock('@prisma/client', () => ({
         PrismaClient: jest.fn(() => ({
           friendship: {
+            findMany: mockFindMany,
             deleteMany: mockDeleteMany,
           },
+          outboxEvent: {
+            create: mockOutboxCreate,
+          },
+          $transaction: jest.fn(async (callback: any) =>
+            callback({
+              friendship: { findMany: mockFindMany, deleteMany: mockDeleteMany },
+              outboxEvent: { create: mockOutboxCreate },
+            })
+          ),
         })),
       }));
 
@@ -438,6 +457,11 @@ describe('Friend Service', () => {
           ],
         },
       });
+      expect(mockOutboxCreate).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          type: 'friend.removed',
+        }),
+      });
 
       jest.dontMock('@prisma/client');
     });
@@ -445,13 +469,32 @@ describe('Friend Service', () => {
     test('should successfully remove a friendship (addressee removes requester)', async () => {
       const mockDeleteResult = { count: 1 };
 
+      const mockFindMany = jest.fn<() => Promise<any[]>>().mockResolvedValue([
+        {
+          requesterId: mockFriendId,
+          addresseeId: mockUserId,
+          requesterDogId: null,
+          addresseeDogId: null,
+        },
+      ]);
       const mockDeleteMany = jest.fn<() => Promise<{ count: number }>>().mockResolvedValue(mockDeleteResult);
+      const mockOutboxCreate = jest.fn();
 
       jest.doMock('@prisma/client', () => ({
         PrismaClient: jest.fn(() => ({
           friendship: {
+            findMany: mockFindMany,
             deleteMany: mockDeleteMany,
           },
+          outboxEvent: {
+            create: mockOutboxCreate,
+          },
+          $transaction: jest.fn(async (callback: any) =>
+            callback({
+              friendship: { findMany: mockFindMany, deleteMany: mockDeleteMany },
+              outboxEvent: { create: mockOutboxCreate },
+            })
+          ),
         })),
       }));
 
@@ -478,6 +521,11 @@ describe('Friend Service', () => {
           ],
         },
       });
+      expect(mockOutboxCreate).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          type: 'friend.removed',
+        }),
+      });
 
       jest.dontMock('@prisma/client');
     });
@@ -485,13 +533,25 @@ describe('Friend Service', () => {
     test('should return count 0 when friendship does not exist', async () => {
       const mockDeleteResult = { count: 0 };
 
+      const mockFindMany = jest.fn<() => Promise<any[]>>().mockResolvedValue([]);
       const mockDeleteMany = jest.fn<() => Promise<{ count: number }>>().mockResolvedValue(mockDeleteResult);
+      const mockOutboxCreate = jest.fn();
 
       jest.doMock('@prisma/client', () => ({
         PrismaClient: jest.fn(() => ({
           friendship: {
+            findMany: mockFindMany,
             deleteMany: mockDeleteMany,
           },
+          outboxEvent: {
+            create: mockOutboxCreate,
+          },
+          $transaction: jest.fn(async (callback: any) =>
+            callback({
+              friendship: { findMany: mockFindMany, deleteMany: mockDeleteMany },
+              outboxEvent: { create: mockOutboxCreate },
+            })
+          ),
         })),
       }));
 
@@ -518,17 +578,24 @@ describe('Friend Service', () => {
           ],
         },
       });
+      expect(mockOutboxCreate).not.toHaveBeenCalled();
 
       jest.dontMock('@prisma/client');
     });
 
     test('should throw error when validation fails', async () => {
       const mockDeleteMany = jest.fn();
+      const mockFindMany = jest.fn();
+      const mockOutboxCreate = jest.fn();
 
       jest.doMock('@prisma/client', () => ({
         PrismaClient: jest.fn(() => ({
           friendship: {
+            findMany: mockFindMany,
             deleteMany: mockDeleteMany,
+          },
+          outboxEvent: {
+            create: mockOutboxCreate,
           },
         })),
       }));
@@ -541,18 +608,38 @@ describe('Friend Service', () => {
       ).rejects.toThrow();
 
       expect(mockDeleteMany).not.toHaveBeenCalled();
+      expect(mockOutboxCreate).not.toHaveBeenCalled();
 
       jest.dontMock('@prisma/client');
     });
 
     test('should throw error when database operation fails', async () => {
+      const mockFindMany = jest.fn<() => Promise<any[]>>().mockResolvedValue([
+        {
+          requesterId: mockUserId,
+          addresseeId: mockFriendId,
+          requesterDogId: null,
+          addresseeDogId: null,
+        },
+      ]);
       const mockDeleteMany = jest.fn<() => Promise<{ count: number }>>().mockRejectedValue(new Error('Database error'));
+      const mockOutboxCreate = jest.fn();
 
       jest.doMock('@prisma/client', () => ({
         PrismaClient: jest.fn(() => ({
           friendship: {
+            findMany: mockFindMany,
             deleteMany: mockDeleteMany,
           },
+          outboxEvent: {
+            create: mockOutboxCreate,
+          },
+          $transaction: jest.fn(async (callback: any) =>
+            callback({
+              friendship: { findMany: mockFindMany, deleteMany: mockDeleteMany },
+              outboxEvent: { create: mockOutboxCreate },
+            })
+          ),
         })),
       }));
 
@@ -569,13 +656,32 @@ describe('Friend Service', () => {
       const mockDeleteResult = { count: 1 };
       const mockFriendDogId = 7;
 
+      const mockFindMany = jest.fn<() => Promise<any[]>>().mockResolvedValue([
+        {
+          requesterId: mockUserId,
+          addresseeId: null,
+          requesterDogId: null,
+          addresseeDogId: mockFriendDogId,
+        },
+      ]);
       const mockDeleteMany = jest.fn<() => Promise<{ count: number }>>().mockResolvedValue(mockDeleteResult);
+      const mockOutboxCreate = jest.fn();
 
       jest.doMock('@prisma/client', () => ({
         PrismaClient: jest.fn(() => ({
           friendship: {
+            findMany: mockFindMany,
             deleteMany: mockDeleteMany,
           },
+          outboxEvent: {
+            create: mockOutboxCreate,
+          },
+          $transaction: jest.fn(async (callback: any) =>
+            callback({
+              friendship: { findMany: mockFindMany, deleteMany: mockDeleteMany },
+              outboxEvent: { create: mockOutboxCreate },
+            })
+          ),
         })),
       }));
 
@@ -597,6 +703,11 @@ describe('Friend Service', () => {
             },
           ],
         },
+      });
+      expect(mockOutboxCreate).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          type: 'friend.removed',
+        }),
       });
 
       jest.dontMock('@prisma/client');

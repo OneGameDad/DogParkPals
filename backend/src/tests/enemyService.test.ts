@@ -9,6 +9,7 @@ const mockPrisma: any = {
     deleteMany: jest.fn(),
   },
   friendship: {
+    findMany: jest.fn(),
     deleteMany: jest.fn(),
   },
   outboxEvent: {
@@ -165,6 +166,14 @@ describe('Enemy Service', () => {
       mockPrisma.$transaction.mockImplementation(async (callback: any) => {
         return await callback(mockPrisma);
       });
+      mockPrisma.friendship.findMany.mockResolvedValue([
+        {
+          requesterId: 1,
+          addresseeId: 2,
+          requesterDogId: null,
+          addresseeDogId: null,
+        },
+      ]);
       mockPrisma.friendship.deleteMany.mockResolvedValue({ count: 1 });
       mockPrisma.enemies.create.mockResolvedValue(mockEnemyData);
 
@@ -186,6 +195,13 @@ describe('Enemy Service', () => {
         data: expect.objectContaining({
           id: 'test-event-id',
           type: 'enemy.added',
+          actorId: 1,
+        }),
+      });
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'friend.removed',
           actorId: 1,
         }),
       });

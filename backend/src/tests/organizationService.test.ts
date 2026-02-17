@@ -289,6 +289,7 @@ describe('Organization Service', () => {
 
   describe('deleteOrganization', () => {
     test('should delete organization successfully', async () => {
+      mockPrisma.organizationMember.findMany.mockResolvedValue([{ userId: 2 }, { userId: 3 }]);
       mockPrisma.organization.delete.mockResolvedValue(mockOrgData);
 
       await organizationService.deleteOrganization(1);
@@ -296,15 +297,23 @@ describe('Organization Service', () => {
       expect(mockPrisma.organization.delete).toHaveBeenCalledWith({
         where: { id: 1 },
       });
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'organization.deleted',
+        }),
+      });
     });
 
     test('should throw error when organization not found', async () => {
+      mockPrisma.organizationMember.findMany.mockResolvedValue([]);
       mockPrisma.organization.delete.mockRejectedValue(new Error('Not found'));
 
       await expect(organizationService.deleteOrganization(999)).rejects.toThrow();
     });
 
     test('should throw error when database operation fails', async () => {
+      mockPrisma.organizationMember.findMany.mockResolvedValue([]);
       mockPrisma.organization.delete.mockRejectedValue(new Error('Database error'));
 
       await expect(organizationService.deleteOrganization(1)).rejects.toThrow();
@@ -420,6 +429,12 @@ describe('Organization Service', () => {
             organizationId: 1,
           },
         },
+      });
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'organization.member.removed',
+        }),
       });
     });
 

@@ -361,6 +361,8 @@ describe('Park Service', () => {
 
   describe('deletePark', () => {
     test('should delete park successfully', async () => {
+      mockPrisma.park.findUnique.mockResolvedValue({ id: 1, name: 'Central Dog Park' });
+      mockPrisma.userFavoritePark.findMany.mockResolvedValue([{ userId: 2 }, { userId: 3 }]);
       mockPrisma.park.delete.mockResolvedValue(mockParkData);
 
       await parkService.deletePark(1);
@@ -368,15 +370,25 @@ describe('Park Service', () => {
       expect(mockPrisma.park.delete).toHaveBeenCalledWith({
         where: { id: 1 },
       });
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'park.deleted',
+        }),
+      });
     });
 
     test('should throw error when park not found', async () => {
+      mockPrisma.park.findUnique.mockResolvedValue(null);
+      mockPrisma.userFavoritePark.findMany.mockResolvedValue([]);
       mockPrisma.park.delete.mockRejectedValue(new Error('Park not found'));
 
       await expect(parkService.deletePark(999)).rejects.toThrow();
     });
 
     test('should throw error when deletion fails', async () => {
+      mockPrisma.park.findUnique.mockResolvedValue({ id: 1, name: 'Central Dog Park' });
+      mockPrisma.userFavoritePark.findMany.mockResolvedValue([]);
       mockPrisma.park.delete.mockRejectedValue(new Error('Deletion failed'));
 
       await expect(parkService.deletePark(1)).rejects.toThrow();

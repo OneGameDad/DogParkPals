@@ -15,6 +15,7 @@ const mockPrisma: any = {
   dogOwner: {
     create: jest.fn(),
     delete: jest.fn(),
+    findMany: jest.fn(),
   },
   user: {
     findMany: jest.fn(),
@@ -125,6 +126,12 @@ describe('Dog Service', () => {
           }),
         })
       );
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'dog.created',
+        }),
+      });
       expect(result.id).toBe(mockDogData.id);
       expect(result.name).toBe('Rex');
     });
@@ -354,6 +361,8 @@ describe('Dog Service', () => {
 
   describe('deleteDog', () => {
     test('deletes dog successfully', async () => {
+      mockPrisma.dog.findUnique.mockResolvedValue({ id: 1, name: 'Rex' });
+      mockPrisma.dogOwner.findMany.mockResolvedValue([{ userId: 1 }, { userId: 2 }]);
       mockPrisma.dog.delete.mockResolvedValue(mockDogData);
 
       await dogService.deleteDog(1);
@@ -361,9 +370,17 @@ describe('Dog Service', () => {
       expect(mockPrisma.dog.delete).toHaveBeenCalledWith({
         where: { id: 1 },
       });
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'dog.deleted',
+        }),
+      });
     });
 
     test('throws error when dog not found', async () => {
+      mockPrisma.dog.findUnique.mockResolvedValue({ id: 999, name: 'Missing' });
+      mockPrisma.dogOwner.findMany.mockResolvedValue([]);
       mockPrisma.dog.delete.mockRejectedValue(new Error('Dog not found'));
 
       await expect(dogService.deleteDog(999)).rejects.toThrow();
@@ -411,6 +428,13 @@ describe('Dog Service', () => {
             userId: 1,
           },
         },
+      });
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'dog.ownership.removed',
+          actorId: 1,
+        }),
       });
     });
 

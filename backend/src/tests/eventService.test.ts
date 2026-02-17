@@ -45,7 +45,8 @@ jest.mock('@prisma/client', () => {
       },
       $transaction: (callback: any) =>
         callback({
-          event: { create: mockEventCreate },
+          event: { create: mockEventCreate, findUnique: mockEventFindUnique, delete: mockEventDelete },
+          eventAttendance: { findMany: mockEventAttendanceFindMany },
           outboxEvent: { create: mockOutboxCreate },
         }),
     })),
@@ -343,6 +344,8 @@ describe('Event Service', () => {
 
   describe('deleteEvent', () => {
     test('should delete event successfully', async () => {
+      mockEventFindUnique.mockResolvedValue(mockEventData);
+      mockEventAttendanceFindMany.mockResolvedValue([] as any);
       mockEventDelete.mockResolvedValue(mockEventData);
 
       await eventService.deleteEvent(1);
@@ -350,9 +353,17 @@ describe('Event Service', () => {
       expect(mockEventDelete).toHaveBeenCalledWith({
         where: { id: 1 },
       });
+      expect(mockOutboxCreate).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'event.deleted',
+        }),
+      });
     });
 
     test('should validate eventId parameter', async () => {
+      mockEventFindUnique.mockResolvedValue(mockEventData);
+      mockEventAttendanceFindMany.mockResolvedValue([] as any);
       mockEventDelete.mockResolvedValue(mockEventData);
 
       await eventService.deleteEvent(1);
@@ -367,6 +378,8 @@ describe('Event Service', () => {
     });
 
     test('should handle database errors', async () => {
+      mockEventFindUnique.mockResolvedValue(mockEventData);
+      mockEventAttendanceFindMany.mockResolvedValue([] as any);
       mockEventDelete.mockRejectedValue(new Error('Database error'));
 
       await expect(

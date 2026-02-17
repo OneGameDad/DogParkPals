@@ -19,8 +19,9 @@ export async function handleParkDeletedNotifications(event: DomainEventUnion) {
     ...(favoriteUserIds ?? []),
     ...staff.map((user) => user.id),
   ];
+  const uniqueRecipientIds = Array.from(new Set(recipientIds));
 
-  await notificationService.createNotifications(recipientIds, NotificationType.PARK_DELETED, {
+  await notificationService.createNotifications(uniqueRecipientIds, NotificationType.PARK_DELETED, {
     parkId,
     name,
     deletedBy,

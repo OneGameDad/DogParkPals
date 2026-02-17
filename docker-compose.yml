@@ -9,7 +9,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - DATABASE_URL=file:./prisma/prod.db
+      - DATABASE_URL=file:./data/prod.db
     env_file:
       - ./docker-secrets
     volumes:

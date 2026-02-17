@@ -304,6 +304,31 @@ model Notification {
   @@index([userId, readAt, createdAt])    
 }
 
+model OutboxEvent {
+  id          String   @id @default(uuid())
+  type        String
+  payload     Json
+  occurredAt  DateTime
+  actorId     Int?
+  version     Int
+  traceId     String?
+  publishedAt DateTime?
+  attempts    Int      @default(0)
+  lastError   String?
+  createdAt   DateTime @default(now())
+
+  @@index([publishedAt, occurredAt])
+}
+
+model ProcessedEvent {
+  id          Int      @id @default(autoincrement())
+  eventId     String
+  handler     String
+  processedAt DateTime @default(now())
+
+  @@unique([eventId, handler])
+}
+
 // Enum for user roles in the organization
 enum OrgRole {
   INVITEE

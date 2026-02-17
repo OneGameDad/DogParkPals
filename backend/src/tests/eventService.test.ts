@@ -10,6 +10,7 @@ const mockEventFindMany = jest.fn() as unknown as jest.Mock<Promise<Event[]>>;
 const mockEventAttendanceCreate = jest.fn() as unknown as jest.Mock<Promise<EventAttendance>>;
 const mockEventAttendanceDeleteMany = jest.fn() as unknown as jest.Mock<Promise<{ count: number }>>;
 const mockEventAttendanceFindMany = jest.fn() as unknown as jest.Mock<Promise<(EventAttendance & { user: User })[]>>;
+const mockOutboxCreate = jest.fn() as unknown as jest.Mock<Promise<any>>;
 
 jest.mock('@prisma/client', () => {
   const mockPrismaClientKnownRequestError = class {
@@ -39,6 +40,14 @@ jest.mock('@prisma/client', () => {
         deleteMany: mockEventAttendanceDeleteMany,
         findMany: mockEventAttendanceFindMany,
       },
+      outboxEvent: {
+        create: mockOutboxCreate,
+      },
+      $transaction: (callback: any) =>
+        callback({
+          event: { create: mockEventCreate },
+          outboxEvent: { create: mockOutboxCreate },
+        }),
     })),
     Prisma: {
       PrismaClientKnownRequestError: mockPrismaClientKnownRequestError,
@@ -58,11 +67,18 @@ jest.mock('../utils/typeSafeLogger', () => ({
   },
 }));
 
-jest.mock('../services/notificationService', () => ({
-  __esModule: true,
-  default: {
-    createNotifications: jest.fn().mockResolvedValue(0),
-  },
+const mockCreateDomainEvent = jest.fn((type, payload, options) => ({
+  id: 'test-event-id',
+  type,
+  occurredAt: '2026-02-17T00:00:00.000Z',
+  actorId: options?.actorId,
+  payload,
+  version: 1,
+  traceId: options?.traceId,
+}));
+
+jest.mock('../events/createDomainEvent', () => ({
+  createDomainEvent: mockCreateDomainEvent,
 }));
 
 jest.mock('../utils/validationSchemas', () => ({
@@ -127,6 +143,13 @@ describe('Event Service', () => {
       );
 
       expect(mockEventCreate).toHaveBeenCalled();
+      expect(mockOutboxCreate).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'event.created',
+          actorId: mockEventData.organizerId,
+        }),
+      });
       expect(result).toEqual(mockEventData);
     });
 

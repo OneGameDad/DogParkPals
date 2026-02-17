@@ -55,6 +55,7 @@ export const en = {
       USER_PHOTO_UPLOADED: 'Your profile photo was updated',
       USER_PHOTO_REMOVED: 'Your profile photo was removed',
       EVENT_DELETED: 'Event "{title}" was deleted',
+      PARK_CHECKED_IN: 'You checked in at "{parkName}"',
       PARK_DELETED: 'Park "{name}" was deleted',
       ENEMY_REMOVED: 'An enemy was removed',
       FRIEND_REMOVED: 'A friendship was removed',

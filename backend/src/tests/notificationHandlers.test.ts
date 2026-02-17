@@ -51,6 +51,7 @@ jest.mock('@prisma/client', () => ({
     LEVEL_UP: 'LEVEL_UP',
     COMMENT_REPLY: 'COMMENT_REPLY',
     PARK_REVIEW: 'PARK_REVIEW',
+    PARK_CHECKED_IN: 'PARK_CHECKED_IN',
     PARK_DELETED: 'PARK_DELETED',
     ORGANIZATION_INVITE: 'ORGANIZATION_INVITE',
     ENEMY_REMOVED: 'ENEMY_REMOVED',
@@ -73,6 +74,7 @@ import { handleUserProfilePictureUploadedNotifications } from '../handlers/notif
 import { handleUserProfilePictureDeletedNotifications } from '../handlers/notifications/onUserProfilePictureDeleted';
 import { handleDogPhotoUploadedNotifications } from '../handlers/notifications/onDogPhotoUploaded';
 import { handleDogPhotoDeletedNotifications } from '../handlers/notifications/onDogPhotoDeleted';
+import { handleParkCheckedInNotifications } from '../handlers/notifications/onParkCheckedIn';
 
 const makeEvent = (type: string, payload: Record<string, unknown>) => ({
   id: 'event-id',
@@ -254,6 +256,18 @@ describe('Notification handlers', () => {
       [5],
       NotificationType.DOG_PHOTO_REMOVED,
       { dogId: 2, previousUrl: '/dog.png' }
+    );
+  });
+
+  test('Park check-in notifies user', async () => {
+    await handleParkCheckedInNotifications(
+      makeEvent(EventTypes.ParkCheckedIn, { checkInId: 1, userId: 3, parkId: 9, dogId: 4 }) as any
+    );
+
+    expect(mockNotificationService.createNotification).toHaveBeenCalledWith(
+      3,
+      NotificationType.PARK_CHECKED_IN,
+      { parkId: 9, dogId: 4 }
     );
   });
 });

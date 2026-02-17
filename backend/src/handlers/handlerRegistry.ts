@@ -40,6 +40,7 @@ import { handleMessageSentLogging } from './logging/onMessageSent';
 import { handleParkCheckedInLogging } from './logging/onParkCheckedIn';
 import { handleParkCheckedOutLogging } from './logging/onParkCheckedOut';
 import { handleParkAutoCheckedOutLogging } from './logging/onParkAutoCheckedOut';
+import { handleParkCheckedInNotifications } from './notifications/onParkCheckedIn';
 import { handleParkDeletedNotifications } from './notifications/onParkDeleted';
 import { handleEventDeletedNotifications } from './notifications/onEventDeleted';
 import { handleEnemyAddedLogging } from './logging/onEnemyAdded';
@@ -137,6 +138,7 @@ export const handlerRegistry: Record<EventType, RegisteredHandler[]> = {
     { name: 'logging.messageSent', handler: handleMessageSentLogging },
   ],
   [EventTypes.ParkCheckedIn]: [
+    { name: 'notifications.parkCheckedIn', handler: handleParkCheckedInNotifications },
     { name: 'logging.parkCheckedIn', handler: handleParkCheckedInLogging },
   ],
   [EventTypes.ParkCheckedOut]: [

@@ -53,6 +53,7 @@ export const es = {
       USER_PHOTO_UPLOADED: 'Your profile photo was updated in Spanish',
       USER_PHOTO_REMOVED: 'Your profile photo was removed in Spanish',
       EVENT_DELETED: 'Event "{title}" was deleted in Spanish',
+      PARK_CHECKED_IN: 'You checked in at "{parkName}" in Spanish',
       PARK_DELETED: 'Park "{name}" was deleted in Spanish',
       ENEMY_REMOVED: 'An enemy was removed in Spanish',
       FRIEND_REMOVED: 'A friendship was removed in Spanish',

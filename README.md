@@ -38,6 +38,9 @@ As this is an MVP it is limited in scope to only included the public dog parks i
 4. **Access the application**
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:3000
+   - Prometheus: http://localhost:9090
+   - Grafana: http://localhost:3001 (admin/admin)
+   - RabbitMQ Management: http://localhost:15672 (guest/guest)
 
 ### RabbitMQ (Management UI)
 
@@ -88,7 +91,7 @@ Quick reference for running DogParkPals locally with Docker and validating the e
 - `docker-secrets` created from `docker-secrets-example`
 
 ### Start stack
-- `docker compose up -d`
+- `docker compose up -d` (starts backend, frontend, db-init, rabbitmq, prometheus, grafana, rabbitmq-exporter)
 - `docker compose logs -f backend`
 - `docker compose logs -f rabbitmq`
 
@@ -97,6 +100,33 @@ Quick reference for running DogParkPals locally with Docker and validating the e
 - Status: `http://localhost:3000/status`
 - Frontend: `http://localhost:5173`
 - RabbitMQ UI: `http://localhost:15672` (default `guest`/`guest`)
+
+### Monitoring (Prometheus + Grafana)
+DogParkPals includes Prometheus metrics and Grafana dashboards for observability.
+
+**Access:**
+- Prometheus: `http://localhost:9090`
+- Grafana: `http://localhost:3001` (username: `admin`, password: `admin`)
+- Backend Metrics: `http://localhost:3000/metrics`
+- RabbitMQ Exporter: `http://localhost:9419/metrics`
+
+**Available Metrics:**
+- Node.js runtime (memory, event loop lag, GC)
+- Event handler executions (success/failure counts, duration by event type)
+- Background job executions (outboxPublisher, autoCheckoutJob, eventConsumer)
+- Outbox event publishing (success/failure by event type)
+- Auto park checkout operations
+- RabbitMQ queue metrics (queue depth, message rates, connections)
+
+**Dashboards:**
+- "DogParkPals - System Overview" is auto-provisioned on Grafana startup
+- View 10 panels covering system health, operations, performance, and event bus monitoring
+- Auto-refreshes every 10 seconds, shows last hour by default
+
+**Querying Prometheus:**
+- Example: `dogparkpals_event_handler_executions_total{status="success"}`
+- Example: `rate(dogparkpals_outbox_events_published_total[5m])`
+- Example: `histogram_quantile(0.95, rate(dogparkpals_job_duration_seconds_bucket[5m]))`
 
 ### Event bus sanity
 - Ensure `EVENT_BUS_ENABLED` is not `false` in `docker-secrets`.
@@ -199,6 +229,8 @@ Quick reference for running DogParkPals locally with Docker and validating the e
 - Jest (Backend unit tests)
 - Supertest (Backend integration tests)
 - RabbitMQ (Queue & Messaging)
+- Prometheus (Metrics & Monitoring)
+- Grafana (Dashboards & Visualization)
 
 Reasoning: All commonly used tech, requested or required in many job advertisements. They also are well documented and supported.
 
@@ -291,6 +323,8 @@ The database is built with SQLite and managed by Prisma ORM. Below is an overvie
 - Localization (English, Finnish, Spanish)
 - Remote Auth (Google Login)
 - Multibrowser Support
+- Metrics
+- Dashboards & Visualizations
 
 ## Modules
 | Module                                            | Points |
@@ -310,7 +344,8 @@ The database is built with SQLite and managed by Prisma ORM. Below is an overvie
 | Remote Auth (Google Login)                        | 1      |
 | Multibrowser Support                              | 1      |
 | Health check & status page system w/ backups, etc | 1      |
-| Total:                                            | 20     |
+| Monitoring System w/ Prometheus + Grafana         | 2      |
+| Total:                                            | 22     |
 
 ## Individual Contributions
 
@@ -348,3 +383,4 @@ The database is built with SQLite and managed by Prisma ORM. Below is an overvie
 - Testing Framework
 - Backend Refactor (Event-Driven Architecture)
 - Setup RabbitMQ
+- Setup Prometheus + Grafana

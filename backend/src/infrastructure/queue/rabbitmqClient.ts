@@ -1,12 +1,12 @@
-import amqplib, { Channel, Connection } from 'amqplib';
+import * as amqp from 'amqplib';
 import type { DomainEventUnion } from '../../events/eventTypes';
 import type { QueueClient, QueueHandler } from './queueClient';
 
 const DEFAULT_QUEUE_NAME = 'dogpark.events';
 
 export class RabbitMqClient implements QueueClient {
-  private connection: Connection | null = null;
-  private channel: Channel | null = null;
+  private connection: any = null;
+  private channel: amqp.Channel | null = null;
   private readonly queueName: string;
   private readonly dlqName: string;
   private readonly url: string;
@@ -26,10 +26,10 @@ export class RabbitMqClient implements QueueClient {
   private async ensureChannel() {
     if (this.channel) return;
 
-    this.connection = await amqplib.connect(this.url);
+    this.connection = await amqp.connect(this.url);
     this.channel = await this.connection.createChannel();
-    await this.channel.assertQueue(this.queueName, { durable: true });
-    await this.channel.assertQueue(this.dlqName, { durable: true });
+    await this.channel!.assertQueue(this.queueName, { durable: true });
+    await this.channel!.assertQueue(this.dlqName, { durable: true });
   }
 
   async publish(event: DomainEventUnion): Promise<void> {

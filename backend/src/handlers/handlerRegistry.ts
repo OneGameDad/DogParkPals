@@ -20,6 +20,8 @@ import { handleOrganizationRoleUpdatedNotifications } from './notifications/onOr
 import { handleOrganizationRoleUpdatedLogging } from './logging/onOrganizationRoleUpdated';
 import { handleDogOwnershipAddedNotifications } from './notifications/onDogOwnershipAdded';
 import { handleDogOwnershipAddedLogging } from './logging/onDogOwnershipAdded';
+import { handleMessageSentNotifications } from './notifications/onMessageSent';
+import { handleMessageSentLogging } from './logging/onMessageSent';
 
 export type EventHandler = (event: DomainEventUnion) => Promise<void>;
 
@@ -68,5 +70,9 @@ export const handlerRegistry: Record<EventType, RegisteredHandler[]> = {
   [EventTypes.DogOwnershipAdded]: [
     { name: 'notifications.dogOwnershipAdded', handler: handleDogOwnershipAddedNotifications },
     { name: 'logging.dogOwnershipAdded', handler: handleDogOwnershipAddedLogging },
+  ],
+  [EventTypes.MessageSent]: [
+    { name: 'notifications.messageSent', handler: handleMessageSentNotifications },
+    { name: 'logging.messageSent', handler: handleMessageSentLogging },
   ],
 };

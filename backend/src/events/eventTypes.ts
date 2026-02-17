@@ -11,6 +11,7 @@ export const EventTypes = {
   OrganizationJoinApproved: 'organization.join.approved',
   OrganizationRoleUpdated: 'organization.role.updated',
   DogOwnershipAdded: 'dog.ownership.added',
+  MessageSent: 'message.sent',
 } as const;
 
 export type EventType = (typeof EventTypes)[keyof typeof EventTypes];
@@ -79,6 +80,12 @@ export type DogOwnershipAddedPayload = {
   userId: number;
 };
 
+export type MessageSentPayload = {
+  messageId: number;
+  senderId: number;
+  receiverId: number;
+};
+
 export type EventPayloadMap = {
   [EventTypes.EventCreated]: EventCreatedPayload;
   [EventTypes.AchievementAwarded]: AchievementAwardedPayload;
@@ -90,6 +97,7 @@ export type EventPayloadMap = {
   [EventTypes.OrganizationJoinApproved]: OrganizationJoinApprovedPayload;
   [EventTypes.OrganizationRoleUpdated]: OrganizationRoleUpdatedPayload;
   [EventTypes.DogOwnershipAdded]: DogOwnershipAddedPayload;
+  [EventTypes.MessageSent]: MessageSentPayload;
 };
 
 export type DomainEvent<TType extends EventType = EventType> = {

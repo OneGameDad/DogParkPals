@@ -14,6 +14,20 @@ describe('Message Service', () => {
     jest.resetModules();
   });
 
+  const mockCreateDomainEvent = jest.fn((type, payload, options) => ({
+    id: 'test-event-id',
+    type,
+    occurredAt: '2026-02-17T00:00:00.000Z',
+    actorId: options?.actorId,
+    payload,
+    version: 1,
+    traceId: options?.traceId,
+  }));
+
+  jest.doMock('../events/createDomainEvent', () => ({
+    createDomainEvent: mockCreateDomainEvent,
+  }));
+
   describe('sendMessage', () => {
     test('should successfully send a message', async () => {
       const mockMessage: Messages = {
@@ -26,9 +40,19 @@ describe('Message Service', () => {
       };
 
       const mockCreate = jest.fn().mockResolvedValue(mockMessage);
+      const mockOutboxCreate = jest.fn().mockResolvedValue(undefined);
 
       jest.doMock('@prisma/client', () => ({
-        PrismaClient: jest.fn(() => ({ messages: { create: mockCreate } })),
+        PrismaClient: jest.fn(() => ({
+          messages: { create: mockCreate },
+          outboxEvent: { create: mockOutboxCreate },
+          $transaction: jest.fn(async (callback: any) =>
+            callback({
+              messages: { create: mockCreate },
+              outboxEvent: { create: mockOutboxCreate },
+            })
+          ),
+        })),
       }));
 
       const messageService = await import('../services/messageService');
@@ -38,6 +62,13 @@ describe('Message Service', () => {
       expect(result).toEqual(mockMessage);
       expect(mockCreate).toHaveBeenCalledWith({
         data: { senderId: mockSenderId, receiverId: mockReceiverId, content: mockContent, status: 'SENT' },
+      });
+      expect(mockOutboxCreate).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'message.sent',
+          actorId: mockSenderId,
+        }),
       });
 
       jest.dontMock('@prisma/client');

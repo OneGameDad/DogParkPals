@@ -44,7 +44,20 @@ export const es = {
       userRoleUpdated: 'Your account role is now {role} in Spanish',
       PROFILE_UPDATED: 'Your profile was updated in Spanish',
       eventCreatedAtFavoritePark: 'A new event was created at "{parkName}" in Spanish',
-      eventCreatedByOrganization: 'A new event was created by "{organizationName}" in Spanish'
+      eventCreatedByOrganization: 'A new event was created by "{organizationName}" in Spanish',
+      DOG_OWNERSHIP_REMOVED: 'You were removed as an owner of dog #{dogId} in Spanish',
+      DOG_CREATED: 'A dog profile was created for "{name}" in Spanish',
+      DOG_DELETED: 'The dog profile "{name}" was deleted in Spanish',
+      ORGANIZATION_MEMBER_REMOVED: 'You were removed from organization #{organizationId} in Spanish',
+      ORGANIZATION_DELETED: 'Organization #{organizationId} was deleted in Spanish',
+      USER_PHOTO_UPLOADED: 'Your profile photo was updated in Spanish',
+      USER_PHOTO_REMOVED: 'Your profile photo was removed in Spanish',
+      EVENT_DELETED: 'Event "{title}" was deleted in Spanish',
+      PARK_DELETED: 'Park "{name}" was deleted in Spanish',
+      ENEMY_REMOVED: 'An enemy was removed in Spanish',
+      FRIEND_REMOVED: 'A friendship was removed in Spanish',
+      DOG_PHOTO_UPLOADED: 'Dog photo updated for dog #{dogId} in Spanish',
+      DOG_PHOTO_REMOVED: 'Dog photo removed for dog #{dogId} in Spanish'
     },
     auth: {
       login: {

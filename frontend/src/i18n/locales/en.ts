@@ -46,7 +46,20 @@ export const en = {
       userRoleUpdated: 'Your account role is now {role}',
       PROFILE_UPDATED: 'Your profile was updated',
       eventCreatedAtFavoritePark: 'A new event was created at "{parkName}"',
-      eventCreatedByOrganization: 'A new event was created by "{organizationName}"'
+      eventCreatedByOrganization: 'A new event was created by "{organizationName}"',
+      DOG_OWNERSHIP_REMOVED: 'You were removed as an owner of dog #{dogId}',
+      DOG_CREATED: 'A dog profile was created for "{name}"',
+      DOG_DELETED: 'The dog profile "{name}" was deleted',
+      ORGANIZATION_MEMBER_REMOVED: 'You were removed from organization #{organizationId}',
+      ORGANIZATION_DELETED: 'Organization #{organizationId} was deleted',
+      USER_PHOTO_UPLOADED: 'Your profile photo was updated',
+      USER_PHOTO_REMOVED: 'Your profile photo was removed',
+      EVENT_DELETED: 'Event "{title}" was deleted',
+      PARK_DELETED: 'Park "{name}" was deleted',
+      ENEMY_REMOVED: 'An enemy was removed',
+      FRIEND_REMOVED: 'A friendship was removed',
+      DOG_PHOTO_UPLOADED: 'Dog photo updated for dog #{dogId}',
+      DOG_PHOTO_REMOVED: 'Dog photo removed for dog #{dogId}'
     },
     // ... existing auth ...
     auth: {

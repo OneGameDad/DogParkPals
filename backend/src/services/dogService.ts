@@ -1,9 +1,11 @@
-import { PrismaClient, DogBreed, DogGender, DogPlaystyle, DogSize, NotificationType } from '@prisma/client';
+import { PrismaClient, DogBreed, DogGender, DogPlaystyle, DogSize } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
 import { parseValidation } from '../utils/validator';
 import { addDogSchema, updateDogSchema } from '../utils/validationSchemas';
-import notificationService from './notificationService';
+import { createDomainEvent } from '../events/createDomainEvent';
+import { EventTypes } from '../events/eventTypes';
+import { addOutboxEvent } from '../infrastructure/outbox/outboxRepository';
 import fs from "fs";
 import path from "path";
 
@@ -191,14 +193,23 @@ const dogService = {
   async addOwnerToDog(dogId: number, userId: number) {
     typeSafeLogger.logUserAction('Adding owner to dog', { dogId, userId });
     try {
-      await prisma.dogOwner.create({
-        data: {
-          dogId,
-          userId,
-        },
-      });
-      await notificationService.createNotification(userId, NotificationType.DOG_OWNERSHIP_ADDED, {
-        dogId,
+      await prisma.$transaction(async (tx) => {
+        await tx.dogOwner.create({
+          data: {
+            dogId,
+            userId,
+          },
+        });
+
+        const domainEvent = createDomainEvent(
+          EventTypes.DogOwnershipAdded,
+          {
+            dogId,
+            userId,
+          },
+          { actorId: userId }
+        );
+        await addOutboxEvent(tx, domainEvent);
       });
       typeSafeLogger.logUserAction('Owner added to dog successfully', { dogId, userId });
     } catch (error) {

@@ -31,7 +31,7 @@ export const getQueryNumber = (value: any): number | undefined => {
  */
 export const getQueryBoolean = (value: any): boolean | undefined => {
   const str = getQueryString(value);
-  if (str === undefined || str === null) return undefined;
+  if (str === undefined) return undefined;
   const lower = str.toLowerCase();
   if (lower === 'true') return true;
   if (lower === 'false') return false;

@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import express from "express";
 import { toAppError } from "../utils/errors";
+import { ensureString } from "../utils/queryHelpers";
 import { checkDogAuthorization } from "./dogController";
 import dogService from "../services/dogService";
 import userService from "../services/userServices";
@@ -17,7 +18,7 @@ const resolveStoredPath = (storedPath: string) => {
 
 router.get("/dogs/:dogId/photo", async (req, res, next) => {
   try {
-    const dogId = parseInt(req.params.dogId, 10);
+    const dogId = parseInt(ensureString(req.params.dogId), 10);
     const userId = req.userId;
     const userRole = req.user?.role;
 
@@ -43,7 +44,7 @@ router.get("/dogs/:dogId/photo", async (req, res, next) => {
 
 router.get("/dogs/:dogId/document", async (req, res, next) => {
   try {
-    const dogId = parseInt(req.params.dogId, 10);
+    const dogId = parseInt(ensureString(req.params.dogId), 10);
     const userId = req.userId;
     const userRole = req.user?.role;
 
@@ -72,7 +73,7 @@ router.get("/dogs/:dogId/document", async (req, res, next) => {
 
 router.get("/users/:userId/profile-picture", async (req, res, next) => {
   try {
-    const requestedUserId = parseInt(req.params.userId, 10);
+    const requestedUserId = parseInt(ensureString(req.params.userId), 10);
     const requesterId = req.userId;
     const requesterRole = req.user?.role;
 

@@ -5,6 +5,7 @@ import typeSafeLogger from "../utils/typeSafeLogger";
 import { toAppError } from "../utils/errors";
 import { createAchievementSchema, updateAchievementSchema, awardAchievementSchema, getAchievementByNameSchema } from "../utils/validationSchemas";
 import { parseValidation } from "../utils/validator";
+import { ensureString } from "../utils/queryHelpers";
 import { AchievementType } from "@prisma/client";
 
 const achievementController = {
@@ -30,7 +31,7 @@ const achievementController = {
   getAchievementById: async (req: Request, res: Response, next: NextFunction) => {
     try {
       typeSafeLogger.logRequest("Received request to fetch achievement by ID", { method: req.method, path: req.path });
-      const achievementId = parseInt(req.params.id, 10);
+      const achievementId = parseInt(ensureString(req.params.id), 10);
 
       const achievement = await achievementService.getAchievementById(achievementId);
       typeSafeLogger.logUserAction("Achievement retrieved", { achievementId });
@@ -97,7 +98,7 @@ const achievementController = {
   updateAchievement: async (req: Request, res: Response, next: NextFunction) => {
     try {
       typeSafeLogger.logRequest("Received request to update achievement", { method: req.method, path: req.path });
-      const achievementId = parseInt(req.params.id, 10);
+      const achievementId = parseInt(ensureString(req.params.id), 10);
 
       const validatedUpdates = parseValidation(updateAchievementSchema, req.body);
       
@@ -124,7 +125,7 @@ const achievementController = {
   deleteAchievement: async (req: Request, res: Response, next: NextFunction) => {
     try {
       typeSafeLogger.logRequest("Received request to delete achievement", { method: req.method, path: req.path });
-      const achievementId = parseInt(req.params.id, 10);
+      const achievementId = parseInt(ensureString(req.params.id), 10);
 
       await achievementService.deleteAchievement(achievementId);
       typeSafeLogger.logUserAction("Achievement deleted", { achievementId });
@@ -170,7 +171,7 @@ const achievementController = {
   getUserAchievements: async (req: Request, res: Response, next: NextFunction) => {
     try {
       typeSafeLogger.logRequest("Received request to fetch user achievements", { method: req.method, path: req.path });
-      const userId = parseInt(req.params.userId, 10);
+      const userId = parseInt(ensureString(req.params.userId), 10);
 
       const userAchievements = await achievementService.getUserAchievements(userId);
       typeSafeLogger.logUserAction("User achievements retrieved", { 
@@ -193,8 +194,8 @@ const achievementController = {
     try {
       typeSafeLogger.logRequest("Received request to remove achievement from user", { method: req.method, path: req.path });
 
-      const userId = parseInt(req.params.userId, 10);
-      const achievementId = parseInt(req.params.achievementId, 10);
+      const userId = parseInt(ensureString(req.params.userId), 10);
+      const achievementId = parseInt(ensureString(req.params.achievementId), 10);
       
       await achievementService.removeAchievementFromUser(userId, achievementId);
       

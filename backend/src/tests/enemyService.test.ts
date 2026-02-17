@@ -271,7 +271,7 @@ describe('Enemy Service', () => {
         { 
           ...mockEnemyData, 
           enemyUser: { id: 2, username: 'enemy1' },
-          user: { id: 1, username: 'user1' }
+          owner: { id: 1, username: 'user1' }
         },
         { 
           ...mockEnemyData, 
@@ -279,7 +279,7 @@ describe('Enemy Service', () => {
           ownerId: 3,
           enemyUserId: 4,
           enemyUser: { id: 4, username: 'enemy2' },
-          user: { id: 3, username: 'user2' }
+          owner: { id: 3, username: 'user2' }
         },
       ];
       mockPrisma.enemies.findMany.mockResolvedValue(allEnemies);
@@ -289,7 +289,7 @@ describe('Enemy Service', () => {
       expect(result).toEqual(allEnemies);
       expect(result.length).toBe(2);
       expect(mockPrisma.enemies.findMany).toHaveBeenCalledWith({
-        include: { enemyUser: true, user: true },
+        include: { enemyUser: true, owner: true },
       });
     });
 

@@ -1,6 +1,7 @@
 import messageService from "../services/messageService";
 import express from "express";
 import typeSafeLogger from "../utils/typeSafeLogger";
+import { ensureString } from "../utils/queryHelpers";
 import { toAppError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import { sendMessageSchema, updateMessageStatusSchema } from "../utils/validationSchemas";
@@ -29,7 +30,7 @@ const messageController = {
         try {
             typeSafeLogger.logRequest("Received request to fetch conversation", { method: req.method, path: req.path });
             const userId = (req as any).user?.id;
-            const friendId = parseInt(req.params.friendId, 10);
+            const friendId = parseInt(ensureString(req.params.friendId), 10);
 
             const conversation = await messageService.getConversation(userId, friendId);
 
@@ -63,7 +64,7 @@ const messageController = {
     updateStatus: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             typeSafeLogger.logRequest("Received request to update message status", { method: req.method, path: req.path });
-            const messageId = parseInt(req.params.messageId, 10);
+            const messageId = parseInt(ensureString(req.params.messageId), 10);
             const { status } = parseValidation(updateMessageStatusSchema, req.body);
 
             const updatedMessage = await messageService.updateStatus(messageId, status);
@@ -81,7 +82,7 @@ const messageController = {
     deleteMessage: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             typeSafeLogger.logRequest("Received request to delete message", { method: req.method, path: req.path });
-            const messageId = parseInt(req.params.messageId, 10);
+            const messageId = parseInt(ensureString(req.params.messageId), 10);
 
             await messageService.deleteMessage(messageId);
 

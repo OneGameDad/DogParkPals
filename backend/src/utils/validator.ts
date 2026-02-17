@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { AppError } from './errors';
 
-export const parseValidation = <T,>(schema: z.ZodSchema<T>, data: unknown): T => {
+export const parseValidation = <T,>(schema: z.ZodSchema<T>, data: any): T => {
   const result = schema.safeParse(data);
 
   if (!result.success) {

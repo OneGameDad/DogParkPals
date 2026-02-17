@@ -3,19 +3,6 @@ import jwt from 'jsonwebtoken';
 import { AuthError } from '../utils/errors';
 import { isTokenBlacklisted } from '../utils/tokenBlacklist';
 
-// Extend Express Request to include userId (set by auth middleware)
-declare global {
-  namespace Express {
-    interface Request {
-      userId?: number;
-      user?: {
-        id: number;
-        role?: string;
-      };
-    }
-  }
-}
-
 interface JwtPayload {
   userId: number;
   email: string;

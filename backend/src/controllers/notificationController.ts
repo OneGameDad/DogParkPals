@@ -3,18 +3,7 @@ import typeSafeLogger from "../utils/typeSafeLogger";
 import { NotFoundError, ForbiddenError, toAppError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import notificationService from "../services/notificationService";
-
-declare global {
-  namespace Express {
-    interface Request {
-      userId?: number;
-      user?: {
-        id: number;
-        role?: string;
-      };
-    }
-  }
-}
+import { getQueryNumber, getQueryBoolean, ensureString } from "../utils/queryHelpers";
 
 const notificationController = {
   getNotifications: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -25,9 +14,9 @@ const notificationController = {
         throw ForbiddenError("User not authenticated");
       }
 
-      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
-      const unreadOnly = req.query.unreadOnly === 'true';
+      const page = getQueryNumber(req.query.page) || 1;
+      const limit = getQueryNumber(req.query.limit) || 20;
+      const unreadOnly = getQueryBoolean(req.query.unreadOnly) || false;
 
       const notifications = await notificationService.getNotifications(userId, {
         page,
@@ -54,7 +43,7 @@ const notificationController = {
         throw ForbiddenError("User not authenticated");
       }
 
-      const notificationId = parseInt(req.params.id, 10);
+      const notificationId = parseInt(ensureString(req.params.id), 10);
       const updatedNotification = await notificationService.markAsRead(notificationId, userId);
 
       if (!updatedNotification) {

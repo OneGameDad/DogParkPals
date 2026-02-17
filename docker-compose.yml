@@ -17,6 +17,8 @@ services:
     depends_on:
       db-init:
         condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
 
   frontend:
@@ -40,6 +42,18 @@ services:
     volumes:
       - backend-db:/app/prisma
     command: sh -c "npx prisma migrate deploy && npx prisma generate"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: dogparkpals-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   backend-db:

@@ -573,6 +573,21 @@ const archived = getQueryBoolean(req.query.archived) || false;
 
 ---
 
+## Post-Merge TypeScript Fixes (Event-Driven Additions)
+
+After the event-driven architecture was merged into `main`, a small set of new TypeScript errors appeared. These were addressed to keep builds green without changing runtime behavior:
+
+**Key fixes**:
+- **Prisma client sync**: Regenerated Prisma client so new models and enum values (e.g., notification types) are reflected in types.
+- **Outbox payload typing**: Cast `event.payload` to JSON-compatible input when writing to the outbox table to satisfy Prisma JSON constraints.
+- **RabbitMQ typing**: Installed `amqplib` + `@types/amqplib` and updated the client implementation to align with the library's connection/channel types.
+- **Outbox publisher union**: Adjusted event construction to avoid union assignment errors when publishing domain events.
+- **Nullable field handling**: Added a non-null assertion where a nullable field is known to be populated after update.
+
+**Outcome**: `npm run build` and backend tests pass cleanly after these updates.
+
+---
+
 ## Frontend Status
 
 **Note**: Frontend contains approximately 60 TypeScript errors, primarily in test fixtures and type-only imports. These are **non-blocking** because:

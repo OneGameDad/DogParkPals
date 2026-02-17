@@ -1,7 +1,7 @@
 import { expect, describe, test, beforeEach, jest } from '@jest/globals';
 import type { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/errors';
-import { awardAchievement, awardExperience, XP_REWARDS } from '../services/xpService';
+import { awardExperience, XP_REWARDS } from '../services/xpService';
 
 const mockParseValidation = jest.fn<any>();
 const mockAddEnemy = jest.fn<any>();
@@ -39,7 +39,6 @@ jest.mock('../utils/typeSafeLogger', () => ({
 
 jest.mock('../services/xpService', () => ({
 	awardExperience: jest.fn(),
-	awardAchievement: jest.fn(),
 	XP_REWARDS: {
 		ADD_ENEMY: 5,
 	},
@@ -82,7 +81,6 @@ describe('enemyController', () => {
 			expect(mockStatus).toHaveBeenCalledWith(201);
 			expect(mockJson).toHaveBeenCalledWith(mockEnemy);
 			expect(awardExperience).toHaveBeenCalledWith(userId, XP_REWARDS.ADD_ENEMY, 'add_enemy');
-			expect(awardAchievement).toHaveBeenCalledWith(userId, 'Fought The Post Man', expect.any(String));
 			expect(mockNext).not.toHaveBeenCalled();
 			expect(mockTypeSafeLoggerInfo).toHaveBeenCalledWith(
 				'addEnemy request received', 
@@ -132,7 +130,6 @@ describe('enemyController', () => {
 			expect(mockStatus).toHaveBeenCalledWith(201);
 			expect(mockJson).toHaveBeenCalledWith(mockEnemy);
 			expect(awardExperience).toHaveBeenCalledWith(userId, XP_REWARDS.ADD_ENEMY, 'add_enemy');
-			expect(awardAchievement).toHaveBeenCalledWith(userId, 'Fought The Post Man', expect.any(String));
 			expect(mockTypeSafeLoggerInfo).toHaveBeenCalledWith(
 				'Enemy added with confirmation',
 				{ userId, enemyUserId, enemyId: mockEnemy.id }
@@ -188,7 +185,6 @@ describe('enemyController', () => {
 			expect(mockStatus).toHaveBeenCalledWith(201);
 			expect(mockJson).toHaveBeenCalledWith(mockEnemy);
 			expect(awardExperience).toHaveBeenCalledWith(userId, XP_REWARDS.ADD_ENEMY, 'add_enemy');
-			expect(awardAchievement).toHaveBeenCalledWith(userId, 'Fought The Post Man', expect.any(String));
 			expect(mockNext).not.toHaveBeenCalled();
 			expect(mockTypeSafeLoggerInfo).toHaveBeenCalledWith(
 				'confirmAddEnemy request received',

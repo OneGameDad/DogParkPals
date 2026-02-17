@@ -46,7 +46,7 @@ jest.mock('@prisma/client', () => {
       $transaction: (callback: any) =>
         callback({
           event: { create: mockEventCreate, findUnique: mockEventFindUnique, delete: mockEventDelete },
-          eventAttendance: { findMany: mockEventAttendanceFindMany },
+          eventAttendance: { create: mockEventAttendanceCreate, findMany: mockEventAttendanceFindMany },
           outboxEvent: { create: mockOutboxCreate },
         }),
     })),

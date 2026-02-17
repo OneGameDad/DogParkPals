@@ -5,8 +5,7 @@ import typeSafeLogger from "../utils/typeSafeLogger";
 import { toAppError, NotFoundError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import { createFriendRequestSchema, getUserIdSchema, removeFriendSchema, friendshipIdSchema, getFriendsSchema } from "../utils/validationSchemas";
-import { awardAchievement, awardExperience, XP_REWARDS } from "../services/xpService";
-import { AchievementType } from "@prisma/client";
+import { awardExperience, XP_REWARDS } from "../services/xpService";
 
 const friendController = {
     addFriend: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -42,11 +41,9 @@ const friendController = {
                 const awards = [] as Promise<any>[];
                 if (newFriendship.requesterId) {
                     awards.push(awardExperience(newFriendship.requesterId, XP_REWARDS.ADD_FRIEND, 'friend_added'));
-                    awards.push(awardAchievement(newFriendship.requesterId, "Okay Friend", AchievementType.BADGE));
                 }
                 if (newFriendship.addresseeId) {
                     awards.push(awardExperience(newFriendship.addresseeId, XP_REWARDS.ADD_FRIEND, 'friend_added'));
-                    awards.push(awardAchievement(newFriendship.addresseeId, "Okay Friend", AchievementType.BADGE));
                 }
                 await Promise.all(awards);
             }
@@ -71,11 +68,9 @@ const friendController = {
             const awards = [] as Promise<any>[];
             if (updatedFriendship.requesterId) {
                 awards.push(awardExperience(updatedFriendship.requesterId, XP_REWARDS.ADD_FRIEND, 'friend_accepted'));
-                awards.push(awardAchievement(updatedFriendship.requesterId, "Okay Friend", AchievementType.BADGE));
             }
             if (updatedFriendship.addresseeId) {
                 awards.push(awardExperience(updatedFriendship.addresseeId, XP_REWARDS.ADD_FRIEND, 'friend_accepted'));
-                awards.push(awardAchievement(updatedFriendship.addresseeId, "Okay Friend", AchievementType.BADGE));
             }
             await Promise.all(awards);
             res.status(200).json(updatedFriendship);

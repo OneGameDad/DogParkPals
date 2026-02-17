@@ -8,11 +8,19 @@ export class RabbitMqClient implements QueueClient {
   private connection: Connection | null = null;
   private channel: Channel | null = null;
   private readonly queueName: string;
+  private readonly dlqName: string;
   private readonly url: string;
+  private readonly maxRetries: number;
 
-  constructor(url: string, queueName = DEFAULT_QUEUE_NAME) {
+  constructor(
+    url: string,
+    queueName = DEFAULT_QUEUE_NAME,
+    options: { maxRetries?: number; dlqName?: string } = {}
+  ) {
     this.url = url;
     this.queueName = queueName;
+    this.dlqName = options.dlqName ?? `${queueName}.dlq`;
+    this.maxRetries = options.maxRetries ?? 5;
   }
 
   private async ensureChannel() {
@@ -21,6 +29,7 @@ export class RabbitMqClient implements QueueClient {
     this.connection = await amqplib.connect(this.url);
     this.channel = await this.connection.createChannel();
     await this.channel.assertQueue(this.queueName, { durable: true });
+    await this.channel.assertQueue(this.dlqName, { durable: true });
   }
 
   async publish(event: DomainEventUnion): Promise<void> {
@@ -38,7 +47,29 @@ export class RabbitMqClient implements QueueClient {
         await handler(parsed);
         this.channel?.ack(message);
       } catch (error) {
-        this.channel?.nack(message, false, true);
+        const headers = message.properties.headers ?? {};
+        const retries = Number(headers['x-retries'] ?? 0);
+        if (retries >= this.maxRetries) {
+          this.channel?.sendToQueue(this.dlqName, message.content, {
+            persistent: true,
+            headers: {
+              ...headers,
+              'x-retries': retries,
+              'x-final-error': error instanceof Error ? error.message : 'Unknown error',
+            },
+          });
+          this.channel?.ack(message);
+          return;
+        }
+
+        this.channel?.sendToQueue(this.queueName, message.content, {
+          persistent: true,
+          headers: {
+            ...headers,
+            'x-retries': retries + 1,
+          },
+        });
+        this.channel?.ack(message);
       }
     });
   }

@@ -44,6 +44,7 @@ As this is an MVP it is limited in scope to only included the public dog parks i
 - URL: http://localhost:15672
 - Default credentials: `guest` / `guest` (unless you configure different credentials)
 - To change credentials, update the RabbitMQ service settings in docker-compose.yml
+- Failed event messages retry up to `EVENT_QUEUE_MAX_RETRIES`, then move to `EVENT_QUEUE_DLQ_NAME`
 
 ### Docker Commands
 

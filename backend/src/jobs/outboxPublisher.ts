@@ -1,8 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { createQueueClient } from '../infrastructure/queue/queueFactory';
-import { listPendingOutboxEvents, markOutboxEventFailed, markOutboxEventPublished } from '../infrastructure/outbox/outboxRepository';
+import { addOutboxEvent, isEventBusEnabled, listPendingOutboxEvents, markOutboxEventFailed, markOutboxEventPublished } from '../infrastructure/outbox/outboxRepository';
 import type { DomainEventUnion } from '../events/eventTypes';
+import { createDomainEvent } from '../events/createDomainEvent';
+import { EventTypes } from '../events/eventTypes';
 
 const prisma = new PrismaClient();
 const queueClient = createQueueClient();
@@ -31,11 +33,23 @@ async function processOutboxOnce(batchSize: number) {
       const message = error instanceof Error ? error.message : 'Unknown publish error';
       await markOutboxEventFailed(prisma, record.id, message);
       typeSafeLogger.logError('Outbox publish failed', error, { eventId: record.id, eventType: record.type });
+
+      const domainEvent = createDomainEvent(EventTypes.JobFailed, {
+        jobName: 'outboxPublisher.publish',
+        errorMessage: message,
+        errorStack: error instanceof Error ? error.stack : undefined,
+        context: { eventId: record.id, eventType: record.type },
+      });
+      await addOutboxEvent(prisma, domainEvent);
     }
   }
 }
 
 export function startOutboxPublisher(options: { intervalMs?: number; batchSize?: number } = {}) {
+  if (!isEventBusEnabled()) {
+    typeSafeLogger.info('Outbox publisher disabled by EVENT_BUS_ENABLED');
+    return;
+  }
   const intervalMs = options.intervalMs ?? 2000;
   const batchSize = options.batchSize ?? 25;
 
@@ -50,6 +64,13 @@ export function startOutboxPublisher(options: { intervalMs?: number; batchSize?:
       await processOutboxOnce(batchSize);
     } catch (error) {
       typeSafeLogger.logError('Outbox publisher cycle failed', error);
+      const message = error instanceof Error ? error.message : 'Unknown publisher cycle error';
+      const domainEvent = createDomainEvent(EventTypes.JobFailed, {
+        jobName: 'outboxPublisher.cycle',
+        errorMessage: message,
+        errorStack: error instanceof Error ? error.stack : undefined,
+      });
+      await addOutboxEvent(prisma, domainEvent);
     } finally {
       isProcessing = false;
     }

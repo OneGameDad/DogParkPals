@@ -3,7 +3,14 @@ import type { DomainEventUnion } from '../../events/eventTypes';
 
 export type PrismaClientOrTx = PrismaClient | Prisma.TransactionClient;
 
+export function isEventBusEnabled() {
+  return process.env.EVENT_BUS_ENABLED !== 'false';
+}
+
 export async function addOutboxEvent(client: PrismaClientOrTx, event: DomainEventUnion) {
+  if (!isEventBusEnabled()) {
+    return null;
+  }
   return client.outboxEvent.create({
     data: {
       id: event.id,

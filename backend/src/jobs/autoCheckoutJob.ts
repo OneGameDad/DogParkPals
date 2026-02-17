@@ -1,6 +1,12 @@
 import cron from "node-cron";
 import parkService from "../services/parkService";
 import typeSafeLogger from "../utils/typeSafeLogger";
+import { PrismaClient } from '@prisma/client';
+import { createDomainEvent } from '../events/createDomainEvent';
+import { EventTypes } from '../events/eventTypes';
+import { addOutboxEvent } from '../infrastructure/outbox/outboxRepository';
+
+const prisma = new PrismaClient();
 
 // Every 15 minutes check if the user has been checked in for over an hour. If so, check them out.
 export async function runAutoCheckOutJob () {
@@ -17,6 +23,14 @@ export async function runAutoCheckOutJob () {
         typeSafeLogger.info("15-minute auto-checkout job completed", { count: checkInsToCheckOut.length });
     } catch (error) {
         typeSafeLogger.logError("15-minute auto-checkout job failed", error);
+        const message = error instanceof Error ? error.message : 'Unknown auto-checkout error';
+        const domainEvent = createDomainEvent(EventTypes.JobFailed, {
+            jobName: 'autoCheckoutJob.run',
+            errorMessage: message,
+            errorStack: error instanceof Error ? error.stack : undefined,
+            context: { schedule: '*/15 * * * *' },
+        });
+        await addOutboxEvent(prisma, domainEvent);
     }
 };
 

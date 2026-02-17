@@ -16,7 +16,7 @@ if ! docker ps | grep -q dogparkpals-backend; then
 fi
 
 # Run seed script inside container
-docker exec -it dogparkpals-backend sh -c "cd /app && npx ts-node prisma/seedProduction.ts"
+docker exec -it dogparkpals-backend sh -c "cd /app && npx tsx prisma/seedProduction.ts"
 
 echo ""
 echo "✅ Database seeded successfully!"

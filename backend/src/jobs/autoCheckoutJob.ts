@@ -5,12 +5,14 @@ import { PrismaClient } from '@prisma/client';
 import { createDomainEvent } from '../events/createDomainEvent';
 import { EventTypes } from '../events/eventTypes';
 import { addOutboxEvent } from '../infrastructure/outbox/outboxRepository';
+import { autoCheckouts, jobExecutions, jobDuration } from '../config/metrics';
 
 const prisma = new PrismaClient();
 
 // Every 15 minutes check if the user has been checked in for over an hour. If so, check them out.
 export async function runAutoCheckOutJob () {
     typeSafeLogger.info("Running 15-minute auto-checkout job");
+    const startTime = Date.now();
     try {
         const now = new Date();
         const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
@@ -18,10 +20,22 @@ export async function runAutoCheckOutJob () {
         const checkInsToCheckOut = await parkService.getStaleCheckIns(oneHourAgo);
         for (const checkIn of checkInsToCheckOut) {
             await parkService.autoCheckOut(checkIn.id);
+            autoCheckouts.inc();
             typeSafeLogger.logUserAction("Auto-checked out user", { checkInId: checkIn.id });
         }
+        
+        // Track successful job execution
+        const duration = (Date.now() - startTime) / 1000;
+        jobDuration.observe({ job_name: 'autoCheckoutJob' }, duration);
+        jobExecutions.inc({ job_name: 'autoCheckoutJob', status: 'success' });
+        
         typeSafeLogger.info("15-minute auto-checkout job completed", { count: checkInsToCheckOut.length });
     } catch (error) {
+        // Track failed job execution
+        const duration = (Date.now() - startTime) / 1000;
+        jobDuration.observe({ job_name: 'autoCheckoutJob' }, duration);
+        jobExecutions.inc({ job_name: 'autoCheckoutJob', status: 'failure' });
+        
         typeSafeLogger.logError("15-minute auto-checkout job failed", error);
         const message = error instanceof Error ? error.message : 'Unknown auto-checkout error';
         const domainEvent = createDomainEvent(EventTypes.JobFailed, {

@@ -479,7 +479,7 @@ export const updateAchievementSchema = z.object({
 export type UpdateAchievementRequest = z.infer<typeof updateAchievementSchema>;
 
 export const getAchievementByNameSchema = z.object({
-  name: z.coerce.string().min(1, 'Achievement name is required'),
+  name: z.string().min(1, 'Achievement name is required'),
 });
 
 export const awardAchievementSchema = z.object({

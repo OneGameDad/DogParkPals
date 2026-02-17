@@ -230,6 +230,51 @@ async function main() {
     },
   });
 
+  await prisma.notification.createMany({
+    data: [
+      {
+        userId: user.id,
+        type: "DOG_CREATED",
+        payload: { dogId: dog.id, name: dog.name },
+      },
+      {
+        userId: user.id,
+        type: "DOG_OWNERSHIP_REMOVED",
+        payload: { dogId: dog.id, removedBy: userBob.id },
+      },
+      {
+        userId: userBob.id,
+        type: "ORGANIZATION_MEMBER_REMOVED",
+        payload: { organizationId: org1.id, removedBy: user.id },
+      },
+      {
+        userId: userBob.id,
+        type: "EVENT_DELETED",
+        payload: { eventId: charityWalk.id, title: charityWalk.title },
+      },
+      {
+        userId: user.id,
+        type: "PARK_DELETED",
+        payload: { parkId: park.id, name: park.name },
+      },
+      {
+        userId: user.id,
+        type: "USER_PHOTO_UPLOADED",
+        payload: { profilePictureUrl: "https://example.com/alice.jpg" },
+      },
+      {
+        userId: userBob.id,
+        type: "DOG_PHOTO_REMOVED",
+        payload: { dogId: dog.id },
+      },
+      {
+        userId: userBob.id,
+        type: "FRIEND_REMOVED",
+        payload: { userId: userBob.id, friendId: user.id },
+      },
+    ],
+  });
+
   const achievements = [
     {
       name: "Level 2",

@@ -22,6 +22,9 @@ import { handleDogOwnershipAddedNotifications } from './notifications/onDogOwner
 import { handleDogOwnershipAddedLogging } from './logging/onDogOwnershipAdded';
 import { handleMessageSentNotifications } from './notifications/onMessageSent';
 import { handleMessageSentLogging } from './logging/onMessageSent';
+import { handleParkCheckedInLogging } from './logging/onParkCheckedIn';
+import { handleParkCheckedOutLogging } from './logging/onParkCheckedOut';
+import { handleParkAutoCheckedOutLogging } from './logging/onParkAutoCheckedOut';
 
 export type EventHandler = (event: DomainEventUnion) => Promise<void>;
 
@@ -74,5 +77,14 @@ export const handlerRegistry: Record<EventType, RegisteredHandler[]> = {
   [EventTypes.MessageSent]: [
     { name: 'notifications.messageSent', handler: handleMessageSentNotifications },
     { name: 'logging.messageSent', handler: handleMessageSentLogging },
+  ],
+  [EventTypes.ParkCheckedIn]: [
+    { name: 'logging.parkCheckedIn', handler: handleParkCheckedInLogging },
+  ],
+  [EventTypes.ParkCheckedOut]: [
+    { name: 'logging.parkCheckedOut', handler: handleParkCheckedOutLogging },
+  ],
+  [EventTypes.ParkAutoCheckedOut]: [
+    { name: 'logging.parkAutoCheckedOut', handler: handleParkAutoCheckedOutLogging },
   ],
 };

@@ -17,6 +17,10 @@ const mockPrisma: any = {
     findMany: jest.fn(),
   },
   $queryRaw: jest.fn(),
+  outboxEvent: {
+    create: jest.fn(),
+  },
+  $transaction: jest.fn(async (callback: any) => callback(mockPrisma)),
 };
 
 const mockParkData = {
@@ -67,6 +71,20 @@ jest.mock('../utils/validationSchemas', () => ({
   updateParkSchema: {
     parse: jest.fn((data) => data),
   },
+}));
+
+const mockCreateDomainEvent = jest.fn((type, payload, options) => ({
+  id: 'test-event-id',
+  type,
+  occurredAt: '2026-02-17T00:00:00.000Z',
+  actorId: options?.actorId,
+  payload,
+  version: 1,
+  traceId: options?.traceId,
+}));
+
+jest.mock('../events/createDomainEvent', () => ({
+  createDomainEvent: mockCreateDomainEvent,
 }));
 
 // Import AFTER all mocks are defined
@@ -513,6 +531,13 @@ describe('Park Service', () => {
         expect(mockPrisma.checkIn.create).toHaveBeenCalledWith({
           data: { userId: 1, parkId: 1, dogId: 123 },
         });
+        expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            id: 'test-event-id',
+            type: 'park.checked_in',
+            actorId: 1,
+          }),
+        });
         expect(result).toEqual(mockCheckInData);
       });
   
@@ -547,6 +572,13 @@ describe('Park Service', () => {
         expect(mockPrisma.checkIn.update).toHaveBeenCalledWith({
           where: { id: 1 },
           data: { checkedOutAt: expect.any(Date) },
+        });
+        expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            id: 'test-event-id',
+            type: 'park.checked_out',
+            actorId: 1,
+          }),
         });
         expect(result.checkedOutAt).not.toBeNull();
       });
@@ -661,6 +693,12 @@ describe('Park Service', () => {
         expect(mockPrisma.checkIn.update).toHaveBeenCalledWith({
           where: { id: 1 },
           data: { checkedOutAt: expect.any(Date) },
+        });
+        expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            id: 'test-event-id',
+            type: 'park.auto_checked_out',
+          }),
         });
         expect(result.checkedOutAt).not.toBeNull();
       });

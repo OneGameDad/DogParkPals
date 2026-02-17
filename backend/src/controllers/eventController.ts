@@ -105,10 +105,10 @@ const eventController = {
 
       await checkEventAuthorization(
         eventId,
-        req.user.id,
-        req.user.role,
-        req.user.organizationId,
-        req.user.organizationMember
+        req.user!.id,
+        req.user!.role,
+        req.user!.organizationId,
+        req.user!.organizationMember
       );
 
       const updatedEvent = await eventService.updateEvent(eventId, updateData);
@@ -132,10 +132,10 @@ const eventController = {
 
       await checkEventAuthorization(
         eventId,
-        req.user.id,
-        req.user.role,
-        req.user.organizationId,
-        req.user.organizationMember
+        req.user!.id,
+        req.user!.role,
+        req.user!.organizationId,
+        req.user!.organizationMember
       );
 
       await eventService.removeAllAttendees(eventId);
@@ -285,7 +285,7 @@ const eventController = {
     try {
       typeSafeLogger.logRequest("Received request to attend event", { method: req.method, path: req.path });
       const { eventId } = parseValidation(getEventByIdSchema, req.params);
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       //check if event is public/private and if user is allowed to join
       const event = await eventService.getEventById(eventId);
@@ -306,9 +306,9 @@ const eventController = {
       await checkEventAuthorization(
         eventId,
         userId,
-        req.user.role,
-        req.user.organizationId,
-        req.user.organizationMember
+        req.user!.role,
+        req.user!.organizationId,
+        req.user!.organizationMember
       );
 
       await eventService.attendEvent(eventId, userId);
@@ -331,7 +331,7 @@ const eventController = {
     try {
       typeSafeLogger.logRequest("Received request to cancel attendance", { method: req.method, path: req.path });
       const { eventId } = parseValidation(getEventByIdSchema, req.params);
-      const userId = req.user.id;
+      const userId = req.user!.id;
       //check user is attending the event
       const event = await eventService.getEventById(eventId);
       if (!event) {
@@ -377,10 +377,10 @@ const eventController = {
 
       await checkEventAuthorization(
         eventId,
-        req.user.id,
-        req.user.role,
-        req.user.organizationId,
-        req.user.organizationMember
+        req.user!.id,
+        req.user!.role,
+        req.user!.organizationId,
+        req.user!.organizationMember
       );
 
       const attendees = await eventService.getEventAttendees(eventId);
@@ -415,10 +415,10 @@ const eventController = {
     // authorization check - organizer/admin/org mod/owner
       await checkEventAuthorization(
         eventId,
-        req.user.id,
-        req.user.role,
-        req.user.organizationId,
-        req.user.organizationMember
+        req.user!.id,
+        req.user!.role,
+        req.user!.organizationId,
+        req.user!.organizationMember
       );
 
       await eventService.removeAttendee(eventId, userId);
@@ -442,10 +442,10 @@ const eventController = {
 
       await checkEventAuthorization(
         eventId,
-        req.user.id,
-        req.user.role,
-        req.user.organizationId,
-        req.user.organizationMember
+        req.user!.id,
+        req.user!.role,
+        req.user!.organizationId,
+        req.user!.organizationMember
       );
 
       await eventService.removeAllAttendees(eventId);

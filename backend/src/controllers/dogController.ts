@@ -1,5 +1,6 @@
 import express from "express";
 import typeSafeLogger from "../utils/typeSafeLogger";
+import { ensureString } from "../utils/queryHelpers";
 import { toAppError, ConflictError, NotFoundError, ForbiddenError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import dogService from "../services/dogService";
@@ -37,20 +38,6 @@ async function areFriends(userId1: number, userId2: number): Promise<boolean> {
     return friends.users.some(user => user.id === userId2);
   } catch {
     return false;
-  }
-}
-
-// Extend Express Request to include user info
-declare global {
-  namespace Express {
-    interface Request {
-      userId?: number;
-      user?: {
-        id: number;
-        role?: string;
-      };
-      file?: Express.Multer.File;
-    }
   }
 }
 
@@ -93,7 +80,7 @@ const dogController = {
   getDogById: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
       typeSafeLogger.logRequest("Received request to fetch dog by ID", { method: req.method, path: req.path });
-      const dogId = parseInt(req.params.id, 10);
+      const dogId = parseInt(ensureString(req.params.id), 10);
 
       const dog = await dogService.getDogById(dogId);
       if (!dog) {
@@ -114,7 +101,7 @@ const dogController = {
   getDogByOwner: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
       typeSafeLogger.logRequest("Received request to fetch dogs by owner", { method: req.method, path: req.path });
-      const ownerId = parseInt(req.params.ownerId, 10);
+      const ownerId = parseInt(ensureString(req.params.ownerId), 10);
 
       const dogs = await dogService.getDogByOwner(ownerId);
       typeSafeLogger.logUserAction("Dogs retrieved for owner", { ownerId, dogCount: dogs.length });
@@ -149,7 +136,7 @@ const dogController = {
   getAllDogsByPark: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
       typeSafeLogger.logRequest("Received request to fetch all dogs by park", { method: req.method, path: req.path });
-      const parkId = parseInt(req.params.parkId, 10);
+      const parkId = parseInt(ensureString(req.params.parkId), 10);
 
       const dogs = await dogService.getAllDogsByPark(parkId);
       typeSafeLogger.logUserAction("Dogs retrieved for park", { parkId, dogCount: dogs.length });
@@ -166,7 +153,7 @@ const dogController = {
 
   updateDog: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
-        const dogId = parseInt(req.params.id, 10);
+        const dogId = parseInt(ensureString(req.params.id), 10);
         const userId = req.userId;
         const userRole = (req as any).user?.role;
         await checkDogAuthorization(dogId, userId, userRole);
@@ -183,7 +170,7 @@ const dogController = {
 
     deleteDog: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
-        const dogId = parseInt(req.params.id, 10);
+        const dogId = parseInt(ensureString(req.params.id), 10);
         const userId = req.userId;
         const userRole = (req as any).user?.role;
         await checkDogAuthorization(dogId, userId, userRole);
@@ -200,7 +187,7 @@ const dogController = {
 
     addOwnerToDog: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
-    const dogId = parseInt(req.params.id, 10);
+    const dogId = parseInt(ensureString(req.params.id), 10);
     const userId = req.userId;
     const userRole = (req as any).user?.role;
     await checkDogAuthorization(dogId, userId, userRole);
@@ -231,7 +218,7 @@ const dogController = {
 
   removeOwnerFromDog: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
-        const dogId = parseInt(req.params.id, 10);
+        const dogId = parseInt(ensureString(req.params.id), 10);
         const userId = req.userId;
         const userRole = (req as any).user?.role;
         await checkDogAuthorization(dogId, userId, userRole);
@@ -249,7 +236,7 @@ const dogController = {
 
     uploadDogPhoto: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
-        const dogId = parseInt(req.params.id, 10);
+        const dogId = parseInt(ensureString(req.params.id), 10);
         const userId = req.userId;
         const userRole = (req as any).user?.role;
         await checkDogAuthorization(dogId, userId, userRole);
@@ -275,7 +262,7 @@ const dogController = {
 
     uploadDocument: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
-        const dogId = parseInt(req.params.id, 10);
+        const dogId = parseInt(ensureString(req.params.id), 10);
         const userId = req.userId;
         const userRole = req.user?.role;
         await checkDogAuthorization(dogId, userId, userRole);
@@ -301,7 +288,7 @@ const dogController = {
     
     deleteDogPhoto: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
-        const dogId = parseInt(req.params.id, 10);
+        const dogId = parseInt(ensureString(req.params.id), 10);
         const userId = req.userId;
         const userRole = (req as any).user?.role;
         await checkDogAuthorization(dogId, userId, userRole);
@@ -318,7 +305,7 @@ const dogController = {
 
     deleteDocument: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
-        const dogId = parseInt(req.params.id, 10);
+        const dogId = parseInt(ensureString(req.params.id), 10);
         const userId = req.userId;
         const userRole = (req as any).user?.role;
         await checkDogAuthorization(dogId, userId, userRole);

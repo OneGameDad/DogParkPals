@@ -1,5 +1,6 @@
 import parkService from "../services/parkService";
 import { NotFoundError, ForbiddenError, isAppError } from "../utils/errors";
+import { ensureString } from "../utils/queryHelpers";
 import { Request, Response, NextFunction } from "express";
 import typeSafeLogger from "../utils/typeSafeLogger";
 import { toAppError } from "../utils/errors";
@@ -36,7 +37,7 @@ const parkController = {
     getParkById: async (req: Request, res: Response, next: NextFunction) => {
       try {
         typeSafeLogger.logRequest("Received request to fetch park by ID", { method: req.method, path: req.path });
-        const parkId = parseInt(req.params.id, 10);
+        const parkId = parseInt(ensureString(req.params.id), 10);
 
         const park = await parkService.getParkById(parkId);
         if (!park) {
@@ -59,9 +60,9 @@ const parkController = {
         typeSafeLogger.logRequest("Received request to fetch parks near location", { method: req.method, path: req.path });
         
         const { latitude, longitude, radiusInKm } = parseValidation(getParksNearLocationSchema, {
-          latitude: parseFloat(req.query.latitude as string),
-          longitude: parseFloat(req.query.longitude as string),
-          radiusInKm: parseFloat(req.query.radiusInKm as string),
+          latitude: parseFloat(ensureString(req.query.latitude)),
+          longitude: parseFloat(ensureString(req.query.longitude)),
+          radiusInKm: parseFloat(ensureString(req.query.radiusInKm)),
         });
 
         const parks = await parkService.getParksNearLocation(latitude, longitude, radiusInKm);
@@ -98,7 +99,7 @@ const parkController = {
     getParkByName: async (req: Request, res: Response, next: NextFunction) => {
       try {
         typeSafeLogger.logRequest("Received request to fetch park by name", { method: req.method, path: req.path });
-        const name = req.params.name;
+        const name = ensureString(req.params.name);
 
         const park = await parkService.getParkByName(name);
         if (!park) {
@@ -136,7 +137,7 @@ const parkController = {
     getUserFavoriteParks: async (req: Request, res: Response, next: NextFunction) => {
       try {
         typeSafeLogger.logRequest("Received request to fetch user favorite parks", { method: req.method, path: req.path });
-        const userId = parseInt(req.params.userId, 10);
+        const userId = parseInt(ensureString(req.params.userId), 10);
 
         const caller = (req as any).user;
         const isAdmin = caller?.role === 'ADMIN' || caller?.role === 'DEVELOPER';
@@ -160,8 +161,8 @@ const parkController = {
     addParkToUserFavorites: async (req: Request, res: Response, next: NextFunction) => {
       try {
         typeSafeLogger.logRequest("Received request to add park to user favorites", { method: req.method, path: req.path });
-        const userId = parseInt(req.params.userId, 10);
-        const parkId = parseInt(req.params.parkId, 10);
+        const userId = parseInt(ensureString(req.params.userId), 10);
+        const parkId = parseInt(ensureString(req.params.parkId), 10);
 
         const caller = (req as any).user;
         const isAdmin = caller?.role === 'ADMIN' || caller?.role === 'DEVELOPER';
@@ -190,8 +191,8 @@ const parkController = {
     removeParkFromUserFavorites: async (req: Request, res: Response, next: NextFunction) => {
       try {
         typeSafeLogger.logRequest("Received request to remove park from user favorites", { method: req.method, path: req.path });
-        const userId = parseInt(req.params.userId, 10);
-        const parkId = parseInt(req.params.parkId, 10);
+        const userId = parseInt(ensureString(req.params.userId), 10);
+        const parkId = parseInt(ensureString(req.params.parkId), 10);
 
         const caller = (req as any).user;
         const isAdmin = caller?.role === 'ADMIN' || caller?.role === 'DEVELOPER';
@@ -241,7 +242,7 @@ const parkController = {
     updatePark: async (req: Request, res: Response, next: NextFunction) => {
         try {
             typeSafeLogger.logRequest("Received request to update park", { method: req.method, path: req.path });
-            const parkId = parseInt(req.params.id, 10);
+            const parkId = parseInt(ensureString(req.params.id), 10);
             const userRole = (req as any).user?.role;
             await checkParkAuthorization(parkId, userRole);
 
@@ -263,7 +264,7 @@ const parkController = {
     deletePark: async (req: Request, res: Response, next: NextFunction) => {
       try {
         typeSafeLogger.logRequest("Received request to delete park", { method: req.method, path: req.path });
-        const parkId = parseInt(req.params.id, 10);
+        const parkId = parseInt(ensureString(req.params.id), 10);
         const userRole = (req as any).user?.role;
         await checkParkAuthorization(parkId, userRole);
 
@@ -283,7 +284,7 @@ const parkController = {
     checkInAtPark: async (req: Request, res: Response, next: NextFunction) => {
       try {
         const userId = (req as any).user?.id;
-        const parkId = parseInt(req.params.parkId, 10);
+        const parkId = parseInt(ensureString(req.params.parkId), 10);
         const dogId = req.body.dogId ? parseInt(req.body.dogId, 10) : undefined;
 
         if (!userId) {
@@ -316,7 +317,7 @@ const parkController = {
     checkOutFromPark: async (req: Request, res: Response, next: NextFunction) => {
       try {
         const userId = (req as any).user?.id;
-        const parkId = parseInt(req.params.parkId, 10);
+        const parkId = parseInt(ensureString(req.params.parkId), 10);
 
         const parkExists = await parkService.parkExists(parkId);
         if (!parkExists) {
@@ -341,7 +342,7 @@ const parkController = {
 
     getActiveCheckInsForPark: async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const parkId = parseInt(req.params.parkId, 10);
+        const parkId = parseInt(ensureString(req.params.parkId), 10);
         const activeCheckIns = await parkService.getActiveCheckInsForPark(parkId);
 
         res.status(200).json(activeCheckIns);

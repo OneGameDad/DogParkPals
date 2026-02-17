@@ -1,6 +1,7 @@
 import organizationService from "../services/organizationService";
 import express from "express";
 import typeSafeLogger from "../utils/typeSafeLogger";
+import { ensureString } from "../utils/queryHelpers";
 import { toAppError, ConflictError, NotFoundError, ForbiddenError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import { sanitizeOrganization } from "../utils/organizationSanitizer";
@@ -104,7 +105,7 @@ const organizationController = {
     getOrganizationById: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             typeSafeLogger.logRequest("Received request to fetch organization by ID", { method: req.method, path: req.path });
-            const { organizationId } = parseValidation(getOrganizationByIdSchema, { organizationId: parseInt(req.params.id, 10) });
+            const { organizationId } = parseValidation(getOrganizationByIdSchema, { organizationId: parseInt(ensureString(req.params.id), 10) });
             const orgId = organizationId;
 
             const org = await organizationService.getOrganizationById(orgId);
@@ -155,7 +156,7 @@ const organizationController = {
     updateOrganization: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             typeSafeLogger.logRequest("Received request to update organization", { method: req.method, path: req.path });
-            const { organizationId } = parseValidation(getOrganizationByIdSchema, { organizationId: parseInt(req.params.id, 10) });
+            const { organizationId } = parseValidation(getOrganizationByIdSchema, { organizationId: parseInt(ensureString(req.params.id), 10) });
             const orgId = organizationId;
             const userId = (req as any).user?.id || req.body.userId || 1; // TODO: Get from auth context
             const userRole = (req as any).user?.role;
@@ -180,7 +181,7 @@ const organizationController = {
     deleteOrganization: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             typeSafeLogger.logRequest("Received request to delete organization", { method: req.method, path: req.path });
-            const { organizationId } = parseValidation(getOrganizationByIdSchema, { organizationId: parseInt(req.params.id, 10) });
+            const { organizationId } = parseValidation(getOrganizationByIdSchema, { organizationId: parseInt(ensureString(req.params.id), 10) });
             const orgId = organizationId;
             const userId = (req as any).user?.id || req.body.userId || 1; // TODO: Get from auth context
             const userRole = (req as any).user?.role;
@@ -202,7 +203,7 @@ const organizationController = {
     addMember: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             typeSafeLogger.logRequest("Received request to add member to organization", { method: req.method, path: req.path });
-            const { organizationId, userId, role } = parseValidation(addMemberSchema, { organizationId: parseInt(req.params.id, 10), ...req.body });
+            const { organizationId, userId, role } = parseValidation(addMemberSchema, { organizationId: parseInt(ensureString(req.params.id), 10), ...req.body });
             const orgId = organizationId;
             const currentUserId = (req as any).user?.id || req.body.currentUserId || 1; // TODO: Get from auth context
             const userRole = (req as any).user?.role;
@@ -232,7 +233,7 @@ const organizationController = {
             }
 
             const { organizationId } = parseValidation(joinOrganizationSchema, {
-                organizationId: parseInt(req.params.id, 10),
+                organizationId: parseInt(ensureString(req.params.id), 10),
                 userId,
             });
 
@@ -252,7 +253,7 @@ const organizationController = {
     removeMember: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             typeSafeLogger.logRequest("Received request to remove member from organization", { method: req.method, path: req.path });
-            const { organizationId, userId: memberId } = parseValidation(removeMemberSchema, { organizationId: parseInt(req.params.id, 10), userId: parseInt(req.params.memberId, 10) });
+            const { organizationId, userId: memberId } = parseValidation(removeMemberSchema, { organizationId: parseInt(ensureString(req.params.id), 10), userId: parseInt(ensureString(req.params.memberId), 10) });
             const orgId = organizationId;
             const currentUserId = (req as any).user?.id || req.body.userId || 1; // TODO: Get from auth context
             const userRole = (req as any).user?.role;
@@ -273,7 +274,7 @@ const organizationController = {
     updateMemberRole: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             typeSafeLogger.logRequest("Received request to update member role in organization", { method: req.method, path: req.path });
-            const { organizationId, userId: memberId, role } = parseValidation(updateMemberRoleSchema, { organizationId: parseInt(req.params.id, 10), userId: parseInt(req.params.memberId, 10), ...req.body });
+            const { organizationId, userId: memberId, role } = parseValidation(updateMemberRoleSchema, { organizationId: parseInt(ensureString(req.params.id), 10), userId: parseInt(ensureString(req.params.memberId), 10), ...req.body });
             const orgId = organizationId;
             const currentUserId = (req as any).user?.id || req.body.currentUserId || 1; // TODO: Get from auth context
             const userRole = (req as any).user?.role;
@@ -295,7 +296,7 @@ const organizationController = {
     getMember: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             typeSafeLogger.logRequest("Received request to get member of organization", { method: req.method, path: req.path });
-            const { organizationId, userId: memberId } = parseValidation(getMemberSchema, { organizationId: parseInt(req.params.id, 10), userId: parseInt(req.params.memberId, 10) });
+            const { organizationId, userId: memberId } = parseValidation(getMemberSchema, { organizationId: parseInt(ensureString(req.params.id), 10), userId: parseInt(ensureString(req.params.memberId), 10) });
             const orgId = organizationId;
 
             const member = await organizationService.getMember(orgId, memberId);
@@ -317,7 +318,7 @@ const organizationController = {
     getMembers: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             typeSafeLogger.logRequest("Received request to get members of organization", { method: req.method, path: req.path });
-            const { organizationId } = parseValidation(getMembersSchema, { organizationId: parseInt(req.params.id, 10) });
+            const { organizationId } = parseValidation(getMembersSchema, { organizationId: parseInt(ensureString(req.params.id), 10) });
             const orgId = organizationId;
             
             // Extract query parameters for sorting
@@ -340,7 +341,7 @@ const organizationController = {
     isMember: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             typeSafeLogger.logRequest("Received request to check if user is member of organization", { method: req.method, path: req.path });
-            const { organizationId, userId } = parseValidation(isMemberSchema, { organizationId: parseInt(req.params.id, 10), userId: parseInt(req.params.userId, 10) });
+            const { organizationId, userId } = parseValidation(isMemberSchema, { organizationId: parseInt(ensureString(req.params.id), 10), userId: parseInt(ensureString(req.params.userId), 10) });
             const orgId = organizationId;
 
             const isMember = await organizationService.isMember(orgId, userId);
@@ -359,7 +360,7 @@ const organizationController = {
     getOrganizationWithDetails: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
             typeSafeLogger.logRequest("Received request to fetch organization with full details", { method: req.method, path: req.path });
-            const { organizationId } = parseValidation(getOrganizationByIdSchema, { organizationId: parseInt(req.params.id, 10) });
+            const { organizationId } = parseValidation(getOrganizationByIdSchema, { organizationId: parseInt(ensureString(req.params.id), 10) });
             const orgId = organizationId;
 
             // Extract query parameters for sorting members

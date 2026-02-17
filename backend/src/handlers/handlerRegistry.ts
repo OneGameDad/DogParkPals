@@ -2,6 +2,8 @@ import type { DomainEventUnion, EventType } from '../events/eventTypes';
 import { EventTypes } from '../events/eventTypes';
 import { handleEventCreatedNotifications } from './notifications/onEventCreated';
 import { handleEventCreatedLogging } from './logging/onEventCreated';
+import { handleAchievementAwardedNotifications } from './notifications/onAchievementAwarded';
+import { handleAchievementAwardedLogging } from './logging/onAchievementAwarded';
 
 export type EventHandler = (event: DomainEventUnion) => Promise<void>;
 
@@ -15,5 +17,8 @@ export const handlerRegistry: Record<EventType, RegisteredHandler[]> = {
     { name: 'notifications.eventCreated', handler: handleEventCreatedNotifications },
     { name: 'logging.eventCreated', handler: handleEventCreatedLogging },
   ],
-  [EventTypes.AchievementAwarded]: [],
+  [EventTypes.AchievementAwarded]: [
+    { name: 'notifications.achievementAwarded', handler: handleAchievementAwardedNotifications },
+    { name: 'logging.achievementAwarded', handler: handleAchievementAwardedLogging },
+  ],
 };

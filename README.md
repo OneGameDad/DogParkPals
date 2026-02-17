@@ -297,3 +297,4 @@ The database is built with SQLite and managed by Prisma ORM. Below is an overvie
 - Friends
 - Enemies
 - Testing Framework
+- Backend Refactor (Event-Driven Architecture)

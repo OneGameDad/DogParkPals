@@ -17,15 +17,15 @@ async function processOutboxOnce(batchSize: number) {
 
   for (const record of pending) {
     try {
-      const event: DomainEventUnion = {
+      const event = {
         id: record.id,
-        type: record.type as DomainEventUnion['type'],
+        type: record.type,
         occurredAt: record.occurredAt.toISOString(),
         actorId: record.actorId ?? undefined,
-        payload: record.payload as DomainEventUnion['payload'],
+        payload: record.payload,
         version: record.version,
         traceId: record.traceId ?? undefined,
-      };
+      } as DomainEventUnion;
 
       await queueClient.publish(event);
       await markOutboxEventPublished(prisma, record.id);

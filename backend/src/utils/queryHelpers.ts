@@ -27,11 +27,15 @@ export const getQueryNumber = (value: any): number | undefined => {
 
 /**
  * Extract the first value and parse as boolean
+ * Returns true for "true", false for "false", undefined for missing/invalid values
  */
 export const getQueryBoolean = (value: any): boolean | undefined => {
   const str = getQueryString(value);
-  if (!str) return undefined;
-  return str.toLowerCase() === 'true';
+  if (str === undefined) return undefined;
+  const lower = str.toLowerCase();
+  if (lower === 'true') return true;
+  if (lower === 'false') return false;
+  return undefined;
 };
 
 /**
@@ -45,10 +49,19 @@ export const getQueryArray = (value: any): string[] => {
 
 /**
  * Cast a param/query value to string, handling arrays and null values
+ * Returns empty string for null/undefined to prevent "null"/"undefined" string conversion
  */
 export const ensureString = (value: any): string => {
+  // Explicitly handle null/undefined so they don't become "null"/"undefined"
+  if (value === null || value === undefined) {
+    return '';
+  }
   if (Array.isArray(value)) {
-    return String(value[0]);
+    const first = value[0];
+    if (first === null || first === undefined) {
+      return '';
+    }
+    return String(first);
   }
   return String(value);
 };

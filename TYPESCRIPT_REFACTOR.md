@@ -280,6 +280,44 @@ const userId = req.user!.id;
 
 ---
 
+### 8. Validator Type Safety Reconsideration (REVERTED)
+
+**Initial Change** (commit `5f83ec8`): Changed validator parameter from `unknown` to `any`
+
+**Problem Identified**: 
+The change from `unknown` to `any` in `parseValidation()` significantly weakens type safety:
+
+```typescript
+// Initial problematic change
+export const parseValidation = <T,>(schema: z.ZodSchema<T>, data: any): T => {
+  // ...
+}
+```
+
+**Why This Was Wrong**:
+- **Type Safety Loss**: `any` bypasses TypeScript's type checking entirely
+- **Purpose Violation**: `unknown` is specifically designed for validation functions receiving untrusted input
+- **Best Practice**: Validation functions should force callers to validate data before use
+- **Zod Compatibility**: Zod's `safeParse()` accepts `unknown` natively - no need for `any`
+
+**Correct Implementation** (reverted):
+```typescript
+export const parseValidation = <T,>(schema: z.ZodSchema<T>, data: unknown): T => {
+  const result = schema.safeParse(data);
+  // ...
+}
+```
+
+**Justification for Revert**:
+- `unknown` forces explicit type checking, which is the entire purpose of a validation layer
+- Zod schemas handle `unknown` types correctly
+- Using `any` defeats TypeScript's type system
+- No functional benefit to using `any` - only downsides
+
+**Status**: ✅ Reverted to `unknown` in commit following code review
+
+---
+
 ## Error Reduction Timeline
 
 | Step | Action | Errors Before | Errors After | Errors Fixed |
@@ -532,6 +570,21 @@ const archived = getQueryBoolean(req.query.archived) || false;
      newField: value  // Set here
    };
    ```
+
+---
+
+## Post-Merge TypeScript Fixes (Event-Driven Additions)
+
+After the event-driven architecture was merged into `main`, a small set of new TypeScript errors appeared. These were addressed to keep builds green without changing runtime behavior:
+
+**Key fixes**:
+- **Prisma client sync**: Regenerated Prisma client so new models and enum values (e.g., notification types) are reflected in types.
+- **Outbox payload typing**: Cast `event.payload` to JSON-compatible input when writing to the outbox table to satisfy Prisma JSON constraints.
+- **RabbitMQ typing**: Installed `amqplib` + `@types/amqplib` and updated the client implementation to align with the library's connection/channel types.
+- **Outbox publisher union**: Adjusted event construction to avoid union assignment errors when publishing domain events.
+- **Nullable field handling**: Added a non-null assertion where a nullable field is known to be populated after update.
+
+**Outcome**: `npm run build` and backend tests pass cleanly after these updates.
 
 ---
 

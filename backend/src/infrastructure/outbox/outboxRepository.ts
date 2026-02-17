@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient, Prisma } from '@prisma/client';
 import type { DomainEventUnion } from '../../events/eventTypes';
 
 export type PrismaClientOrTx = PrismaClient | Prisma.TransactionClient;
@@ -15,7 +15,7 @@ export async function addOutboxEvent(client: PrismaClientOrTx, event: DomainEven
     data: {
       id: event.id,
       type: event.type,
-      payload: event.payload,
+      payload: event.payload as any,
       occurredAt: new Date(event.occurredAt),
       actorId: event.actorId ?? null,
       version: event.version,

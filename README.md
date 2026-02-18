@@ -490,7 +490,7 @@ The database is built with SQLite and managed by Prisma ORM. Below is an overvie
 | Multibrowser Support                              | 1      |
 | Health check & status page system w/ backups, etc | 1      |
 | Monitoring System w/ Prometheus + Grafana         | 2      |
-| Centralized Logging & Audit Trail w/ ELK Stack   | 2      |
+| Centralized Logging & Audit Trail w/ ELK Stack    | 2      |
 | Total:                                            | 24     |
 
 ## Individual Contributions
@@ -530,3 +530,4 @@ The database is built with SQLite and managed by Prisma ORM. Below is an overvie
 - Backend Refactor (Event-Driven Architecture)
 - Setup RabbitMQ
 - Setup Prometheus + Grafana
+- Setup ELK

@@ -1,0 +1,160 @@
+{
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.max_result_window": 50000,
+      "index.lifecycle.name": "dogparkpals-logs-ilm",
+      "index.lifecycle.rollover_alias": "dogparkpals-logs",
+      "analysis": {
+        "analyzer": {
+          "default": {
+            "type": "standard"
+          }
+        }
+      }
+    },
+    "mappings": {
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        },
+        "timestamp": {
+          "type": "date"
+        },
+        "level": {
+          "type": "keyword"
+        },
+        "severity": {
+          "type": "keyword"
+        },
+        "severity_number": {
+          "type": "integer"
+        },
+        "message": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "log_message": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "service": {
+          "type": "keyword"
+        },
+        "application": {
+          "type": "keyword"
+        },
+        "environment": {
+          "type": "keyword"
+        },
+        "hostname": {
+          "type": "keyword"
+        },
+        "context_type": {
+          "type": "keyword"
+        },
+        "tags": {
+          "type": "keyword"
+        },
+        "trace_id": {
+          "type": "keyword"
+        },
+        "request_id": {
+          "type": "keyword"
+        },
+        "event_id": {
+          "type": "keyword"
+        },
+        "event_type": {
+          "type": "keyword"
+        },
+        "actor_id": {
+          "type": "integer"
+        },
+        "user_id": {
+          "type": "integer"
+        },
+        "dog_id": {
+          "type": "integer"
+        },
+        "park_id": {
+          "type": "integer"
+        },
+        "organization_id": {
+          "type": "integer"
+        },
+        "method": {
+          "type": "keyword"
+        },
+        "path": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "status_code": {
+          "type": "integer"
+        },
+        "statusCode": {
+          "type": "integer"
+        },
+        "duration": {
+          "type": "float"
+        },
+        "duration_ms": {
+          "type": "float"
+        },
+        "username": {
+          "type": "keyword"
+        },
+        "email": {
+          "type": "keyword"
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "text"
+            },
+            "stack": {
+              "type": "text"
+            },
+            "name": {
+              "type": "keyword"
+            }
+          }
+        },
+        "stack": {
+          "type": "text"
+        },
+        "payload": {
+          "type": "object",
+          "enabled": true
+        },
+        "context": {
+          "type": "object",
+          "enabled": true
+        },
+        "metadata": {
+          "type": "object",
+          "enabled": true
+        }
+      }
+    }
+  },
+  "index_patterns": ["dogparkpals-logs-*"]
+}

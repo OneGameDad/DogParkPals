@@ -7,6 +7,7 @@ import logger from './logger';
 // Define common metadata types
 export interface BaseLogMeta {
   [key: string]: any;
+  traceId?: string;
 }
 
 export interface UserLogMeta extends BaseLogMeta {
@@ -25,6 +26,13 @@ export interface RequestLogMeta extends BaseLogMeta {
   path?: string;
   statusCode?: number;
   duration?: number;
+}
+
+export interface EventLogMeta extends BaseLogMeta {
+  eventId?: string;
+  eventType?: string;
+  actorId?: number;
+  payload?: any;
 }
 
 // Type-safe logger wrapper
@@ -56,6 +64,10 @@ export const typeSafeLogger = {
 
   logError: (message: string, error: Error | unknown, meta?: BaseLogMeta) => {
     logger.error(message, { ...meta, error });
+  },
+
+  logEvent: (message: string, meta: EventLogMeta) => {
+    logger.info(message, { ...meta, context_type: 'event' });
   },
 };
 

@@ -40,6 +40,7 @@ As this is an MVP it is limited in scope to only included the public dog parks i
    - Backend API: http://localhost:3000
    - Prometheus: http://localhost:9090
    - Grafana: http://localhost:3001 (admin/admin)
+   - Kibana: http://localhost:5601
    - RabbitMQ Management: http://localhost:15672 (guest/guest)
 
 ### RabbitMQ (Management UI)
@@ -127,6 +128,147 @@ DogParkPals includes Prometheus metrics and Grafana dashboards for observability
 - Example: `dogparkpals_event_handler_executions_total{status="success"}`
 - Example: `rate(dogparkpals_outbox_events_published_total[5m])`
 - Example: `histogram_quantile(0.95, rate(dogparkpals_job_duration_seconds_bucket[5m]))`
+
+### Centralized Logging (ELK Stack)
+DogParkPals includes an ELK stack (Elasticsearch, Logstash, Kibana) for centralized log aggregation, search, and audit trail capabilities.
+
+**Access:**
+- Kibana: `http://localhost:5601`
+- Elasticsearch: `http://localhost:9200` (HTTP API)
+- Logstash: Receives logs on TCP/UDP port 5000 (not user-facing)
+
+**Setup:**
+After starting Docker services, initialize Kibana with dashboards and saved searches:
+```bash
+bash kibana/setup-kibana.sh
+```
+
+This creates:
+- Elasticsearch ILM (Index Lifecycle Management) policy for automatic log retention
+- Index pattern `dogparkpals-logs-*` (queries all log indices automatically)
+- 8 pre-configured saved searches (all logs, errors, events, failed jobs, etc.)
+- 5 sample dashboards (event timeline, error analysis, user activity, system health, audit trail)
+
+**Log Retention (Automatic):**
+- Hot Phase (0-1 day): Active indexing, rollover at 50GB or 1 day
+- Warm Phase (1-7 days): Read-only access
+- Delete Phase (30+ days): Automatic deletion
+
+Logs older than 30 days are automatically deleted to prevent disk space issues. Customize retention in [elasticsearch/ilm-policy.json](./elasticsearch/ilm-policy.json).
+
+**Key Features:**
+
+**Event-Driven Audit Trail:**
+- All 34 domain event types are automatically logged to Elasticsearch
+- Immutable record of every system change for compliance
+- Tagged with event_id, actor_id, user_id, dog_id, park_id, organization_id
+- Searchable by time, user, event type, resource ID, or outcome
+
+**Structured JSON Logging:**
+- Backend logs sent to Logstash via UDP (fire-and-forget, no blocking)
+- Automatically parsed and enriched with contextual fields
+- Error stack traces captured and searchable
+- Handler performance metrics (duration_ms) tracked
+- Request tracing with trace_id for correlation
+
+**Available Dashboards:**
+1. **Event Timeline** - Real-time volume of all domain events (24h)
+2. **Error Analysis** - Error distribution by severity and trends (7d)
+3. **User Activity Breakdown** - Top users and event types (7d)
+4. **System Health & Performance** - Failed jobs and handler latency (24h)
+5. **Complete Audit Trail** - Searchable record of all 34 event types (30d)
+
+**Quick Searches:**
+
+Access these pre-built saved searches in Kibana → Discover:
+- **All Logs** - View complete system logs
+- **Errors & Warnings** - Filter for severity: error, fatal, warn
+- **Domain Events** - Pure event-driven audit trail (context_type: event)
+- **Failed Background Jobs** - job.failed events from outboxPublisher, autoCheckoutJob, eventConsumer
+- **Event Handler Performance** - Handler execution logs with timing metrics
+
+**Common Queries (KQL - Kibana Query Language):**
+```
+# All errors in last hour
+severity: error OR severity: fatal
+
+# Events by specific user
+actor_id: 123
+
+# Failed operations affecting a dog
+dog_id: 456 AND severity: error
+
+# Trace event workflow
+event_type: (friend.request.sent OR friend.request.accepted)
+
+# Handler performance over threshold
+duration_ms > 500
+
+# All system changes in a park
+park_id: 789
+```
+
+**Log Fields Reference:**
+
+Key searchable fields automatically extracted by Logstash:
+- `@timestamp` - Event timestamp (UTC, indexed for fast queries)
+- `severity` - Log level: debug, info, warn, error, fatal
+- `context_type` - Log category: event (domain events), request, error
+- `event_id` - UUID of domain event
+- `event_type` - Type of domain event (e.g., friend.request.sent)
+- `actor_id` - User who triggered the event
+- `user_id`, `dog_id`, `park_id`, `organization_id` - Affected resources
+- `duration_ms` - Execution time in milliseconds (for handlers/jobs)
+- `error.message`, `error.stack` - Exception details
+- `trace_id` - Request correlation ID for tracing
+
+Full field reference: See [kibana/README.md](./kibana/README.md)
+
+**Monitoring Best Practices:**
+
+Daily:
+1. Open **System Health & Performance** dashboard
+2. Check for `job.failed` events (indicates stuck background jobs)
+3. Review handler performance (watch for > 500ms outliers)
+
+Weekly:
+1. Open **Complete Audit Trail** dashboard
+2. Sample events to verify audit trail accuracy
+3. Check **Error Analysis** for recurring patterns
+
+Incident Response:
+1. Use **Complete Audit Trail** → Filter by timestamp/user/resource
+2. Use **Error Analysis** → Identify when errors started/stopped
+3. Export relevant logs (Kibana → inspect panel → download CSV)
+
+**Troubleshooting:**
+
+**No logs appearing in Kibana?**
+- Verify Logstash is running: `docker compose logs logstash`
+- Check Elasticsearch has data: `curl http://localhost:9200/dogparkpals-logs-*/_count`
+- Run setup script: `bash kibana/setup-kibana.sh`
+- Ensure backend is logging (check `docker compose logs backend`)
+
+**"No matching indices" error?**
+- Wait 30 seconds for first log to arrive
+- Refresh index pattern: Kibana → Stack Management → Index Patterns → dogparkpals-logs-* → Refresh fields
+
+**Kibana is slow?**
+- Use shorter time range (Last 24h instead of Last 30d)
+- Add more specific filters
+- Archive indices older than 30 days (advanced: see Elasticsearch docs)
+
+**Disk space filling up?**
+- Check retention policy is active: `curl http://localhost:9200/_ilm/policy/dogparkpals-logs-ilm`
+- Manually delete old indices: `curl -X DELETE http://localhost:9200/dogparkpals-logs-2026.01.*`
+- Reduce retention period: Edit [elasticsearch/ilm-policy.json](./elasticsearch/ilm-policy.json)
+
+**Complete Documentation:**
+- Kibana setup and log retention: [kibana/README.md](./kibana/README.md)
+- Dashboard details and examples: [kibana/DASHBOARDS.md](./kibana/DASHBOARDS.md)
+- Logstash pipeline: [logstash/pipeline/dogparkpals.conf](./logstash/pipeline/dogparkpals.conf)
+- Elasticsearch index template: [elasticsearch/index-template.json](./elasticsearch/index-template.json)
+- Elasticsearch ILM policy: [elasticsearch/ilm-policy.json](./elasticsearch/ilm-policy.json)
 
 ### Event bus sanity
 - Ensure `EVENT_BUS_ENABLED` is not `false` in `docker-secrets`.
@@ -231,8 +373,11 @@ DogParkPals includes Prometheus metrics and Grafana dashboards for observability
 - RabbitMQ (Queue & Messaging)
 - Prometheus (Metrics & Monitoring)
 - Grafana (Dashboards & Visualization)
+- Elasticsearch (Centralized Logging)
+- Logstash (Log Processing & Enrichment)
+- Kibana (Log Search & Dashboard)
 
-Reasoning: All commonly used tech, requested or required in many job advertisements. They also are well documented and supported.
+Reasoning: All commonly used tech, requested or required in many job advertisements. They also are well documented and supported. ELK stack provides immutable event-driven audit trail, centralized logging, and compliance-ready dashboards.
 
 ## Database Schema
 
@@ -345,7 +490,8 @@ The database is built with SQLite and managed by Prisma ORM. Below is an overvie
 | Multibrowser Support                              | 1      |
 | Health check & status page system w/ backups, etc | 1      |
 | Monitoring System w/ Prometheus + Grafana         | 2      |
-| Total:                                            | 22     |
+| Centralized Logging & Audit Trail w/ ELK Stack    | 2      |
+| Total:                                            | 24     |
 
 ## Individual Contributions
 
@@ -384,3 +530,4 @@ The database is built with SQLite and managed by Prisma ORM. Below is an overvie
 - Backend Refactor (Event-Driven Architecture)
 - Setup RabbitMQ
 - Setup Prometheus + Grafana
+- Setup ELK

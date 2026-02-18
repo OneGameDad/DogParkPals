@@ -1,5 +1,6 @@
 import { createLogger, format, transports } from 'winston';
 import { sanitizeLogData } from './logSanitizer';
+import * as dgram from 'dgram';
 
 // Custom format to sanitize sensitive data from logs
 const sanitizeFormat = format((info) => {
@@ -15,6 +16,29 @@ const sanitizeFormat = format((info) => {
     ...sanitizedMeta,
   };
 })();
+
+// Custom UDP transport for sending logs to Logstash
+class UDPTransport extends transports.Transport {
+  private client: dgram.Socket;
+  private host: string;
+  private port: number;
+
+  constructor(options?: any) {
+    super(options);
+    this.host = options?.host || 'localhost';
+    this.port = options?.port || 5000;
+    this.client = dgram.createSocket('udp4');
+  }
+
+  log(info: any, callback?: (err?: Error | null) => void) {
+    const message = JSON.stringify(info);
+    const buffer = Buffer.from(message);
+
+    this.client.send(buffer, 0, buffer.length, this.port, this.host, (err) => {
+      if (callback) callback(err);
+    });
+  }
+}
 
 const logger = createLogger({
   level: process.env.LOG_LEVEL || 'info',
@@ -42,5 +66,15 @@ const logger = createLogger({
     }),
   ],
 });
+
+// Add UDP transport to Logstash in production (when running in Docker)
+if (process.env.NODE_ENV === 'production' || process.env.ENABLE_LOGSTASH === 'true') {
+  logger.add(
+    new UDPTransport({
+      host: process.env.LOGSTASH_HOST || 'logstash',
+      port: parseInt(process.env.LOGSTASH_PORT || '5000'),
+    })
+  );
+}
 
 export default logger;

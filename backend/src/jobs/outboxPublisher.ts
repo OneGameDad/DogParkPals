@@ -110,7 +110,7 @@ export function startOutboxPublisher(options: { intervalMs?: number; batchSize?:
         });
         await addOutboxEvent(prisma, domainEvent);
       } catch (recordError) {
-        // Silently fail to record error - at least it was logged above
+        // Silently fail - cannot record the job failure event, but the original error was already logged
         typeSafeLogger.debug('Could not record job failure event', { cause: recordError });
       }
     } finally {

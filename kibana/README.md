@@ -20,7 +20,7 @@ Then open Kibana: http://localhost:5601
 - **Time Field:** `@timestamp`
 - Automatically discovers all daily indices created by Logstash
 
-### Saved Searches
+### Saved Searches (8)
 
 Pre-configured searches available in Kibana's Discover tab:
 
@@ -32,6 +32,31 @@ Pre-configured searches available in Kibana's Discover tab:
 6. **User Actions (by User)** - Filter logs by user_id (update query for your user)
 7. **Outbox Publishing Activity** - Outbox publisher logs and event publishing status
 8. **Event Handler Performance** - Event handler execution logs
+
+### Dashboards (5)
+
+Pre-built visual dashboards for key insights:
+
+1. **Event Timeline** - Real-time event volume and activity over last 24 hours
+2. **Error Analysis** - Error severity breakdown, trends, and patterns over 7 days
+3. **User Activity Breakdown** - Top users, event types, and activity timeline
+4. **System Health & Performance** - Failed jobs, handler execution times, performance distribution
+5. **Complete Audit Trail** - Full searchable record of all 34 domain event types
+
+See [DASHBOARDS.md](./DASHBOARDS.md) for detailed guide on each dashboard.
+
+## Setup Script
+
+The `setup-kibana.sh` script automates:
+1. Waits for Kibana to be ready (polls for 60 seconds)
+2. Creates the `dogparkpals-logs-*` index pattern
+3. Imports 8 pre-configured saved searches
+4. Imports 5 sample dashboards with 8 visualizations
+
+Run after Docker services are started:
+```bash
+bash kibana/setup-kibana.sh
+```
 
 ## Manual Setup (if script fails)
 
@@ -54,6 +79,12 @@ Go to **Discover** → select `dogparkpals-logs-*` index pattern
 2. Click **Save** (top right)
 3. Give it a name and description
 4. Click **Save**
+
+### Import Dashboards Manually
+
+1. Go to **Stack Management** → **Saved Objects** → **Import**
+2. Upload `kibana/dashboards.ndjson`
+3. Click **Import**
 
 ## Useful Queries
 
@@ -115,22 +146,22 @@ duration_ms > 100
 ## Monitoring with Kibana
 
 ### Real-time Activity
-1. Go to **Discover** → **Domain Events (Audit Trail)**
-2. Click the clock icon to set **Last 15 minutes**
-3. Watch for new event-driven logs appearing in real-time
+1. Go to **Dashboards** → **Event Timeline**
+2. Watch real-time event stream
+3. Compare with baseline for anomalies
 
 ### Performance Analysis
-1. Search: `event_handler_executions_total` in logs
-2. Review handler duration histograms
-3. Identify slow handlers causing issues
+1. **Dashboards** → **System Health & Performance**
+2. Review handler duration and failed jobs
+3. Identify performance bottlenecks
 
 ### Error Tracking
-1. Use **Errors & Warnings** saved search
-2. Drill down by severity, service, or handler
-3. Group by error message to find patterns
+1. **Dashboards** → **Error Analysis**
+2. Filter by severity, service, or error type
+3. View error trends over time
 
 ### Audit Trail
-1. Use **Domain Events** saved search
+1. **Dashboards** → **Complete Audit Trail**
 2. Filter by event_type, actor_id, or timestamp
 3. Complete history of all system changes
 
@@ -149,3 +180,8 @@ duration_ms > 100
 - Reduce time range in Kibana
 - Use more specific filters
 - Archive old indices (older than 30 days)
+
+**Dashboards not appearing after import?**
+- Run setup script: `bash kibana/setup-kibana.sh`
+- Refresh Kibana browser (Ctrl+R or Cmd+R)
+- Check browser console for errors (F12 → Console tab)

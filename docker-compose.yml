@@ -9,7 +9,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - DATABASE_URL=file:./data/prod.db
+      - DATABASE_URL=file:/app/data/prod.db
     env_file:
       - ./docker-secrets
     volumes:
@@ -39,7 +39,7 @@ services:
       dockerfile: Dockerfile.db-init
     container_name: dogparkpals-db-init
     environment:
-      - DATABASE_URL=file:./data/prod.db
+      - DATABASE_URL=file:/app/data/prod.db
     env_file:
       - ./docker-secrets
     volumes:
@@ -52,7 +52,7 @@ services:
       dockerfile: Dockerfile
     container_name: dogparkpals-backup-events
     environment:
-      - DATABASE_URL=file:./data/prod.db
+      - DATABASE_URL=file:/app/data/prod.db
     env_file:
       - ./docker-secrets
     volumes:

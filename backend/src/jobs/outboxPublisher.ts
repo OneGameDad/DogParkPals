@@ -61,11 +61,10 @@ async function processOutboxOnce(batchSize: number) {
       }
     }
   } catch (error) {
-    // If we can't even fetch pending events (database issue), log it but don't crash
+    // If we can't even fetch pending events (database issue), log it but don't crash;
+    // the job will retry on the next interval.
     const message = error instanceof Error ? error.message : 'Unknown fetch error';
     typeSafeLogger.logError('Outbox: Could not fetch pending events', error, { message });
-    // Re-throw to let the caller handle it
-    throw error;
   }
 }
 

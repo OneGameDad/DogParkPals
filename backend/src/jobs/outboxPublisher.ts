@@ -55,7 +55,7 @@ async function processOutboxOnce(batchSize: number) {
         try {
           await addOutboxEvent(prisma, domainEvent);
         } catch (addError) {
-          // Silently fail - error was already logged above
+          // Silently fail - cannot record the failure event, but the original error was already logged
           typeSafeLogger.debug('Could not record publish failure event', { cause: addError });
         }
       }

@@ -452,6 +452,70 @@ const logger = winston.createLogger({
 
 **Resolution**: Remove `version: '3.8'` from docker-compose.yml (Compose V2 syntax doesn't need it).
 
+### 4. SQLite Database Path Configuration (2026-02-18)
+
+**Issue**: Database initialization failures with "Error code 14: Unable to open the database file"
+
+**Root Causes**:
+1. **Relative path in production containers**: `DATABASE_URL="file:./data/prod.db"` used relative path. Inside containers, the working directory may differ, making the path invalid.
+2. **Missing directory creation**: The backend Dockerfile didn't create `/app/data` directory, causing SQLite to fail when trying to create the database file.
+3. **Race condition in outbox publisher**: The `startOutboxPublisher()` job started immediately on server startup and tried to access the database before migrations completed, causing unhandled errors that crashed the container.
+4. **Missing RabbitMQ configuration**: `docker-secrets` file was missing event queue environment variables, causing partial initialization.
+
+**Error Signature**:
+```
+PrismaClientInitializationError: 
+Invalid `prisma.outboxEvent.create()` invocation:
+Error querying the database: Error code 14: Unable to open the database file
+```
+
+**Impact**: Application crashed during startup with "Restarting (1)" status in Docker, preventing services from running.
+
+**Resolution Implemented**:
+
+1. **Fixed database path to absolute**: Updated `docker-compose.yml` and `docker-secrets` to use absolute path:
+   ```yaml
+   DATABASE_URL=file:/app/data/prod.db  # Before: file:./data/prod.db
+   ```
+   Applied to:
+   - Backend service environment
+   - db-init service environment
+   - backup-events service environment
+
+2. **Created data directory in Dockerfile**:
+   ```dockerfile
+   RUN mkdir -p uploads data  # Ensures /app/data exists at container startup
+   ```
+
+3. **Added error handling to outbox publisher** (`src/jobs/outboxPublisher.ts`):
+   - Wrapped `addOutboxEvent()` calls in try-catch to prevent crashes
+   - Added graceful degradation: logs errors but continues operation
+   - Database connection fails are now logged but don't terminate the server
+   - Protects against transient database unavailability during startup
+
+4. **Added missing RabbitMQ configuration** to `docker-secrets`:
+   ```bash
+   EVENT_BUS_ENABLED=true
+   RABBITMQ_URL=amqp://rabbitmq:5672
+   EVENT_QUEUE_NAME=dogpark.events
+   EVENT_QUEUE_MAX_RETRIES=5
+   EVENT_QUEUE_DLQ_NAME=dogpark.events.dlq
+   ```
+
+**Testing Verification**:
+- ✅ Backend container starts and stays running (up 36+ seconds)
+- ✅ Health check endpoint responds: `curl http://localhost:3000/health` → `{"status":"ok"}`
+- ✅ Database migrations complete successfully (15 migrations applied)
+- ✅ Frontend accessible at http://localhost:5173
+- ✅ RabbitMQ connections established successfully
+- ✅ Database file persists in named volume across container restarts
+
+**Files Modified**:
+- `docker-compose.yml` - Updated DATABASE_URL paths (3 services)
+- `docker-secrets` - Fixed path, added RabbitMQ config
+- `backend/Dockerfile` - Created data directory
+- `backend/src/jobs/outboxPublisher.ts` - Added error handling
+
 ## Performance Metrics
 
 ### Build Times

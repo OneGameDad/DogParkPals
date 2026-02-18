@@ -162,6 +162,142 @@ bash kibana/setup-kibana.sh
 docker compose logs logstash
 ```
 
+## Production Security Hardening
+
+### Current State
+The observability stack currently runs **without authentication or encryption**:
+- ❌ Elasticsearch: No authentication, plain HTTP
+- ❌ Kibana: No authentication
+- ❌ Logstash: Plain HTTP to Elasticsearch
+- ❌ Prometheus/Grafana: No authentication
+
+### Security Checklist for Production
+
+#### 1. Elasticsearch Security
+```bash
+# Enable X-Pack security in docker-compose.yml:
+# environment:
+#   - xpack.security.enabled=true
+#   - ELASTIC_PASSWORD=<strong-password>
+
+# Configure TLS for HTTP and node-to-node transport
+# environment:
+#   - xpack.security.http.ssl.enabled=true
+#   - xpack.security.transport.ssl.enabled=true
+#   - xpack.security.http.ssl.keystore.path=certs/elasticsearch.p12
+#   - xpack.security.transport.ssl.keystore.path=certs/elasticsearch.p12
+```
+
+#### 2. Kibana Authentication
+```bash
+# Enable authentication in docker-compose.yml:
+# environment:
+#   - ELASTICSEARCH_USERNAME=kibana_system
+#   - ELASTICSEARCH_PASSWORD=<strong-password>
+#   - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=/usr/share/kibana/config/certs/ca.crt
+```
+
+#### 3. Logstash Credentials
+```bash
+# Use Elasticsearch API keys in logstash.conf:
+# output {
+#   elasticsearch {
+#     api_key => "<api-key-id>:<api-key-secret>"
+#     ssl => true
+#     ssl_certificate_verification => true
+#   }
+# }
+```
+
+#### 4. Network Security
+```bash
+# Firewall Rules (example with ufw):
+ufw allow 22/tcp          # SSH only
+ufw allow 3000/tcp        # Backend API
+ufw allow 3001/tcp        # Grafana
+ufw allow 5173/tcp        # Frontend
+ufw deny 9200/tcp         # Block Elasticsearch (internal only)
+ufw deny 9300/tcp         # Block ES transport
+ufw deny 5601/tcp         # Block Kibana (use reverse proxy)
+ufw deny 9090/tcp         # Block Prometheus (use reverse proxy)
+```
+
+#### 5. Reverse Proxies
+```bash
+# Setup nginx reverse proxies for:
+# - Kibana on :5601    → with authentication
+# - Prometheus on :9090 → with basic auth
+# - Elasticsearch :9200 → private/internal only
+```
+
+#### 6. Database Backups
+```bash
+# Regular snapshots with Elasticsearch:
+# 1. Configure snapshot repository
+# 2. Set up automated snapshot schedule
+# 3. Test restore procedure monthly
+# 4. Store backups off-server (S3, NAS, etc.)
+```
+
+#### 7. Monitoring & Alerting
+```bash
+# Enable alerts for:
+# - Disk usage > 80%
+# - Indexing failures
+# - Authentication failures (watch logs)
+# - Unassigned shards
+# - High GC pauses
+```
+
+#### 8. Access Control
+```bash
+# Implement:
+# - Role-based access control (RBAC) in Kibana
+# - Separate read-only users for auditors
+# - Admin-only users for modifications
+# - All logins logged in Elasticsearch audit trail
+```
+
+#### 9. Audit Logging
+```bash
+# Enable in docker-compose.yml:
+# environment:
+#   - xpack.security.audit.enabled=true
+#   - xpack.security.audit.logfile.enabled=true
+```
+
+#### 10. TLS Certificate Management
+```bash
+# Use proper certificates (not self-signed) from:
+# - Let's Encrypt (free, automated renewal)
+# - Commercial CA
+# - Internal PKI infrastructure
+
+# Monitor certificate expiration
+```
+
+### Estimated Implementation Time
+- Basic (items 1-3): 2-4 hours
+- Intermediate (items 4-6): 4-8 hours  
+- Production-grade (items 7-10): 8-16 hours
+
+### Risk Assessment
+
+**Without Security:**
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|-----------|
+| Unauthorized log access | High | Critical | Enable authentication + TLS |
+| Data breach | High | Critical | Network isolation + encryption |
+| Log tampering | Medium | High | Audit logging + backups |
+| DoS/resource exhaustion | Medium | High | Rate limiting + monitoring |
+| Credential exposure | Low | Critical | Secrets management + rotation |
+
+**With Production Security (all items complete):**
+- ISO 27001 ready
+- GDPR compliant (encryption + audit trail)
+- SOC 2 Type II capable
+- HIPAA ready (with extended retention)
+
 ## Files Location
 
 ```

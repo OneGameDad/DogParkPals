@@ -16,8 +16,8 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
-# Create uploads directory
-RUN mkdir -p uploads
+# Create uploads and data directories
+RUN mkdir -p uploads data
 
 # Expose port
 EXPOSE 3000

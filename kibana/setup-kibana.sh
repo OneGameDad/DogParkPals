@@ -2,21 +2,35 @@
 
 # Setup Kibana index pattern, visualizations, and dashboards
 # This script creates the index pattern, saved searches, and sample dashboards for DogParkPals logs
+# Also applies Elasticsearch index template and ILM policy
 
 set -e
 
 KIBANA_URL="${KIBANA_URL:-http://localhost:5601}"
+ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-http://localhost:9200}"
 SCRIPT_DIR="$(dirname "$0")"
 SAVED_SEARCHES_FILE="$SCRIPT_DIR/saved_searches.ndjson"
 DASHBOARDS_FILE="$SCRIPT_DIR/dashboards.ndjson"
+ES_TEMPLATE_SCRIPT="$(dirname "$SCRIPT_DIR")/elasticsearch/apply-template.sh"
 
 echo "========================================="
-echo "Setting up Kibana for DogParkPals"
+echo "Setting up DogParkPals Observability"
 echo "========================================="
+echo "Elasticsearch URL: $ELASTICSEARCH_URL"
 echo "Kibana URL: $KIBANA_URL"
 echo ""
 
-# Wait for Kibana to be ready
+# Step 1: Apply Elasticsearch template and ILM policy
+if [ -f "$ES_TEMPLATE_SCRIPT" ]; then
+  echo "🔧 Applying Elasticsearch configuration..."
+  bash "$ES_TEMPLATE_SCRIPT" || echo "⚠ Elasticsearch setup had issues, continuing..."
+  echo ""
+else
+  echo "⚠ Elasticsearch setup script not found: $ES_TEMPLATE_SCRIPT"
+  echo ""
+fi
+
+# Step 2: Wait for Kibana to be ready
 echo "⏳ Waiting for Kibana to be ready..."
 for i in {1..60}; do
   if curl -s "$KIBANA_URL/api/status" > /dev/null 2>&1; then
@@ -30,7 +44,7 @@ for i in {1..60}; do
   sleep 1
 done
 
-# Create index pattern
+# Step 3: Create index pattern
 echo ""
 echo "📊 Creating index pattern 'dogparkpals-logs-*'..."
 response=$(curl -s -w "\n%{http_code}" -X POST \

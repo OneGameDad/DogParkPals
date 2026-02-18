@@ -144,9 +144,17 @@ bash kibana/setup-kibana.sh
 ```
 
 This creates:
+- Elasticsearch ILM (Index Lifecycle Management) policy for automatic log retention
 - Index pattern `dogparkpals-logs-*` (queries all log indices automatically)
 - 8 pre-configured saved searches (all logs, errors, events, failed jobs, etc.)
 - 5 sample dashboards (event timeline, error analysis, user activity, system health, audit trail)
+
+**Log Retention (Automatic):**
+- Hot Phase (0-1 day): Active indexing, rollover at 50GB or 1 day
+- Warm Phase (1-7 days): Read-only access
+- Delete Phase (30+ days): Automatic deletion
+
+Logs older than 30 days are automatically deleted to prevent disk space issues. Customize retention in [elasticsearch/ilm-policy.json](./elasticsearch/ilm-policy.json).
 
 **Key Features:**
 
@@ -250,11 +258,17 @@ Incident Response:
 - Add more specific filters
 - Archive indices older than 30 days (advanced: see Elasticsearch docs)
 
+**Disk space filling up?**
+- Check retention policy is active: `curl http://localhost:9200/_ilm/policy/dogparkpals-logs-ilm`
+- Manually delete old indices: `curl -X DELETE http://localhost:9200/dogparkpals-logs-2026.01.*`
+- Reduce retention period: Edit [elasticsearch/ilm-policy.json](./elasticsearch/ilm-policy.json)
+
 **Complete Documentation:**
-- Kibana setup and user guide: [kibana/README.md](./kibana/README.md)
+- Kibana setup and log retention: [kibana/README.md](./kibana/README.md)
 - Dashboard details and examples: [kibana/DASHBOARDS.md](./kibana/DASHBOARDS.md)
 - Logstash pipeline: [logstash/pipeline/dogparkpals.conf](./logstash/pipeline/dogparkpals.conf)
 - Elasticsearch index template: [elasticsearch/index-template.json](./elasticsearch/index-template.json)
+- Elasticsearch ILM policy: [elasticsearch/ilm-policy.json](./elasticsearch/ilm-policy.json)
 
 ### Event bus sanity
 - Ensure `EVENT_BUS_ENABLED` is not `false` in `docker-secrets`.

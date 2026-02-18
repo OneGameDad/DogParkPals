@@ -20,6 +20,22 @@ Then open Kibana: http://localhost:5601
 - **Time Field:** `@timestamp`
 - Automatically discovers all daily indices created by Logstash
 
+### Elasticsearch ILM Policy
+
+Automatic log retention and archiving policy:
+- **Hot Phase (0-1 day):** Active indexing, rollover at 50GB or 1 day
+- **Warm Phase (1-7 days):** Read-only, reduced priority (no new writes)
+- **Delete Phase (7-30 days):** Automatic deletion after 30 days
+
+**Benefit:** Disk space is automatically reclaimed; logs don't accumulate indefinitely
+
+To customize retention (e.g., keep logs for 90 days instead of 30):
+```bash
+# Edit elasticsearch/ilm-policy.json
+# Change "min_age": "30d" to desired value in delete phase
+bash elasticsearch/apply-template.sh  # Reapply policy
+```
+
 ### Saved Searches (8)
 
 Pre-configured searches available in Kibana's Discover tab:
@@ -44,6 +60,139 @@ Pre-built visual dashboards for key insights:
 5. **Complete Audit Trail** - Full searchable record of all 34 domain event types
 
 See [DASHBOARDS.md](./DASHBOARDS.md) for detailed guide on each dashboard.
+
+## Log Retention & Archiving
+
+DogParkPals uses **Elasticsearch Index Lifecycle Management (ILM)** for automatic log retention and cleanup.
+
+### Default Policy: `dogparkpals-logs-ilm`
+
+| Phase | Age | Action | Details |
+|-------|-----|--------|---------|
+| Hot | 0-1d | Rollover | Split index when it reaches 50GB or 1 day old |
+| Warm | 1-7d | Read-only | Mark as read-only (no new writes accepted) |
+| Delete | 7-30d | Delete | Automatically delete old indices |
+
+**Result:** Elasticsearch disk usage stays bounded; logs older than 30 days are automatically removed.
+
+### How It Works
+
+1. **Rollover:** When an index reaches 50GB or 1 day old, a new index is created
+   - Old: `dogparkpals-logs-2026.02.01`
+   - New: `dogparkpals-logs-2026.02.02`
+   - Prevents huge indices, improves query performance
+
+2. **Warm Phase:** After 7 days, indices become read-only
+   - Can still search and query
+   - Cannot add new documents
+   - Lower disk I/O, can be moved to cheaper storage (future enhancement)
+
+3. **Delete Phase:** After 30 days, indices are permanently deleted
+   - Frees disk space
+   - Older logs must be archived separately if needed for compliance
+
+### Customizing Retention
+
+**To keep logs for 90 days instead of 30:**
+
+```bash
+# 1. Edit the ILM policy
+nano elasticsearch/ilm-policy.json
+
+# Change this:
+#   "delete": {
+#     "min_age": "30d",
+
+# To this:
+#   "delete": {
+#     "min_age": "90d",
+
+# 2. Reapply the policy
+bash elasticsearch/apply-template.sh
+
+# 3. Verify it was applied
+curl http://localhost:9200/_ilm/policy/dogparkpals-logs-ilm
+```
+
+### Production Configuration
+
+**For Production Deployments:**
+
+```json
+"hot": {
+  "min_age": "0d",
+  "actions": {
+    "rollover": {
+      "max_primary_shard_size": "100gb",  // Larger indices for production
+      "max_age": "1d"
+    }
+  }
+},
+"warm": {
+  "min_age": "7d"     // Keep searchable for 7 days
+},
+"delete": {
+  "min_age": "90d"    // Keep for 90 days for compliance
+}
+```
+
+### Monitoring ILM Status
+
+**Check policy status:**
+```bash
+curl http://localhost:9200/_ilm/policy/dogparkpals-logs-ilm | jq
+```
+
+**Check index lifecycle status:**
+```bash
+curl http://localhost:9200/dogparkpals-logs-*/_ilm/explain | jq '.indices'
+```
+
+**View indices and their phases:**
+```bash
+curl http://localhost:9200/_cat/custom?v&s=index&h=index,creation.date.string,ilm.managed,ilm.status,ilm.phase
+```
+
+### Disk Space Estimation
+
+**Daily logs (estimated):**
+- Small deployment: 50-200MB per day
+- Medium deployment: 200MB-1GB per day
+- Large deployment: 1-5GB per day
+
+**Total disk needed (30-day retention):**
+- Small: 1.5-6GB
+- Medium: 6-30GB
+- Large: 30-150GB
+
+Adjust retention period based on disk availability and compliance requirements.
+
+### Archiving Old Logs (Advanced)
+
+For long-term archival beyond 30 days:
+
+1. **Before deletion date, manually export:**
+```bash
+curl "http://localhost:9200/dogparkpals-logs-2025.12.01/_search?size=10000" \
+  > dogparkpals-logs-2025-12-01.json
+```
+
+2. **Or use Elasticsearch Snapshots (enterprise):**
+```bash
+# Create snapshot repository
+# Schedule automated snapshots
+# Restore from S3/backup storage as needed
+```
+
+3. **Or modify ILM policy to use "cold" tier:**
+```json
+"cold": {
+  "min_age": "30d",
+  "actions": {
+    "searchable_snapshot": { ... }
+  }
+}
+```
 
 ## Setup Script
 

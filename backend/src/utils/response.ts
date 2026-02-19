@@ -7,6 +7,19 @@ export interface ErrorResponseBody {
   requestId?: string;
 }
 
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+  totalPages: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: PaginationMeta;
+}
+
 export const buildErrorResponse = (
   req: Request,
   { error, code, details }: { error: string; code: string; details?: unknown }
@@ -17,4 +30,31 @@ export const buildErrorResponse = (
   if (requestId) body.requestId = requestId;
   if (details !== undefined) body.details = details;
   return body;
+};
+
+export const buildPaginationMeta = (
+  page: number,
+  limit: number,
+  total: number
+): PaginationMeta => {
+  const totalPages = Math.ceil(total / limit);
+  return {
+    page,
+    limit,
+    total,
+    totalPages,
+    hasMore: page < totalPages,
+  };
+};
+
+export const buildPaginatedResponse = <T>(
+  data: T[],
+  page: number,
+  limit: number,
+  total: number
+): PaginatedResponse<T> => {
+  return {
+    data,
+    pagination: buildPaginationMeta(page, limit, total),
+  };
 };

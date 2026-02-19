@@ -506,3 +506,21 @@ export const searchByTypeSchema = z.object({
 });
 
 export type SearchByTypeRequest = z.infer<typeof searchByTypeSchema>;
+
+export const paginationQuerySchema = z.object({
+  page: z.coerce
+    .number()
+    .int()
+    .positive('Page must be a positive integer')
+    .default(1)
+    .optional(),
+  limit: z.coerce
+    .number()
+    .int()
+    .positive('Limit must be a positive integer')
+    .max(100, 'Limit cannot exceed 100')
+    .default(50)
+    .optional(),
+});
+
+export type PaginationQueryRequest = z.infer<typeof paginationQuerySchema>;

@@ -1,4 +1,5 @@
 import { createLogger, format, transports } from 'winston';
+import TransportStream from 'winston-transport';
 import { sanitizeLogData } from './logSanitizer';
 import * as dgram from 'dgram';
 
@@ -18,7 +19,7 @@ const sanitizeFormat = format((info) => {
 })();
 
 // Custom UDP transport for sending logs to Logstash
-class UDPTransport extends transports.Transport {
+class UDPTransport extends TransportStream {
   private client: dgram.Socket;
   private host: string;
   private port: number;
@@ -30,12 +31,17 @@ class UDPTransport extends transports.Transport {
     this.client = dgram.createSocket('udp4');
   }
 
-  log(info: any, callback?: (err?: Error | null) => void) {
+  log(info: any, callback: () => void) {
+    setImmediate(() => this.emit('logged', info));
+    
     const message = JSON.stringify(info);
     const buffer = Buffer.from(message);
 
     this.client.send(buffer, 0, buffer.length, this.port, this.host, (err) => {
-      if (callback) callback(err);
+      if (err) {
+        this.emit('error', err);
+      }
+      if (callback) callback();
     });
   }
 }

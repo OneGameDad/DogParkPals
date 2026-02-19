@@ -317,8 +317,7 @@ export const en = {
       chattingWith: "Chatting with {{name}}",
       noMessagesStartConversation: "No messages yet. Say hello!",
       selectConversation: "Select a conversation",
-      startTalking: "Choose a friend from the list to start chatting.",
-      sendMessage: "Send"
+      startTalking: "Choose a friend from the list to start chatting."
     }
   }
 };

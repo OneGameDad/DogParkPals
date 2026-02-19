@@ -1,19 +1,15 @@
 import { api } from './api';
-import type { Messages, User } from '../types';
-
-export interface UnreadCountResponse {
-    count: number;
-}
+import type { Messages, User, PaginatedMessagesResponse, UnreadCountResponse } from '../types';
 
 const messageService = {
-    // Get all messages for the current user (inbox style, not conversation specific)
-    getAllMessages: async (): Promise<Messages[]> => {
-        return api.get<Messages[]>('/api/messages');
+    // Get all messages for the current user (inbox style, with pagination)
+    getAllMessages: async (page: number = 1, limit: number = 50): Promise<PaginatedMessagesResponse> => {
+        return api.get<PaginatedMessagesResponse>(`/api/messages?page=${page}&limit=${limit}`);
     },
 
-    // Get conversation with a specific friend
-    getConversation: async (friendId: number, page: number = 1, limit: number = 20): Promise<Messages[]> => {
-        return api.get<Messages[]>(`/api/messages/${friendId}?page=${page}&limit=${limit}`);
+    // Get conversation with a specific friend (with pagination)
+    getConversation: async (friendId: number, page: number = 1, limit: number = 50): Promise<PaginatedMessagesResponse> => {
+        return api.get<PaginatedMessagesResponse>(`/api/messages/${friendId}?page=${page}&limit=${limit}`);
     },
 
     // Send a message to a friend
@@ -31,9 +27,9 @@ const messageService = {
         return api.delete<void>(`/api/messages/${messageId}`);
     },
 
-    // Get unread messages (all)
-    getUnreadMessages: async (): Promise<Messages[]> => {
-        return api.get<Messages[]>('/api/messages/unread');
+    // Get unread messages (with pagination)
+    getUnreadMessages: async (page: number = 1, limit: number = 50): Promise<PaginatedMessagesResponse> => {
+        return api.get<PaginatedMessagesResponse>(`/api/messages/unread?page=${page}&limit=${limit}`);
     },
 
     // Get count of unread messages

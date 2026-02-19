@@ -161,7 +161,7 @@ const MessageThread = ({ friendId, currentUserId }: MessageThreadProps) => {
             // Force scroll to bottom when sending a message
             isNearBottomRef.current = true;
 
-            const sentMessage = await messageService.sendMessage(currentUserId, friendId, newMessage);
+            const sentMessage = await messageService.sendMessage(friendId, newMessage);
             setMessages((prev: Messages[]) => [...prev, sentMessage]);
             setNewMessage('');
         } catch (err) {

@@ -18,7 +18,7 @@ export const messageService = {
 
     // Send a message to a friend
     sendMessage: async (senderId: number, friendId: number, content: string): Promise<Messages> => {
-        return api.post<Messages>(`/api/messages/${friendId}`, { senderId, receiverId: friendId, content });
+        return api.post<Messages>(`/api/messages/${friendId}`, { senderId, content });
     },
 
     // Mark a message as read (or other status)

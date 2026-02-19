@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { messageService } from '../../services/messageService';
+import messageService from '../../services/messageService';
 import { usePolling } from '../../hooks/usePolling';
 import type { Messages, User } from '../../types';
-import { Loading, Picture } from '../common';
+import { Loading, Picture, ErrorMessage } from '../common';
 import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import { api } from '../../services/api';
@@ -165,7 +165,7 @@ const MessageThread = ({ friendId, currentUserId }: MessageThreadProps) => {
             // Force scroll to bottom when sending a message
             isNearBottomRef.current = true;
 
-            const sentMessage = await messageService.sendMessage(friendId, newMessage);
+            const sentMessage = await messageService.sendMessage(currentUserId, friendId, newMessage);
             setMessages((prev: Messages[]) => [...prev, sentMessage]);
             setNewMessage('');
         } catch (err) {

@@ -5,20 +5,20 @@ export interface UnreadCountResponse {
     count: number;
 }
 
-export const messageService = {
+const messageService = {
     // Get all messages for the current user (inbox style, not conversation specific)
     getAllMessages: async (): Promise<Messages[]> => {
         return api.get<Messages[]>('/api/messages');
     },
 
     // Get conversation with a specific friend
-    getConversation: async (friendId: number): Promise<Messages[]> => {
-        return api.get<Messages[]>(`/api/messages/${friendId}`);
+    getConversation: async (friendId: number, page: number = 1, limit: number = 20): Promise<Messages[]> => {
+        return api.get<Messages[]>(`/api/messages/${friendId}?page=${page}&limit=${limit}`);
     },
 
     // Send a message to a friend
     sendMessage: async (senderId: number, friendId: number, content: string): Promise<Messages> => {
-        return api.post<Messages>(`/api/messages/${friendId}`, { senderId, content });
+        return api.post<Messages>(`/api/messages/${friendId}`, { senderId, receiverId: friendId, content });
     },
 
     // Mark a message as read (or other status)
@@ -41,3 +41,5 @@ export const messageService = {
         return api.get<UnreadCountResponse>('/api/messages/unread/count');
     },
 };
+
+export default messageService;

@@ -66,13 +66,15 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     container_name: dogparkpals-rabbitmq
+    user: "999:999"
     ports:
       - "5672:5672"
       - "15672:15672"
-    env_file:
-      - ./docker-secrets
+    environment:
+      - RABBITMQ_NODENAME=rabbit@localhost
     tmpfs:
       - /var/lib/rabbitmq
+      - /tmp
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s

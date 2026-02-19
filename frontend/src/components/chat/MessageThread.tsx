@@ -49,8 +49,12 @@ const MessageThread = ({ friendId, currentUserId }: MessageThreadProps) => {
     // Fetch latest messages (for initial load and polling)
     const fetchLatestMessages = useCallback(async () => {
         try {
-            // Always fetch page 1 (latest messages)
-            const latestMessages = await messageService.getConversation(friendId, 1, MESSAGES_PER_PAGE);
+            // Fetch full conversation and derive latest page client-side
+            const allMessages = await messageService.getConversation(friendId);
+            const latestMessages =
+                allMessages.length > MESSAGES_PER_PAGE
+                    ? allMessages.slice(-MESSAGES_PER_PAGE)
+                    : allMessages;
 
             if (latestMessages.length < MESSAGES_PER_PAGE) {
                 setHasMore(false);

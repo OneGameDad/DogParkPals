@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { Messages, User, PaginatedMessagesResponse, UnreadCountResponse } from '../types';
+import type { Messages, User, PaginatedMessagesResponse, CursorPaginatedMessagesResponse, UnreadCountResponse } from '../types';
 
 const messageService = {
     // Get all messages for the current user (inbox style, with pagination)
@@ -35,6 +35,30 @@ const messageService = {
     // Get count of unread messages
     getUnreadCount: async (): Promise<UnreadCountResponse> => {
         return api.get<UnreadCountResponse>('/api/messages/unread/count');
+    },
+
+    // Cursor-based pagination endpoints for real-time chat (better for infinite scroll)
+    getAllMessagesCursor: async (lastMessageId?: number, limit: number = 50): Promise<CursorPaginatedMessagesResponse> => {
+        const query = new URLSearchParams();
+        if (lastMessageId) query.append('lastMessageId', lastMessageId.toString());
+        query.append('limit', limit.toString());
+        return api.get<CursorPaginatedMessagesResponse>(`/api/messages/cursor?${query.toString()}`);
+    },
+
+    // Get conversation with a specific friend (cursor-based pagination)
+    getConversationCursor: async (friendId: number, lastMessageId?: number, limit: number = 50): Promise<CursorPaginatedMessagesResponse> => {
+        const query = new URLSearchParams();
+        if (lastMessageId) query.append('lastMessageId', lastMessageId.toString());
+        query.append('limit', limit.toString());
+        return api.get<CursorPaginatedMessagesResponse>(`/api/messages/${friendId}/cursor?${query.toString()}`);
+    },
+
+    // Get unread messages (cursor-based pagination)
+    getUnreadMessagesCursor: async (lastMessageId?: number, limit: number = 50): Promise<CursorPaginatedMessagesResponse> => {
+        const query = new URLSearchParams();
+        if (lastMessageId) query.append('lastMessageId', lastMessageId.toString());
+        query.append('limit', limit.toString());
+        return api.get<CursorPaginatedMessagesResponse>(`/api/messages/unread/cursor?${query.toString()}`);
     },
 };
 

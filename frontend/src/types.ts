@@ -154,6 +154,19 @@ export interface PaginatedResponse<T> {
 
 export type PaginatedMessagesResponse = PaginatedResponse<Messages>;
 
+export interface CursorPaginationMeta {
+  hasMore: boolean;
+  lastMessageId: number | null;
+  limit: number;
+}
+
+export interface CursorPaginatedResponse<T> {
+  data: T[];
+  cursor: CursorPaginationMeta;
+}
+
+export type CursorPaginatedMessagesResponse = CursorPaginatedResponse<Messages>;
+
 export interface UnreadCountResponse {
   count: number;
 }

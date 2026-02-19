@@ -5,14 +5,16 @@ import type { User } from '../../types';
 interface UserListProps {
     users: User[];
     currentUserId?: number;
+    activeUserId?: number;
     onUserClick: (user: User) => void;
-    emptyMessage?: string;
+    emptyMessage?: React.ReactNode;
     showChevron?: boolean;
 }
 
 export default function UserList({
     users,
     currentUserId,
+    activeUserId,
     onUserClick,
     emptyMessage,
     showChevron = true
@@ -37,7 +39,8 @@ export default function UserList({
                 <UserCard
                     key={user.id}
                     user={user}
-                    onClick={onUserClick}
+                    onClick={() => onUserClick(user)}
+                    isActive={activeUserId === user.id}
                     showChevron={showChevron}
                 />
             ))}

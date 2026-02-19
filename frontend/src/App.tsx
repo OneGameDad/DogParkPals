@@ -38,7 +38,12 @@ function AppContent() {
   return (
     <>
       <Toaster position="top-right" />
-      <div className="flex flex-col h-screen overflow-hidden"
+      <div
+        className={
+          isMessagesPage
+            ? "flex flex-col h-screen overflow-hidden"
+            : "flex flex-col min-h-screen"
+        }
         style={{
           backgroundImage: "url(/imgs/background.png)",
           backgroundSize: "cover",

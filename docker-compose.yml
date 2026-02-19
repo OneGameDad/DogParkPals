@@ -69,6 +69,8 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
@@ -175,6 +177,8 @@ volumes:
   grafana-data:
     driver: local
   elasticsearch-data:
+    driver: local
+  rabbitmq-data:
     driver: local
 
 networks:

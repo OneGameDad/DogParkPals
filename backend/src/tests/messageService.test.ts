@@ -92,21 +92,25 @@ describe('Message Service', () => {
   });
 
   describe('getConversation', () => {
-    test('should fetch conversation between two users', async () => {
+    test('should fetch conversation between two users with pagination', async () => {
       const mockMessages: Messages[] = [
         { id: 1, senderId: mockSenderId, receiverId: mockReceiverId, content: 'Hi', status: 'SENT', sentAt: new Date() },
       ];
       const mockFindMany = jest.fn().mockResolvedValue(mockMessages);
+      const mockCount = jest.fn().mockResolvedValue(1);
 
       jest.doMock('@prisma/client', () => ({
-        PrismaClient: jest.fn(() => ({ messages: { findMany: mockFindMany } })),
+        PrismaClient: jest.fn(() => ({
+          messages: { findMany: mockFindMany, count: mockCount },
+          $transaction: jest.fn(),
+        })),
       }));
 
       const messageService = await import('../services/messageService');
 
       const result = await messageService.default.getConversation(mockSenderId, mockReceiverId);
 
-      expect(result).toEqual(mockMessages);
+      expect(result).toEqual({ messages: mockMessages, total: 1 });
       expect(mockFindMany).toHaveBeenCalledWith({
         where: {
           OR: [
@@ -118,6 +122,7 @@ describe('Message Service', () => {
         skip: 0,
         take: 50,
       });
+      expect(mockCount).toHaveBeenCalled();
 
       jest.dontMock('@prisma/client');
     });
@@ -125,27 +130,35 @@ describe('Message Service', () => {
     test('should apply status filter if provided', async () => {
       const mockMessages: Messages[] = [];
       const mockFindMany = jest.fn().mockResolvedValue(mockMessages);
+      const mockCount = jest.fn().mockResolvedValue(0);
 
       jest.doMock('@prisma/client', () => ({
-        PrismaClient: jest.fn(() => ({ messages: { findMany: mockFindMany } })),
+        PrismaClient: jest.fn(() => ({
+          messages: { findMany: mockFindMany, count: mockCount },
+        })),
       }));
 
       const messageService = await import('../services/messageService');
 
-      await messageService.default.getConversation(mockSenderId, mockReceiverId, 1, 50, 'SENT');
+      const result = await messageService.default.getConversation(mockSenderId, mockReceiverId, 1, 50, 'SENT');
 
+      expect(result).toEqual({ messages: mockMessages, total: 0 });
       expect(mockFindMany).toHaveBeenCalledWith(expect.objectContaining({
         where: expect.objectContaining({ status: 'SENT' }),
       }));
+      expect(mockCount).toHaveBeenCalled();
 
       jest.dontMock('@prisma/client');
     });
 
     test('should throw error when database operation fails', async () => {
       const mockFindMany = jest.fn().mockRejectedValue(new Error('Database error'));
+      const mockCount = jest.fn().mockResolvedValue(0);
 
       jest.doMock('@prisma/client', () => ({
-        PrismaClient: jest.fn(() => ({ messages: { findMany: mockFindMany } })),
+        PrismaClient: jest.fn(() => ({
+          messages: { findMany: mockFindMany, count: mockCount },
+        })),
       }));
 
       const messageService = await import('../services/messageService');
@@ -240,30 +253,36 @@ describe('Message Service', () => {
   });
 
   describe('getUnreadMessages & getUnreadCount', () => {
-    test('should fetch unread messages', async () => {
+    test('should fetch unread messages with pagination', async () => {
       const mockMessages: Messages[] = [{ id: 1, senderId: mockSenderId, receiverId: mockReceiverId, content: 'Hi', status: 'SENT', sentAt: new Date() }];
       const mockFindMany = jest.fn().mockResolvedValue(mockMessages);
+      const mockCount = jest.fn().mockResolvedValue(1);
 
       jest.doMock('@prisma/client', () => ({
-        PrismaClient: jest.fn(() => ({ messages: { findMany: mockFindMany } })),
+        PrismaClient: jest.fn(() => ({
+          messages: { findMany: mockFindMany, count: mockCount },
+        })),
       }));
 
       const messageService = await import('../services/messageService');
 
       const result = await messageService.default.getUnreadMessages(mockReceiverId);
 
-      expect(result).toEqual(mockMessages);
+      expect(result).toEqual({ messages: mockMessages, total: 1 });
       expect(mockFindMany).toHaveBeenCalledWith({
         where: { receiverId: mockReceiverId, status: 'SENT' },
         orderBy: { sentAt: 'asc' },
+        skip: 0,
+        take: 50,
       });
+      expect(mockCount).toHaveBeenCalled();
 
       jest.dontMock('@prisma/client');
     });
 
     test('should fetch unread message count', async () => {
-      const mockCount = 5;
-      const mockCountFn = jest.fn().mockResolvedValue(mockCount);
+      const mockCountValue = 5;
+      const mockCountFn = jest.fn().mockResolvedValue(mockCountValue);
 
       jest.doMock('@prisma/client', () => ({
         PrismaClient: jest.fn(() => ({ messages: { count: mockCountFn } })),
@@ -273,7 +292,7 @@ describe('Message Service', () => {
 
       const count = await messageService.default.getUnreadCount(mockReceiverId);
 
-      expect(count).toBe(mockCount);
+      expect(count).toBe(mockCountValue);
       expect(mockCountFn).toHaveBeenCalledWith({ where: { receiverId: mockReceiverId, status: 'SENT' } });
 
       jest.dontMock('@prisma/client');

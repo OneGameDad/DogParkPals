@@ -117,17 +117,12 @@ const MessageThread = ({ friendId, currentUserId }: MessageThreadProps) => {
 
                     if (uniqueOlderMessages.length === 0) return prev;
 
-                    return [...uniqueOlderMessages, ...prev];
+                    // Backend returns messages in ascending order by sentAt, and higher pages
+                    // contain chronologically later (newer) messages. To preserve correct
+                    // ordering, append these messages to the existing list.
+                    return [...prev, ...uniqueOlderMessages];
                 });
                 setPage(nextPage);
-
-                requestAnimationFrame(() => {
-                    if (scrollContainerRef.current) {
-                        const newScrollHeight = scrollContainerRef.current.scrollHeight;
-                        const heightDifference = newScrollHeight - oldScrollHeight;
-                        scrollContainerRef.current.scrollTop = oldScrollTop + heightDifference;
-                    }
-                });
             }
         } catch (err) {
             console.error('Failed to load older messages', err);

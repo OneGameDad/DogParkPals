@@ -12,8 +12,8 @@ export const messageService = {
     },
 
     // Get conversation with a specific friend
-    getConversation: async (friendId: number, page: number = 1, limit: number = 20): Promise<Messages[]> => {
-        return api.get<Messages[]>(`/api/messages/${friendId}?page=${page}&limit=${limit}`);
+    getConversation: async (friendId: number): Promise<Messages[]> => {
+        return api.get<Messages[]>(`/api/messages/${friendId}`);
     },
 
     // Send a message to a friend

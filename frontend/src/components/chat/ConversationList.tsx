@@ -21,7 +21,7 @@ const ConversationList = ({ currentUserId, activeFriendId, onSelectFriend }: Con
         const fetchFriends = async () => {
             try {
                 setLoading(true);
-                const response = await api.get<{ users: User[], dogs: any[] }>(`/api/friends?userId=${currentUserId}`);
+                const response = await api.get<{ users: User[], dogs: any[] }>('/api/friends');
                 setFriends(response.users || []);
                 setError(null);
             } catch (err) {

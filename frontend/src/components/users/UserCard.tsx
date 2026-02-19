@@ -7,20 +7,23 @@ interface UserCardProps {
     onClick?: (user: User) => void;
     action?: React.ReactNode;
     showChevron?: boolean;
+    isActive?: boolean;
 }
 
 export default function UserCard({
     user,
     onClick,
     action,
-    showChevron = true
+    showChevron = true,
+    isActive = false
 }: UserCardProps) {
     const isClickable = !!onClick;
 
     return (
         <div
             onClick={() => onClick?.(user)}
-            className={`flex items-center justify-between p-4 border rounded-lg transition-shadow ${isClickable ? 'cursor-pointer hover:shadow-md hover:bg-gray-50' : ''
+            className={`flex items-center justify-between p-4 border rounded-lg transition-all ${isClickable ? 'cursor-pointer hover:shadow-md' : ''
+                } ${isActive ? 'bg-blue-50 border-blue-200 shadow-sm' : 'hover:bg-gray-50'
                 }`}
         >
             <div className="flex items-center space-x-4 pointer-events-none">

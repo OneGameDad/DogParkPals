@@ -6,13 +6,16 @@ export const en = {
     navlogout: "Logout",
     navregister: "Register",
     dashboard: "Dashboard",
+    messages: "Messages",
     settings: "Settings",
     exampleData: "Example Data",
     memberSince: "Member Since",
     exampleDate: "January 2026",
     owner: "Owner",
     common: {
+      back: "Back",
       goBack: "Go Back",
+      send: "Send",
       loading: "Loading...",
       error: "An error occurred",
       accept: "Accept",
@@ -304,6 +307,18 @@ export const en = {
         submit: "Create Organization",
         submitting: "Creating..."
       }
+    },
+    chat: {
+      conversations: "Conversations",
+      noFriends: "No friends found.",
+      addFriendsToChat: "Add friends to start chatting!",
+      failedToLoadFriends: "Failed to load friends list",
+      typeMessage: "Type a message...",
+      chattingWith: "Chatting with {{name}}",
+      noMessagesStartConversation: "No messages yet. Say hello!",
+      selectConversation: "Select a conversation",
+      startTalking: "Choose a friend from the list to start chatting.",
+      sendMessage: "Send"
     }
   }
 };

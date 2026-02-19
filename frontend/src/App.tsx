@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuth, useHeartbeat } from './hooks';
 import Home from './pages/Home';
@@ -22,10 +22,13 @@ import CreateOrganization from './pages/CreateOrganization';
 import OrganizationList from './components/organizations/OrganizationList';
 import OrganizationProfile from './pages/OrganizationProfile';
 import OrganizationUpdate from './pages/OrganizationUpdate';
+import Messages from './pages/Messages';
 
-function App() {
+function AppContent() {
   const { user } = useAuth();
-  
+  const location = useLocation();
+  const isMessagesPage = location.pathname === '/messages';
+
   // Send heartbeat for logged-in users
   useHeartbeat({
     enabled: !!user,
@@ -33,9 +36,9 @@ function App() {
   });
 
   return (
-    <BrowserRouter>
+    <>
       <Toaster position="top-right" />
-      <div className="flex flex-col min-h-screen"
+      <div className="flex flex-col h-screen overflow-hidden"
         style={{
           backgroundImage: "url(/imgs/background.png)",
           backgroundSize: "cover",
@@ -44,7 +47,7 @@ function App() {
         }}>
         <Navbar />
         {/* The Router Switch */}
-        <div className="flex-grow p-8">
+        <div className={isMessagesPage ? "flex-1 overflow-hidden relative flex flex-col min-h-0" : "flex-1 overflow-y-auto p-8"}>
           <Routes>
             {/* Public routes - accessible to everyone */}
             <Route path="/" element={<Home />} />
@@ -59,6 +62,11 @@ function App() {
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/messages" element={
+              <ProtectedRoute>
+                <Messages />
               </ProtectedRoute>
             } />
             <Route path="/social" element={
@@ -134,8 +142,16 @@ function App() {
           </Routes>
         </div>
 
-        <Footer />
+        {!isMessagesPage && <Footer />}
       </div>
+    </>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
     </BrowserRouter>
   );
 }

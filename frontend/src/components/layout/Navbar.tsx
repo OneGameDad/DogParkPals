@@ -21,6 +21,7 @@ const Navbar = () => {
             {isAuthenticated ? (
                 <>
                     <Link to="/dashboard" className="text-gray-600 hover:underline font-medium">{t('dashboard')}</Link>
+                    <Link to="/messages" className="text-gray-600 hover:underline font-medium">{t('messages')}</Link>
                     <Link to="/social" className="text-gray-600 hover:underline font-medium">{t('social.title', 'Social')}</Link>
                     <Link to="/profile" className="text-gray-600 hover:underline font-medium">{t('profile.title')}</Link>
                     <Link to="/settings" className="text-gray-600 hover:underline font-medium">{t('settings')}</Link>

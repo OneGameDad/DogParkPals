@@ -4,8 +4,9 @@ import typeSafeLogger from "../utils/typeSafeLogger";
 import { ensureString } from "../utils/queryHelpers";
 import { toAppError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
-import { sendMessageSchema, updateMessageStatusSchema } from "../utils/validationSchemas";
+import { sendMessageSchema, updateMessageStatusSchema, paginationQuerySchema } from "../utils/validationSchemas";
 import { awardExperience, awardSirBarksALotIfEligible, XP_REWARDS } from "../services/xpService";
+import { buildPaginatedResponse } from "../utils/response";
 
 
 const messageController = {
@@ -31,11 +32,13 @@ const messageController = {
             typeSafeLogger.logRequest("Received request to fetch conversation", { method: req.method, path: req.path });
             const userId = (req as any).user?.id;
             const friendId = parseInt(ensureString(req.params.friendId), 10);
+            
+            const { page = 1, limit = 50 } = parseValidation(paginationQuerySchema, req.query);
 
-            const conversation = await messageService.getConversation(userId, friendId);
+            const { messages, total } = await messageService.getConversation(userId, friendId, page, limit);
 
-            typeSafeLogger.logUserAction("Conversation retrieved", { userId, friendId, messageCount: conversation.length });
-            res.status(200).json(conversation);
+            typeSafeLogger.logUserAction("Conversation retrieved", { userId, friendId, messageCount: messages.length, page, limit, total });
+            res.status(200).json(buildPaginatedResponse(messages, page, limit, total));
         } catch (error) {
             if (isAppError(error)) {
                 return next(error);
@@ -48,11 +51,13 @@ const messageController = {
         try {
             typeSafeLogger.logRequest("Received request to fetch all messages", { method: req.method, path: req.path });
             const userId = (req as any).user?.id;
+            
+            const { page = 1, limit = 50 } = parseValidation(paginationQuerySchema, req.query);
 
-            const messages = await messageService.getAllMessages(userId);
+            const { messages, total } = await messageService.getAllMessages(userId, page, limit);
 
-            typeSafeLogger.logUserAction("All messages retrieved", { userId, messageCount: messages.length });
-            res.status(200).json(messages);
+            typeSafeLogger.logUserAction("All messages retrieved", { userId, messageCount: messages.length, page, limit, total });
+            res.status(200).json(buildPaginatedResponse(messages, page, limit, total));
         } catch (error) {
             if (isAppError(error)) {
                 return next(error);
@@ -99,9 +104,12 @@ const messageController = {
     getUnreadMessages: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
       try {
         const userId = (req as any).user?.id;
-        const messages = await messageService.getUnreadMessages(userId);
-        typeSafeLogger.logUserAction('Unread messages retrieved', { userId, count: messages.length });
-        res.status(200).json(messages);
+        const { page = 1, limit = 50 } = parseValidation(paginationQuerySchema, req.query);
+
+        const { messages, total } = await messageService.getUnreadMessages(userId, page, limit);
+        
+        typeSafeLogger.logUserAction('Unread messages retrieved', { userId, count: messages.length, page, limit, total });
+        res.status(200).json(buildPaginatedResponse(messages, page, limit, total));
       } catch (error) {
         if (isAppError(error)) {
             return next(error);

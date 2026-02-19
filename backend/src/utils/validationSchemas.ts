@@ -524,3 +524,19 @@ export const paginationQuerySchema = z.object({
 });
 
 export type PaginationQueryRequest = z.infer<typeof paginationQuerySchema>;
+
+export const getConversationQuerySchema = paginationQuerySchema.extend({
+  friendId: z.coerce.number().int().positive('Friend ID must be a positive integer'),
+});
+
+export type GetConversationQueryRequest = z.infer<typeof getConversationQuerySchema>;
+
+export const getAllMessagesQuerySchema = paginationQuerySchema.extend({
+  status: z.enum(['SENT', 'DELIVERED', 'READ', 'ARCHIVED']).optional(),
+});
+
+export type GetAllMessagesQueryRequest = z.infer<typeof getAllMessagesQuerySchema>;
+
+export const getUnreadMessagesQuerySchema = paginationQuerySchema;
+
+export type GetUnreadMessagesQueryRequest = z.infer<typeof getUnreadMessagesQuerySchema>;

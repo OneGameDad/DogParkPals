@@ -58,3 +58,38 @@ export const buildPaginatedResponse = <T>(
     pagination: buildPaginationMeta(page, limit, total),
   };
 };
+
+export interface CursorPaginationMeta {
+  hasMore: boolean;
+  lastMessageId: number | null;
+  limit: number;
+}
+
+export interface CursorPaginatedResponse<T> {
+  data: T[];
+  cursor: CursorPaginationMeta;
+}
+
+export const buildCursorPaginationMeta = (
+  data: Array<{ id: number }>,
+  limit: number,
+  hasMore: boolean
+): CursorPaginationMeta => {
+  const lastMessageId = data.length > 0 ? data[data.length - 1].id : null;
+  return {
+    hasMore,
+    lastMessageId,
+    limit,
+  };
+};
+
+export const buildCursorPaginatedResponse = <T extends { id: number }>(
+  data: T[],
+  limit: number,
+  hasMore: boolean
+): CursorPaginatedResponse<T> => {
+  return {
+    data,
+    cursor: buildCursorPaginationMeta(data, limit, hasMore),
+  };
+};

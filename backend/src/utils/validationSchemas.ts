@@ -540,3 +540,45 @@ export type GetAllMessagesQueryRequest = z.infer<typeof getAllMessagesQuerySchem
 export const getUnreadMessagesQuerySchema = paginationQuerySchema;
 
 export type GetUnreadMessagesQueryRequest = z.infer<typeof getUnreadMessagesQuerySchema>;
+
+// Cursor-based pagination schemas for real-time chat (better for infinite scroll)
+export const cursorPaginationQuerySchema = z.object({
+  lastMessageId: z.coerce.number().int().positive('lastMessageId must be a positive integer').optional(),
+  limit: z.coerce
+    .number()
+    .int()
+    .positive('Limit must be a positive integer')
+    .max(100, 'Limit cannot exceed 100')
+    .default(50)
+    .optional(),
+});
+
+export type CursorPaginationQueryRequest = z.infer<typeof cursorPaginationQuerySchema>;
+
+export const getConversationCursorQuerySchema = cursorPaginationQuerySchema.extend({
+  friendId: z.coerce.number().int().positive('Friend ID must be a positive integer'),
+});
+
+export type GetConversationCursorQueryRequest = z.infer<typeof getConversationCursorQuerySchema>;
+
+export const getAllMessagesCursorQuerySchema = cursorPaginationQuerySchema.extend({
+  status: z.enum(['SENT', 'DELIVERED', 'READ', 'ARCHIVED']).optional(),
+});
+
+export type GetAllMessagesCursorQueryRequest = z.infer<typeof getAllMessagesCursorQuerySchema>;
+
+export const getUnreadMessagesCursorQuerySchema = cursorPaginationQuerySchema;
+
+export type GetUnreadMessagesCursorQueryRequest = z.infer<typeof getUnreadMessagesCursorQuerySchema>;
+
+// Cursor-based response for pagination
+export interface CursorPaginationMeta {
+  hasMore: boolean;
+  lastMessageId: number | null;
+  limit: number;
+}
+
+export interface CursorPaginatedResponse<T> {
+  data: T[];
+  cursor: CursorPaginationMeta;
+}

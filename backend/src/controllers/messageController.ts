@@ -4,9 +4,9 @@ import typeSafeLogger from "../utils/typeSafeLogger";
 import { ensureString } from "../utils/queryHelpers";
 import { toAppError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
-import { sendMessageSchema, updateMessageStatusSchema, paginationQuerySchema } from "../utils/validationSchemas";
+import { sendMessageSchema, updateMessageStatusSchema, paginationQuerySchema, cursorPaginationQuerySchema } from "../utils/validationSchemas";
 import { awardExperience, awardSirBarksALotIfEligible, XP_REWARDS } from "../services/xpService";
-import { buildPaginatedResponse } from "../utils/response";
+import { buildPaginatedResponse, buildCursorPaginatedResponse } from "../utils/response";
 
 
 const messageController = {
@@ -129,6 +129,63 @@ const messageController = {
             return next(error);
         }
         return next(toAppError(error, { message: 'Failed to fetch unread message count', code: 'INTERNAL_ERROR', statusCode: 500 }));
+      }
+    },
+
+    // Cursor-based pagination endpoints for real-time chat
+    getConversationCursor: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            typeSafeLogger.logRequest("Received request to fetch conversation (cursor)", { method: req.method, path: req.path });
+            const userId = (req as any).user?.id;
+            const friendId = parseInt(ensureString(req.params.friendId), 10);
+            
+            const { lastMessageId, limit = 50 } = parseValidation(cursorPaginationQuerySchema, req.query);
+
+            const { messages, hasMore } = await messageService.getConversationCursor(userId, friendId, lastMessageId, limit);
+
+            typeSafeLogger.logUserAction("Conversation retrieved (cursor)", { userId, friendId, messageCount: messages.length, lastMessageId, hasMore });
+            res.status(200).json(buildCursorPaginatedResponse(messages, limit, hasMore));
+        } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
+            return next(toAppError(error, { message: "Failed to retrieve conversation", code: "INTERNAL_ERROR", statusCode: 500 }));
+        }
+    },
+
+    getAllMessagesCursor: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            typeSafeLogger.logRequest("Received request to fetch all messages (cursor)", { method: req.method, path: req.path });
+            const userId = (req as any).user?.id;
+            
+            const { lastMessageId, limit = 50 } = parseValidation(cursorPaginationQuerySchema, req.query);
+
+            const { messages, hasMore } = await messageService.getAllMessagesCursor(userId, lastMessageId, limit);
+
+            typeSafeLogger.logUserAction("All messages retrieved (cursor)", { userId, messageCount: messages.length, lastMessageId, hasMore });
+            res.status(200).json(buildCursorPaginatedResponse(messages, limit, hasMore));
+        } catch (error) {
+            if (isAppError(error)) {
+                return next(error);
+            }
+            return next(toAppError(error, { message: "Failed to fetch messages", code: "INTERNAL_ERROR", statusCode: 500 }));
+        }
+    },
+
+    getUnreadMessagesCursor: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+      try {
+        const userId = (req as any).user?.id;
+        const { lastMessageId, limit = 50 } = parseValidation(cursorPaginationQuerySchema, req.query);
+
+        const { messages, hasMore } = await messageService.getUnreadMessagesCursor(userId, lastMessageId, limit);
+        
+        typeSafeLogger.logUserAction('Unread messages retrieved (cursor)', { userId, count: messages.length, lastMessageId, hasMore });
+        res.status(200).json(buildCursorPaginatedResponse(messages, limit, hasMore));
+      } catch (error) {
+        if (isAppError(error)) {
+            return next(error);
+        }
+        return next(toAppError(error, { message: 'Failed to fetch unread messages', code: 'INTERNAL_ERROR', statusCode: 500 }));
       }
     },
 };

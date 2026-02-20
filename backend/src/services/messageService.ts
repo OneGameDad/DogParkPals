@@ -183,7 +183,7 @@ const messageService = {
       const hasMore = messages.length > limit;
       const data = hasMore ? messages.slice(0, limit) : messages;
 
-      return { messages: data.reverse(), hasMore }; // reverse to get ascending order
+      return { messages: data, hasMore };
     } catch (error) {
       throw toAppError(error, { message: 'Failed to fetch conversation', code: 'FETCH_CONVERSATION_FAILED' });
     }

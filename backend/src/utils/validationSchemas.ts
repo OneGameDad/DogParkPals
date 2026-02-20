@@ -512,15 +512,15 @@ export const paginationQuerySchema = z.object({
     .number()
     .int()
     .positive('Page must be a positive integer')
-    .default(1)
-    .optional(),
+    .optional()
+    .default(1),
   limit: z.coerce
     .number()
     .int()
     .positive('Limit must be a positive integer')
     .max(100, 'Limit cannot exceed 100')
-    .default(50)
-    .optional(),
+    .optional()
+    .default(50),
 });
 
 export type PaginationQueryRequest = z.infer<typeof paginationQuerySchema>;

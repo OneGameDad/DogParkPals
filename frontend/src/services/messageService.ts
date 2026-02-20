@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { Messages, User, PaginatedMessagesResponse, CursorPaginatedMessagesResponse, UnreadCountResponse } from '../types';
+import type { Messages, PaginatedMessagesResponse, CursorPaginatedMessagesResponse, UnreadCountResponse } from '../types';
 
 const messageService = {
     // Get all messages for the current user (inbox style, with pagination)

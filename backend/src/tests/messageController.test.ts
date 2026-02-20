@@ -42,18 +42,22 @@ jest.mock('../utils/errors', () => ({
   isAppError: jest.fn((err) => err instanceof Error && (err as any).statusCode !== undefined),
 }));
 
-jest.mock('../utils/response', () => ({
-  buildPaginatedResponse: jest.fn((data, page, limit, total) => ({
-    data,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-      hasMore: page < Math.ceil(total / limit),
-    },
-  })),
-}));
+jest.mock('../utils/response', () => {
+  const actual = jest.requireActual('../utils/response');
+  return {
+    ...actual,
+    buildPaginatedResponse: jest.fn((data, page, limit, total) => ({
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasMore: page < Math.ceil(total / limit),
+      },
+    })),
+  };
+});
 
 describe('messageController', () => {
   let mockReq: Partial<Request>;

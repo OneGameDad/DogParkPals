@@ -34,9 +34,9 @@ export const useInfiniteScroll = (
       setMessages(response.data);
       setHasMore(response.cursor.hasMore);
       
-      // Store the last message ID for cursor pagination
-      if (response.data.length > 0) {
-        lastMessageIdRef.current = response.data[response.data.length - 1].id;
+      // Store the last message ID for cursor pagination using cursor metadata
+      if (response.cursor.lastMessageId != null) {
+        lastMessageIdRef.current = response.cursor.lastMessageId;
       }
 
       hasInitialLoadRef.current = true;
@@ -60,11 +60,11 @@ export const useInfiniteScroll = (
       const response = await fetchFn(lastMessageIdRef.current, initialPageSize);
       
       // Append new messages to existing ones
-      setMessages(prev => [...prev, ...response.data]);
+      setMessages(prev => [...response.data, ...prev]);
       setHasMore(response.cursor.hasMore);
 
       // Update cursor for next load
-      if (response.data.length > 0) {
+      if (response.data.length > 0 && response.data[response.data.length - 1].id != null) {
         lastMessageIdRef.current = response.data[response.data.length - 1].id;
       }
     } catch (err) {
@@ -89,7 +89,7 @@ export const useInfiniteScroll = (
       const response = await fetchFn(undefined, initialPageSize);
       setMessages(response.data);
       setHasMore(response.cursor.hasMore);
-      if (response.data.length > 0) {
+      if (response.data.length > 0 && response.data[response.data.length - 1].id != null) {
         lastMessageIdRef.current = response.data[response.data.length - 1].id;
       }
       hasInitialLoadRef.current = true;
@@ -102,12 +102,22 @@ export const useInfiniteScroll = (
     }
   }, [fetchFn, initialPageSize, onError]);
 
-  // Initial load on mount
+  // Initial load on mount and when fetchFn/initialPageSize change
   useEffect(() => {
     if (!hasInitialLoadRef.current) {
+      // First time: just load messages
       loadMessages();
+      return;
     }
-  }, []);
+    // If fetchFn or initialPageSize change after initial load,
+    // reset pagination state and reload messages
+    lastMessageIdRef.current = undefined;
+    hasInitialLoadRef.current = false;
+    setMessages([]);
+    setHasMore(true);
+    setError(null);
+    loadMessages();
+  }, [fetchFn, initialPageSize, loadMessages]);
 
   return {
     messages,

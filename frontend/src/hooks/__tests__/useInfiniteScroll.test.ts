@@ -1,6 +1,6 @@
- import { renderHook, act, waitFor } from "@testing-library/react";
- import { vi, describe, test, expect, beforeEach, afterEach } from "vitest";
- import { useInfiniteScroll } from "../useInfiniteScroll";
+import { renderHook, act, waitFor } from "@testing-library/react";
+import { vi, describe, test, expect, beforeEach} from "vitest";
+import { useInfiniteScroll } from "../useInfiniteScroll";
 import type { CursorPaginatedMessagesResponse, Messages } from '../../types';
 
 describe('useInfiniteScroll - Live Chat Pagination', () => {

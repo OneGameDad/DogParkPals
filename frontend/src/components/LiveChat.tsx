@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import messageService from '../services/messageService';
 import type { Messages } from '../types';
+import { useAuth } from '../hooks';
 
 interface LiveChatProps {
   friendId: number;
@@ -20,6 +21,7 @@ interface LiveChatProps {
 export const LiveChat: React.FC<LiveChatProps> = ({ friendId }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
 
   // Initialize infinite scroll hook with cursor pagination
   const {
@@ -69,11 +71,10 @@ export const LiveChat: React.FC<LiveChatProps> = ({ friendId }) => {
 
   const handleSendMessage = async (content: string) => {
     try {
-      // In a real app, you'd get the currentUserId from auth context
-      const currentUserId = 1; // Placeholder
+      if (!user) throw new Error('User not authenticated');
       
       const newMessage = await messageService.sendMessage(
-        currentUserId,
+        user.id,
         friendId,
         content
       );

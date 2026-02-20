@@ -12,11 +12,13 @@ vi.mock('react-i18next', () => ({
     }),
 }));
 
+const mockMessageService = {
+    getConversation: vi.fn(),
+    sendMessage: vi.fn(),
+};
 vi.mock('../../../services/messageService', () => ({
-    messageService: {
-        getConversation: vi.fn(),
-        sendMessage: vi.fn(),
-    }
+    default: mockMessageService,
+    messageService: mockMessageService,
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -60,7 +62,7 @@ describe('MessageThread', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         (api.get as any).mockResolvedValue(mockFriend);
-        (messageService.getConversation as any).mockResolvedValue(mockMessages);
+        (messageService.getConversation as any).mockResolvedValue({ data: mockMessages });
     });
 
     it('renders loading state initially', () => {
@@ -80,7 +82,7 @@ describe('MessageThread', () => {
     });
 
     it('renders empty state when no messages', async () => {
-        (messageService.getConversation as any).mockResolvedValue([]);
+        (messageService.getConversation as any).mockResolvedValue({ data: [] });
         render(<MessageThread friendId={2} currentUserId={1} />);
 
         await waitFor(() => {

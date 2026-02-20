@@ -50,7 +50,8 @@ const MessageThread = ({ friendId, currentUserId }: MessageThreadProps) => {
     const fetchLatestMessages = useCallback(async () => {
         try {
             // Fetch full conversation and derive latest page client-side
-            const allMessages = await messageService.getConversation(friendId);
+            const response = await messageService.getConversation(friendId);
+            const allMessages = response.data;
             const latestMessages =
                 allMessages.length > MESSAGES_PER_PAGE
                     ? allMessages.slice(-MESSAGES_PER_PAGE)
@@ -108,7 +109,8 @@ const MessageThread = ({ friendId, currentUserId }: MessageThreadProps) => {
             const oldScrollHeight = container?.scrollHeight || 0;
             const oldScrollTop = container?.scrollTop || 0;
 
-            const olderMessages = await messageService.getConversation(friendId, nextPage, MESSAGES_PER_PAGE);
+            const response = await messageService.getConversation(friendId, nextPage, MESSAGES_PER_PAGE);
+            const olderMessages = response.data;
 
             if (olderMessages.length < MESSAGES_PER_PAGE) {
                 setHasMore(false);

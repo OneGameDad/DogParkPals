@@ -139,6 +139,38 @@ export interface Messages {
   status: MessageStatus;
 }
 
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: PaginationMeta;
+}
+
+export type PaginatedMessagesResponse = PaginatedResponse<Messages>;
+
+export interface CursorPaginationMeta {
+  hasMore: boolean;
+  lastMessageId: number | null;
+  limit: number;
+}
+
+export interface CursorPaginatedResponse<T> {
+  data: T[];
+  cursor: CursorPaginationMeta;
+}
+
+export type CursorPaginatedMessagesResponse = CursorPaginatedResponse<Messages>;
+
+export interface UnreadCountResponse {
+  count: number;
+}
+
 export interface CheckIn {
   id: number;
   userId: number;

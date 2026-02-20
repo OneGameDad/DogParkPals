@@ -52,14 +52,17 @@ const messageService = {
 
       if (status) where.status = status;
 
-      const messages = await prisma.messages.findMany({
-        where,
-        orderBy: { sentAt: 'asc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      });
+      const [messages, total] = await Promise.all([
+        prisma.messages.findMany({
+          where,
+          orderBy: { sentAt: 'asc' },
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+        prisma.messages.count({ where }),
+      ]);
 
-      return messages;
+      return { messages, total };
     } catch (error) {
       throw toAppError(error, { message: 'Failed to fetch conversation', code: 'FETCH_CONVERSATION_FAILED' });
     }
@@ -75,14 +78,17 @@ const messageService = {
       const where: any = { receiverId: userId };
       if (status) where.status = status;
 
-      const messages = await prisma.messages.findMany({
-        where,
-        orderBy: { sentAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      });
+      const [messages, total] = await Promise.all([
+        prisma.messages.findMany({
+          where,
+          orderBy: { sentAt: 'desc' },
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+        prisma.messages.count({ where }),
+      ]);
 
-      return messages;
+      return { messages, total };
     } catch (error) {
       throw toAppError(error, { message: 'Failed to fetch messages', code: 'FETCH_MESSAGES_FAILED' });
     }
@@ -108,13 +114,25 @@ const messageService = {
     }
   },
 
-  async getUnreadMessages(userId: number) {
+  async getUnreadMessages(
+    userId: number,
+    page: number = 1,
+    limit: number = 50
+  ) {
     try {
-      const messages = await prisma.messages.findMany({
-        where: { receiverId: userId, status: 'SENT' },
-        orderBy: { sentAt: 'asc' },
-      });
-      return messages;
+      const where = { receiverId: userId, status: 'SENT' as MessageStatus };
+
+      const [messages, total] = await Promise.all([
+        prisma.messages.findMany({
+          where,
+          orderBy: { sentAt: 'asc' },
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+        prisma.messages.count({ where }),
+      ]);
+
+      return { messages, total };
     } catch (error) {
       throw toAppError(error, {
         message: 'Failed to fetch unread messages',
@@ -133,6 +151,93 @@ const messageService = {
       throw toAppError(error, {
         message: 'Failed to fetch unread message count',
         code: 'FETCH_UNREAD_COUNT_FAILED',
+      });
+    }
+  },
+
+  // Cursor-based pagination methods for real-time chat (better for infinite scroll)
+  async getConversationCursor(
+    userId: number,
+    friendId: number,
+    lastMessageId?: number,
+    limit: number = 50,
+    status?: MessageStatus
+  ) {
+    try {
+      const where: any = {
+        OR: [
+          { senderId: userId, receiverId: friendId },
+          { senderId: friendId, receiverId: userId },
+        ],
+      };
+
+      if (status) where.status = status;
+      if (lastMessageId) where.id = { lt: lastMessageId };
+
+      const messages = await prisma.messages.findMany({
+        where,
+        orderBy: { sentAt: 'desc' },
+        take: limit + 1, // fetch one extra to determine hasMore
+      });
+
+      const hasMore = messages.length > limit;
+      const data = hasMore ? messages.slice(0, limit) : messages;
+
+      return { messages: data, hasMore };
+    } catch (error) {
+      throw toAppError(error, { message: 'Failed to fetch conversation', code: 'FETCH_CONVERSATION_FAILED' });
+    }
+  },
+
+  async getAllMessagesCursor(
+    userId: number,
+    lastMessageId?: number,
+    limit: number = 50,
+    status?: MessageStatus
+  ) {
+    try {
+      const where: any = { receiverId: userId };
+      if (status) where.status = status;
+      if (lastMessageId) where.id = { lt: lastMessageId };
+
+      const messages = await prisma.messages.findMany({
+        where,
+        orderBy: { sentAt: 'desc' },
+        take: limit + 1, // fetch one extra to determine hasMore
+      });
+
+      const hasMore = messages.length > limit;
+      const data = hasMore ? messages.slice(0, limit) : messages;
+
+      return { messages: data, hasMore };
+    } catch (error) {
+      throw toAppError(error, { message: 'Failed to fetch messages', code: 'FETCH_MESSAGES_FAILED' });
+    }
+  },
+
+  async getUnreadMessagesCursor(
+    userId: number,
+    lastMessageId?: number,
+    limit: number = 50
+  ) {
+    try {
+      const where: any = { receiverId: userId, status: 'SENT' as MessageStatus };
+      if (lastMessageId) where.id = { lt: lastMessageId };
+
+      const messages = await prisma.messages.findMany({
+        where,
+        orderBy: { sentAt: 'desc' },
+        take: limit + 1, // fetch one extra to determine hasMore
+      });
+
+      const hasMore = messages.length > limit;
+      const data = hasMore ? messages.slice(0, limit) : messages;
+
+      return { messages: data.reverse(), hasMore }; // reverse to get ascending order
+    } catch (error) {
+      throw toAppError(error, {
+        message: 'Failed to fetch unread messages',
+        code: 'FETCH_UNREAD_MESSAGES_FAILED',
       });
     }
   }

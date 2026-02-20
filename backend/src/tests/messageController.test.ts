@@ -42,6 +42,23 @@ jest.mock('../utils/errors', () => ({
   isAppError: jest.fn((err) => err instanceof Error && (err as any).statusCode !== undefined),
 }));
 
+jest.mock('../utils/response', () => {
+  const actual = jest.requireActual('../utils/response');
+  return {
+    ...actual,
+    buildPaginatedResponse: jest.fn((data, page, limit, total) => ({
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasMore: page < Math.ceil(total / limit),
+      },
+    })),
+  };
+});
+
 describe('messageController', () => {
   let mockReq: Partial<Request>;
   let mockRes: any;
@@ -90,20 +107,34 @@ describe('messageController', () => {
   });
 
   describe('getConversation', () => {
-    test('fetches conversation successfully', async () => {
-      const mockConversation = [{ id: 1, content: 'Hi' }];
-      (messageService.getConversation as jest.Mock).mockResolvedValue(mockConversation);
+    test('fetches conversation successfully with pagination', async () => {
+      const mockMessages = [{ id: 1, content: 'Hi' }];
+      (parseValidation as jest.Mock).mockReturnValue({ page: 1, limit: 50 });
+      (messageService.getConversation as jest.Mock).mockResolvedValue({ messages: mockMessages, total: 1 });
       mockReq.params.friendId = '2';
+      mockReq.query = { page: '1', limit: '50' };
 
       await messageController.getConversation(mockReq as Request, mockRes as Response, mockNext);
 
-      expect(messageService.getConversation).toHaveBeenCalledWith(1, 2);
+      expect(parseValidation).toHaveBeenCalled();
+      expect(messageService.getConversation).toHaveBeenCalledWith(1, 2, 1, 50);
       expect(mockStatus).toHaveBeenCalledWith(200);
-      expect(mockJson).toHaveBeenCalledWith(mockConversation);
+      expect(mockJson).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: mockMessages,
+          pagination: expect.objectContaining({
+            page: 1,
+            limit: 50,
+            total: 1,
+            hasMore: false,
+          }),
+        })
+      );
     });
 
     test('forwards error on failure', async () => {
       const error = new Error('DB failure');
+      (parseValidation as jest.Mock).mockReturnValue({ page: 1, limit: 50 });
       (messageService.getConversation as jest.Mock).mockRejectedValue(error);
       mockReq.params.friendId = '2';
 
@@ -115,24 +146,39 @@ describe('messageController', () => {
   });
 
   describe('getAllMessages', () => {
-    test('fetches all messages successfully', async () => {
-      const messages = [{ id: 1, content: 'Hi' }];
-      (messageService.getAllMessages as jest.Mock).mockResolvedValue(messages);
+    test('fetches all messages successfully with pagination', async () => {
+      const mockMessages = [{ id: 1, content: 'Hi' }];
+      (parseValidation as jest.Mock).mockReturnValue({ page: 1, limit: 50 });
+      (messageService.getAllMessages as jest.Mock).mockResolvedValue({ messages: mockMessages, total: 1 });
+      mockReq.query = { page: '1', limit: '50' };
 
       await messageController.getAllMessages(mockReq as Request, mockRes as Response, mockNext);
 
-      expect(messageService.getAllMessages).toHaveBeenCalledWith(1);
+      expect(parseValidation).toHaveBeenCalled();
+      expect(messageService.getAllMessages).toHaveBeenCalledWith(1, 1, 50);
       expect(mockStatus).toHaveBeenCalledWith(200);
-      expect(mockJson).toHaveBeenCalledWith(messages);
+      expect(mockJson).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: mockMessages,
+          pagination: expect.objectContaining({
+            page: 1,
+            limit: 50,
+            total: 1,
+            hasMore: false,
+          }),
+        })
+      );
     });
 
-    test('forwards error', async () => {
+    test('forwards error on failure', async () => {
       const error = new Error('DB failure');
+      (parseValidation as jest.Mock).mockReturnValue({ page: 1, limit: 50 });
       (messageService.getAllMessages as jest.Mock).mockRejectedValue(error);
 
       await messageController.getAllMessages(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockNext).toHaveBeenCalledWith(error);
+      expect(mockStatus).not.toHaveBeenCalled();
     });
   });
 
@@ -184,24 +230,40 @@ describe('messageController', () => {
   });
 
   describe('getUnreadMessages', () => {
-    test('fetches unread messages successfully', async () => {
-      const messages = [{ id: 1, content: 'Hi' }];
-      (messageService.getUnreadMessages as jest.Mock).mockResolvedValue(messages);
+    test('fetches unread messages successfully with pagination', async () => {
+      const mockMessages = [{ id: 1, content: 'Hi' }];
+      (parseValidation as jest.Mock).mockReturnValue({ page: 1, limit: 50 });
+      (messageService.getUnreadMessages as jest.Mock).mockResolvedValue({ messages: mockMessages, total: 1 });
+      mockReq.query = { page: '1', limit: '50' };
 
       await messageController.getUnreadMessages(mockReq as Request, mockRes as Response, mockNext);
 
-      expect(messageService.getUnreadMessages).toHaveBeenCalledWith(1);
+      expect(parseValidation).toHaveBeenCalled();
+      expect(messageService.getUnreadMessages).toHaveBeenCalledWith(1, 1, 50);
       expect(mockStatus).toHaveBeenCalledWith(200);
-      expect(mockJson).toHaveBeenCalledWith(messages);
+      expect(mockJson).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: mockMessages,
+          pagination: expect.objectContaining({
+            page: 1,
+            limit: 50,
+            total: 1,
+            hasMore: false,
+          }),
+        })
+      );
     });
 
-    test('forwards error', async () => {
+    test('forwards error on failure', async () => {
       const error = new Error('DB failure');
+      (parseValidation as jest.Mock).mockReturnValue({ page: 1, limit: 50 });
       (messageService.getUnreadMessages as jest.Mock).mockRejectedValue(error);
+      mockReq.query = { page: '1', limit: '50' };
 
       await messageController.getUnreadMessages(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockNext).toHaveBeenCalledWith(error);
+      expect(mockStatus).not.toHaveBeenCalled();
     });
   });
 

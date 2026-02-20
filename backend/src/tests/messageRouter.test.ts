@@ -19,6 +19,9 @@ const updateStatusMock = jest.fn<(req: Request, res: Response, next: NextFunctio
 const deleteMessageMock = jest.fn<(req: Request, res: Response, next: NextFunction) => unknown>();
 const getUnreadMessagesMock = jest.fn<(req: Request, res: Response, next: NextFunction) => unknown>();
 const getUnreadCountMock = jest.fn<(req: Request, res: Response, next: NextFunction) => unknown>();
+const getConversationCursorMock = jest.fn<(req: Request, res: Response, next: NextFunction) => unknown>();
+const getAllMessagesCursorMock = jest.fn<(req: Request, res: Response, next: NextFunction) => unknown>();
+const getUnreadMessagesCursorMock = jest.fn<(req: Request, res: Response, next: NextFunction) => unknown>();
 
 jest.mock('../controllers/messageController', () => ({
   __esModule: true,
@@ -30,6 +33,9 @@ jest.mock('../controllers/messageController', () => ({
     deleteMessage: deleteMessageMock,
     getUnreadMessages: getUnreadMessagesMock,
     getUnreadCount: getUnreadCountMock,
+    getConversationCursor: getConversationCursorMock,
+    getAllMessagesCursor: getAllMessagesCursorMock,
+    getUnreadMessagesCursor: getUnreadMessagesCursorMock,
   },
 }));
 
@@ -46,6 +52,9 @@ const defaultHandlers = () => {
   deleteMessageMock.mockImplementation(okHandler('deleteMessage'));
   getUnreadMessagesMock.mockImplementation(okHandler('getUnreadMessages'));
   getUnreadCountMock.mockImplementation(okHandler('getUnreadCount'));
+  getConversationCursorMock.mockImplementation(okHandler('getConversationCursor'));
+  getAllMessagesCursorMock.mockImplementation(okHandler('getAllMessagesCursor'));
+  getUnreadMessagesCursorMock.mockImplementation(okHandler('getUnreadMessagesCursor'));
 };
 
 const buildApp = () => {

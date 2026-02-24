@@ -279,67 +279,67 @@ async function main() {
     {
       name: "Level 2",
       type: AchievementType.TROPHY,
-      badgeUrl: "https://example.com/achievements/level-2.png",
+      badgeUrl: "/badges/trophy_level_2.png",
     },
     {
       name: "Level 3",
       type: AchievementType.TROPHY,
-      badgeUrl: "https://example.com/achievements/level-3.png",
+      badgeUrl: "/badges/trophy_level_3.png",
     },
     {
       name: "Level 4",
       type: AchievementType.TROPHY,
-      badgeUrl: "https://example.com/achievements/level-4.png",
+      badgeUrl: "/badges/trophy_level_4.png",
     },
     {
       name: "Level 5",
       type: AchievementType.TROPHY,
-      badgeUrl: "https://example.com/achievements/level-5.png",
+      badgeUrl: "/badges/trophy_level_5.png",
     },
     {
       name: "Best Friend",
       type: AchievementType.BADGE,
-      badgeUrl: "https://example.com/achievements/best-friend.png",
+      badgeUrl: "/badges/badge_best_friend.png",
     },
     {
       name: "Okay Friend",
       type: AchievementType.BADGE,
-      badgeUrl: "https://example.com/achievements/okay-friend.png",
+      badgeUrl: "/badges/badge_okay_friend.png",
     },
     {
       name: "Pack Leader",
       type: AchievementType.BADGE,
-      badgeUrl: "https://example.com/achievements/pack-leader.png",
+      badgeUrl: "/badges/badge_pack_leader.png",
     },
     {
       name: "Pack Member",
       type: AchievementType.BADGE,
-      badgeUrl: "https://example.com/achievements/pack-member.png",
+      badgeUrl: "/badges/badge_pack_member.png",
     },
     {
       name: "Pup Pal",
       type: AchievementType.BADGE,
-      badgeUrl: "https://example.com/achievements/pup-pal.png",
+      badgeUrl: "/badges/badge_pup_pal.png",
     },
     {
       name: "Park Patrol",
       type: AchievementType.BADGE,
-      badgeUrl: "https://example.com/achievements/park-patrol.png",
+      badgeUrl: "/badges/badge_park_patrol.png",
     },
     {
       name: "Family Dog",
       type: AchievementType.BADGE,
-      badgeUrl: "https://example.com/achievements/family-dog.png",
+      badgeUrl: "/badges/badge_family_dog.png",
     },
     {
       name: "Sir Barks-A-Lot",
       type: AchievementType.BADGE,
-      badgeUrl: "https://example.com/achievements/sir-barks-a-lot.png",
+      badgeUrl: "/badges/badge_sir_barks_a_lot.png",
     },
     {
       name: "Fought The Post Man",
       type: AchievementType.BADGE,
-      badgeUrl: "https://example.com/achievements/fought-the-post-man.png",
+      badgeUrl: "/badges/badge_fought_the_post_man.png",
     },
   ];
 

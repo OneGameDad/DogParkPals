@@ -103,6 +103,27 @@ jest.mock('../events/createDomainEvent', () => ({
   createDomainEvent: mockCreateDomainEvent,
 }));
 
+const mockNotificationService = {
+  createNotification: jest.fn().mockResolvedValue({
+    id: 1,
+    userId: 2,
+    type: 'ORGANIZATION_ROLE_UPDATED',
+    payload: {},
+    read: false,
+    readAt: null,
+    createdAt: new Date(),
+  }),
+  getNotifications: jest.fn(),
+  markAsRead: jest.fn(),
+  markAllAsRead: jest.fn(),
+  createNotifications: jest.fn(),
+};
+
+jest.mock('../services/notificationService', () => ({
+  __esModule: true,
+  default: mockNotificationService,
+}));
+
 // Import AFTER all mocks are defined
 import organizationService from '../services/organizationService';
 
@@ -452,11 +473,24 @@ describe('Organization Service', () => {
   });
 
   describe('updateMemberRole', () => {
-    test('should update member role to MODERATOR', async () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockNotificationService.createNotification.mockResolvedValue({
+        id: 1,
+        userId: 2,
+        type: 'ORGANIZATION_ROLE_UPDATED',
+        payload: {},
+        read: false,
+        readAt: null,
+        createdAt: new Date(),
+      });
+    });
+
+    test('should update member role to MODERATOR and notify both users', async () => {
       const updatedMember = { ...mockMemberData, role: 'MODERATOR' };
       mockPrisma.organizationMember.update.mockResolvedValue(updatedMember);
 
-      const result = await organizationService.updateMemberRole(1, 2, 'MODERATOR');
+      const result = await organizationService.updateMemberRole(1, 2, 'MODERATOR', 3);
 
       expect(result).toEqual(updatedMember);
       expect(mockPrisma.organizationMember.update).toHaveBeenCalledWith({
@@ -470,13 +504,34 @@ describe('Organization Service', () => {
           role: 'MODERATOR',
         },
       });
+      
+      // Verify notification was sent to target user
+      expect(mockNotificationService.createNotification).toHaveBeenCalledWith(
+        2,
+        'ORGANIZATION_ROLE_UPDATED',
+        {
+          organizationId: 1,
+          newRole: 'MODERATOR',
+        }
+      );
+      
+      // Verify notification was sent to user who made the update
+      expect(mockNotificationService.createNotification).toHaveBeenCalledWith(
+        3,
+        'ORGANIZATION_ROLE_UPDATED',
+        {
+          organizationId: 1,
+          targetUserId: 2,
+          newRole: 'MODERATOR',
+        }
+      );
     });
 
     test('should update member role to OWNER', async () => {
       const updatedMember = { ...mockMemberData, role: 'OWNER' };
       mockPrisma.organizationMember.update.mockResolvedValue(updatedMember);
 
-      await organizationService.updateMemberRole(1, 2, 'OWNER');
+      await organizationService.updateMemberRole(1, 2, 'OWNER', 3);
 
       expect(mockPrisma.organizationMember.update).toHaveBeenCalledWith({
         where: {
@@ -489,15 +544,41 @@ describe('Organization Service', () => {
           role: 'OWNER',
         },
       });
+      
+      // Verify notifications were created
+      expect(mockNotificationService.createNotification).toHaveBeenCalledTimes(2);
     });
 
     test('should downgrade member role back to MEMBER', async () => {
       const downgraded = { ...mockMemberData, role: 'MEMBER' };
       mockPrisma.organizationMember.update.mockResolvedValue(downgraded);
 
-      await organizationService.updateMemberRole(1, 2, 'MEMBER');
+      await organizationService.updateMemberRole(1, 2, 'MEMBER', 3);
 
       expect(mockPrisma.organizationMember.update).toHaveBeenCalled();
+      
+      // Verify notifications were created
+      expect(mockNotificationService.createNotification).toHaveBeenCalledTimes(2);
+    });
+
+    test('should only notify target user when updatedBy is not provided', async () => {
+      const updatedMember = { ...mockMemberData, role: 'MODERATOR' };
+      mockPrisma.organizationMember.update.mockResolvedValue(updatedMember);
+
+      await organizationService.updateMemberRole(1, 2, 'MODERATOR');
+
+      expect(mockPrisma.organizationMember.update).toHaveBeenCalled();
+      
+      // Verify only target user was notified
+      expect(mockNotificationService.createNotification).toHaveBeenCalledTimes(1);
+      expect(mockNotificationService.createNotification).toHaveBeenCalledWith(
+        2,
+        'ORGANIZATION_ROLE_UPDATED',
+        {
+          organizationId: 1,
+          newRole: 'MODERATOR',
+        }
+      );
     });
 
     test('should throw error when member not found', async () => {

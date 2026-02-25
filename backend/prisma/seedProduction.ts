@@ -279,7 +279,7 @@ const USERS: UserData[] = [
   {
     email: "admin1@dogparkpals.com",
     username: "admin_user1",
-    password_hash: "$2a$10$tyEt863wIwuZhdmfJ3IzCevjTamBLaWkrc8UYe3p2TM.fbVkKTQ2y"
+    password_hash: "$2a$10$acANfMAt9F2iqlCerUpgqeX9QoWpQMBaR5BjHjIsBaPr00d1t2es.",
     first_name: "Greg",
     last_name: "Pellechi",
     role: UserRole.ADMIN,
@@ -287,7 +287,7 @@ const USERS: UserData[] = [
   {
     email: "admin2@dogparkpals.com",
     username: "admin_user2",
-    password_hash: "$2a$10$tyEt863wIwuZhdmfJ3IzCevjTamBLaWkrc8UYe3p2TM.fbVkKTQ2y"
+    password_hash: "$2a$10$4UrHkwGKoosBC6Bo.Ted2usPy2YWi6HX0kvIzB7FhLPwfjYeAymMy",
     first_name: "Renato",
     last_name: "de Moraes Bonilha",
     role: UserRole.ADMIN,
@@ -295,7 +295,7 @@ const USERS: UserData[] = [
   {
     email: "dev1@dogparkpals.com",
     username: "dev_user1",
-    password_hash: "$2a$10$tyEt863wIwuZhdmfJ3IzCevjTamBLaWkrc8UYe3p2TM.fbVkKTQ2y"
+    password_hash: "$2a$10$FDlagcHCbQir1GyqV9RNiufv4MAcZma13JVZTK8X3/iShxybEM83W",
     first_name: "Laura",
     last_name: "Guillen",
     role: UserRole.DEVELOPER,
@@ -303,7 +303,7 @@ const USERS: UserData[] = [
   {
     email: "dev2@dogparkpals.com",
     username: "dev_user2",
-    password_hash: "$2a$10$tyEt863wIwuZhdmfJ3IzCevjTamBLaWkrc8UYe3p2TM.fbVkKTQ2y"
+    password_hash: "$2a$10$o0c/VfaqffbWeHwc3q0EAODj0sOfRjk2EHzTJWYvtCesjDVo1tNHy",
     first_name: "Jules",
     last_name: "Pierce",
     role: UserRole.DEVELOPER,
@@ -311,7 +311,7 @@ const USERS: UserData[] = [
   {
     email: "dev3@dogparkpals.com",
     username: "dev_user3",
-    password_hash: "$2a$10$tyEt863wIwuZhdmfJ3IzCevjTamBLaWkrc8UYe3p2TM.fbVkKTQ2y"
+    password_hash: "$2a$10$w/J.umIPf7FXdoSjz/i9zuFmCqSG2PqNXSC1GoIK8AVLX6bfF4dHi",
     first_name: "Mark",
     last_name: "Byrne",
     role: UserRole.DEVELOPER,
@@ -404,7 +404,7 @@ const DOGS: DogData[] = [
   },
   {
     name: "Bella",
-    breed: DogBreed.GERMAN_SHEPHERD,
+    breed: DogBreed.GERMAN_SHEPHERD_DOG,
     gender: "FEMALE",
     dateOfBirth: new Date("2020-11-05"),
     size: DogSize.LARGE,
@@ -528,18 +528,8 @@ async function seedProduction() {
     console.log("📍 Creating parks...");
     const createdParks = [];
     for (const parkData of PARKS) {
-      // Use park name as stable unique key for upsert (add unique constraint to schema if not present)
-      // For now, upsert by name to make seeding idempotent
-      const park = await prisma.park.upsert({
-        where: { name: parkData.name },
-        update: {
-          latitude: parkData.latitude,
-          longitude: parkData.longitude,
-          description: parkData.description,
-          separateSmallDogArea: parkData.separateSmallDogArea,
-          amenities: parkData.amenities ? parkData.amenities : null, // Store as JSON array, not string
-        },
-        create: {
+      const park = await prisma.park.create({
+        data: {
           ...parkData,
           amenities: parkData.amenities ? parkData.amenities : null, // Store as JSON array, not string
         },
@@ -569,10 +559,18 @@ async function seedProduction() {
     for (let i = 0; i < DOGS.length; i++) {
       const dogData = DOGS[i];
       const owner = createdUsers[dogData.ownerIndex];
-      const { ownerIndex, ...dogCreateData } = dogData;
-
+      
       const dog = await prisma.dog.create({
-        data: dogCreateData,
+        data: {
+          name: dogData.name,
+          breed: dogData.breed,
+          gender: dogData.gender,
+          dateOfBirth: dogData.dateOfBirth,
+          size: dogData.size || DogSize.MEDIUM,
+          playstyle: dogData.playstyle || DogPlaystyle.SOCIAL,
+          fixed: dogData.fixed ?? false,
+          description: dogData.description,
+        },
       });
       createdDogs.push(dog);
 
@@ -601,16 +599,8 @@ async function seedProduction() {
     for (const orgData of ORGANIZATIONS) {
       const owner = createdUsers[orgData.ownerIndex];
       
-      // Upsert organization by name to make idempotent
-      const organization = await prisma.organization.upsert({
-        where: { name: orgData.name },
-        update: {
-          description: orgData.description,
-          websiteUrl: orgData.websiteUrl,
-          profilePictureUrl: orgData.profilePictureUrl,
-          ownerId: owner.id,
-        },
-        create: {
+      const organization = await prisma.organization.create({
+        data: {
           name: orgData.name,
           description: orgData.description,
           websiteUrl: orgData.websiteUrl,

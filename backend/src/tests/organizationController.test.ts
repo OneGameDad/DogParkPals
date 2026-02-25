@@ -438,7 +438,8 @@ describe('Organization Controller', () => {
   describe('updateMemberRole', () => {
     test('should update member role when user is authorized', async () => {
       mockReq.params = { id: '1', memberId: '3' };
-      mockReq.body = { role: 'MODERATOR', userId: 1 };
+      mockReq.body = { role: 'MODERATOR' };
+      mockReq.user = { id: 1, role: 'OWNER' };
       mockParseValidation.mockReturnValue({ organizationId: 1, userId: 3, role: 'MODERATOR' });
       mockGetOrganizationById.mockResolvedValue(mockOrgData);
       mockGetMember.mockResolvedValue({ ...mockMemberData, userId: 1, role: 'OWNER' });
@@ -446,13 +447,28 @@ describe('Organization Controller', () => {
 
       await organizationController.updateMemberRole(mockReq as Request, mockRes as Response, mockNext);
 
-      expect(mockUpdateMemberRole).toHaveBeenCalledWith(1, 3, 'MODERATOR');
+      expect(mockUpdateMemberRole).toHaveBeenCalledWith(1, 3, 'MODERATOR', 1);
+      expect(mockStatus).toHaveBeenCalledWith(200);
+    });
+
+    test('should update member role with currentUserId from body when user.id not available', async () => {
+      mockReq.params = { id: '1', memberId: '3' };
+      mockReq.body = { role: 'MODERATOR', currentUserId: 2 };
+      mockParseValidation.mockReturnValue({ organizationId: 1, userId: 3, role: 'MODERATOR' });
+      mockGetOrganizationById.mockResolvedValue(mockOrgData);
+      mockGetMember.mockResolvedValue({ ...mockMemberData, userId: 2, role: 'OWNER' });
+      mockUpdateMemberRole.mockResolvedValue({ userId: 3, organizationId: 1, role: 'MODERATOR' });
+
+      await organizationController.updateMemberRole(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockUpdateMemberRole).toHaveBeenCalledWith(1, 3, 'MODERATOR', 2);
       expect(mockStatus).toHaveBeenCalledWith(200);
     });
 
     test('should throw forbidden error when user is not authorized', async () => {
       mockReq.params = { id: '1', memberId: '3' };
-      mockReq.body = { role: 'MODERATOR', userId: 2 };
+      mockReq.body = { role: 'MODERATOR' };
+      mockReq.user = { id: 2, role: 'MEMBER' };
       mockParseValidation.mockReturnValue({ organizationId: 1, userId: 3, role: 'MODERATOR' });
       mockGetOrganizationById.mockResolvedValue(mockOrgData);
       mockGetMember.mockResolvedValue({ ...mockMemberData, userId: 2, role: 'MEMBER' });

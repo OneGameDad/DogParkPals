@@ -279,7 +279,7 @@ const USERS: UserData[] = [
   {
     email: "admin1@dogparkpals.com",
     username: "admin_user1",
-    password_hash: "$2b$10$hashedpassword1", // ⚠️ REPLACE WITH ACTUAL HASHED PASSWORD
+    password_hash: "$2a$10$tyEt863wIwuZhdmfJ3IzCevjTamBLaWkrc8UYe3p2TM.fbVkKTQ2y"
     first_name: "Greg",
     last_name: "Pellechi",
     role: UserRole.ADMIN,
@@ -287,7 +287,7 @@ const USERS: UserData[] = [
   {
     email: "admin2@dogparkpals.com",
     username: "admin_user2",
-    password_hash: "$2b$10$hashedpassword2", // ⚠️ REPLACE WITH ACTUAL HASHED PASSWORD
+    password_hash: "$2a$10$tyEt863wIwuZhdmfJ3IzCevjTamBLaWkrc8UYe3p2TM.fbVkKTQ2y"
     first_name: "Renato",
     last_name: "de Moraes Bonilha",
     role: UserRole.ADMIN,
@@ -295,7 +295,7 @@ const USERS: UserData[] = [
   {
     email: "dev1@dogparkpals.com",
     username: "dev_user1",
-    password_hash: "$2b$10$hashedpassword3", // ⚠️ REPLACE WITH ACTUAL HASHED PASSWORD
+    password_hash: "$2a$10$tyEt863wIwuZhdmfJ3IzCevjTamBLaWkrc8UYe3p2TM.fbVkKTQ2y"
     first_name: "Laura",
     last_name: "Guillen",
     role: UserRole.DEVELOPER,
@@ -303,7 +303,7 @@ const USERS: UserData[] = [
   {
     email: "dev2@dogparkpals.com",
     username: "dev_user2",
-    password_hash: "$2b$10$hashedpassword4", // ⚠️ REPLACE WITH ACTUAL HASHED PASSWORD
+    password_hash: "$2a$10$tyEt863wIwuZhdmfJ3IzCevjTamBLaWkrc8UYe3p2TM.fbVkKTQ2y"
     first_name: "Jules",
     last_name: "Pierce",
     role: UserRole.DEVELOPER,
@@ -311,7 +311,7 @@ const USERS: UserData[] = [
   {
     email: "dev3@dogparkpals.com",
     username: "dev_user3",
-    password_hash: "$2b$10$hashedpassword5", // ⚠️ REPLACE WITH ACTUAL HASHED PASSWORD
+    password_hash: "$2a$10$tyEt863wIwuZhdmfJ3IzCevjTamBLaWkrc8UYe3p2TM.fbVkKTQ2y"
     first_name: "Mark",
     last_name: "Byrne",
     role: UserRole.DEVELOPER,

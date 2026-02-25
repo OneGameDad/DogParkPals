@@ -4,6 +4,7 @@ import { toAppError } from '../utils/errors';
 import { createDomainEvent } from '../events/createDomainEvent';
 import { EventTypes } from '../events/eventTypes';
 import { addOutboxEvent } from '../infrastructure/outbox/outboxRepository';
+import notificationService from './notificationService';
 import {
   createOrganizationSchema,
   updateOrganizationSchema,
@@ -267,7 +268,7 @@ const organizationService = {
     }
   },
 
-  async updateMemberRole(organizationId: number, userId: number, role: 'MEMBER' | 'MODERATOR' | 'OWNER') {
+  async updateMemberRole(organizationId: number, userId: number, role: 'MEMBER' | 'MODERATOR' | 'OWNER', updatedBy?: number) {
     const validated = updateMemberRoleSchema.parse({ organizationId, userId, role });
     typeSafeLogger.logUserAction('Updating member role', { organizationId: validated.organizationId, userId: validated.userId, role: validated.role });
     try {
@@ -288,6 +289,30 @@ const organizationService = {
         role: validated.role,
       });
       await addOutboxEvent(prisma, domainEvent);
+      
+      // Notify the target user of their role update
+      await notificationService.createNotification(
+        validated.userId,
+        'ORGANIZATION_ROLE_UPDATED',
+        {
+          organizationId: validated.organizationId,
+          newRole: validated.role,
+        }
+      );
+      
+      // Notify the user who performed the update
+      if (updatedBy && updatedBy !== validated.userId) {
+        await notificationService.createNotification(
+          updatedBy,
+          'ORGANIZATION_ROLE_UPDATED',
+          {
+            organizationId: validated.organizationId,
+            targetUserId: validated.userId,
+            newRole: validated.role,
+          }
+        );
+      }
+      
       typeSafeLogger.logUserAction('Member role updated successfully', { organizationId, userId, role });
       return updatedMember;
     } catch (error) {

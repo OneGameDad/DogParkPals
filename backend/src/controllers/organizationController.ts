@@ -277,7 +277,7 @@ const organizationController = {
             const userRole = (req as any).user?.role;
             await checkOrganizationAuthorization(orgId, currentUserId, userRole);
 
-            await organizationService.updateMemberRole(orgId, memberId, role);
+            await organizationService.updateMemberRole(orgId, memberId, role, currentUserId);
             typeSafeLogger.logUserAction("Member role updated in organization", { organizationId: orgId, memberId, role });
             res.status(200).send();
         } catch (error) {

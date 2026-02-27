@@ -15,6 +15,15 @@ vi.mock('../../../hooks/useFetch', () => ({
   useFetch: () => mockUseFetch(),
 }));
 
+const mockUseEntitySearch = vi.fn();
+vi.mock('../../../hooks/search/useEntitySearch', () => ({
+  useEntitySearch: () => mockUseEntitySearch(),
+}));
+
+vi.mock('../../../hooks/search/usePagination', () => ({
+  usePagination: (items: any[]) => ({ offset: 0, setOffset: vi.fn(), paginatedItems: items }),
+}));
+
 const mockParks: Park[] = [
   {
     id: 1,
@@ -59,6 +68,12 @@ describe('ParkExplorer', () => {
       loading: true,
       error: null,
     });
+    mockUseEntitySearch.mockReturnValue({
+      results: [],
+      loading: false,
+      error: null,
+      isSearching: false
+    });
 
     renderParkExplorer();
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
@@ -70,6 +85,12 @@ describe('ParkExplorer', () => {
       loading: false,
       error: 'Failed to fetch',
     });
+    mockUseEntitySearch.mockReturnValue({
+      results: [],
+      loading: false,
+      error: null,
+      isSearching: false
+    });
 
     renderParkExplorer();
     expect(screen.getByText('parks.error')).toBeInTheDocument();
@@ -80,6 +101,12 @@ describe('ParkExplorer', () => {
       data: mockParks,
       loading: false,
       error: null,
+    });
+    mockUseEntitySearch.mockReturnValue({
+      results: [],
+      loading: false,
+      error: null,
+      isSearching: false
     });
 
     renderParkExplorer();
@@ -93,21 +120,34 @@ describe('ParkExplorer', () => {
       loading: false,
       error: null,
     });
+    mockUseEntitySearch.mockReturnValue({
+      results: [],
+      loading: false,
+      error: null,
+      isSearching: false
+    });
 
     renderParkExplorer();
     expect(screen.getByPlaceholderText('Search parks...')).toBeInTheDocument();
   });
 
-  it('filters parks by name', async () => {
+  it('filters parks by name via entity search', async () => {
     mockUseFetch.mockReturnValue({
       data: mockParks,
       loading: false,
       error: null,
     });
 
+    mockUseEntitySearch.mockReturnValue({
+      results: [mockParks[0]], // Only Central Dog Park
+      loading: false,
+      error: null,
+      isSearching: true
+    });
+
     renderParkExplorer();
     const searchInput = screen.getByPlaceholderText('Search parks...');
-    
+
     fireEvent.change(searchInput, { target: { value: 'Central' } });
 
     await waitFor(() => {
@@ -116,16 +156,23 @@ describe('ParkExplorer', () => {
     });
   });
 
-  it('filters parks by description', async () => {
+  it('filters parks by description via entity search', async () => {
     mockUseFetch.mockReturnValue({
       data: mockParks,
       loading: false,
       error: null,
     });
 
+    mockUseEntitySearch.mockReturnValue({
+      results: [mockParks[1]], // Only Westside Park
+      loading: false,
+      error: null,
+      isSearching: true
+    });
+
     renderParkExplorer();
     const searchInput = screen.getByPlaceholderText('Search parks...');
-    
+
     fireEvent.change(searchInput, { target: { value: 'Spacious' } });
 
     await waitFor(() => {
@@ -141,13 +188,20 @@ describe('ParkExplorer', () => {
       error: null,
     });
 
+    mockUseEntitySearch.mockReturnValue({
+      results: [],
+      loading: false,
+      error: null,
+      isSearching: true
+    });
+
     renderParkExplorer();
     const searchInput = screen.getByPlaceholderText('Search parks...');
-    
+
     fireEvent.change(searchInput, { target: { value: 'NonexistentPark' } });
 
     await waitFor(() => {
-      expect(screen.getByText('No parks found matching your search.')).toBeInTheDocument();
+      expect(screen.getByText('No parks found matching your criteria.')).toBeInTheDocument();
     });
   });
 
@@ -158,9 +212,16 @@ describe('ParkExplorer', () => {
       error: null,
     });
 
+    mockUseEntitySearch.mockReturnValue({
+      results: [mockParks[0]],
+      loading: false,
+      error: null,
+      isSearching: true
+    });
+
     renderParkExplorer();
     const searchInput = screen.getByPlaceholderText('Search parks...');
-    
+
     fireEvent.change(searchInput, { target: { value: 'CENTRAL' } });
 
     await waitFor(() => {

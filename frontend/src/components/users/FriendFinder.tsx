@@ -29,7 +29,9 @@ const FriendFinder = () => {
     const { data: baseUsers, loading: initialLoading, error: fetchError } = useFetch<User[]>('/users');
 
     // Advanced search hook
-    const { results: searchResults, loading: searchLoading, error: searchError, isSearching } = useEntitySearch<User>('USER', debouncedQuery);
+    const { results: searchResults, loading: rawSearchLoading, error: rawSearchError, isSearching } = useEntitySearch<User>('USER', debouncedQuery);
+    const searchLoading = initialLoading || rawSearchLoading;
+    const searchError = fetchError ?? rawSearchError;
 
     const {
         addFriend,

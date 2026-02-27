@@ -38,6 +38,13 @@ const EditDogProfile = () => {
   const [vaccinationFileName, setVaccinationFileName] = useState<string | null>(null);
   const [vaccinationDeleted, setVaccinationDeleted] = useState(false);
 
+  // Revoke blob URL on unmount or when preview changes to avoid memory leaks
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
   useEffect(() => {
     if (dog) {
       setFormData({
@@ -85,7 +92,6 @@ const EditDogProfile = () => {
       };
 
       let response;
-      if (isEditMode) {
       if (isEditMode) {
         response = await api.put(`/api/dogs/${id}`, payload);
       } else {
@@ -140,7 +146,15 @@ const EditDogProfile = () => {
             {!photoDeleted && dog?.profilePictureUrl && !previewUrl && (
               <button
                 type="button"
-                onClick={() => setPhotoDeleted(true)}
+                onClick={() => {
+                  setPhotoDeleted(true);
+                  // Clear pending selection so delete wins
+                  setSelectedFile(null);
+                  if (previewUrl) {
+                    URL.revokeObjectURL(previewUrl);
+                    setPreviewUrl(null);
+                  }
+                }}
                 className="text-sm text-red-500 hover:text-red-700 underline"
               >
                 {t('dogProfile.removePhoto', 'Remove photo')}
@@ -169,9 +183,8 @@ const EditDogProfile = () => {
             category="dogPhoto"
             onFileSelect={(file) => {
               setSelectedFile(file);
-              if (previewUrl) {
-                URL.revokeObjectURL(previewUrl);
-              }
+              // Selecting a new file cancels any pending delete
+              if (file) setPhotoDeleted(false);
               setPreviewUrl(file ? URL.createObjectURL(file) : null);
             }}
             hideUploadButton={true}
@@ -189,7 +202,11 @@ const EditDogProfile = () => {
                 <p className="text-sm text-green-600">✓ {t('dogProfile.vaccinationOnFile', 'Record on file')}</p>
                 <button
                   type="button"
-                  onClick={() => setVaccinationDeleted(true)}
+                  onClick={() => {
+                    setVaccinationDeleted(true);
+                    setSelectedVaccinationFile(null); // Clear pending upload
+                    setVaccinationFileName(null);
+                  }}
                   className="text-sm text-red-500 hover:text-red-700 underline"
                 >
                   {t('dogProfile.removeRecord', 'Remove')}
@@ -213,6 +230,7 @@ const EditDogProfile = () => {
                 onFileSelect={(file) => {
                   setSelectedVaccinationFile(file);
                   setVaccinationFileName(file ? file.name : null);
+                  if (file) setVaccinationDeleted(false);
                 }}
                 hideUploadButton={true}
                 hidePreview={true}

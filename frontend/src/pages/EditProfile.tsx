@@ -24,6 +24,13 @@ const EditProfile = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [photoDeleted, setPhotoDeleted] = useState(false);
 
+  // Revoke blob URL on unmount or when preview changes to avoid memory leaks
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
   useEffect(() => {
     if (user) {
       setFormData({
@@ -122,7 +129,12 @@ const EditProfile = () => {
               <button
                 type="button"
                 disabled={isSubmitting}
-                onClick={() => setPhotoDeleted(true)}
+                onClick={() => {
+                  setPhotoDeleted(true);
+                  // Clear any pending file selection so delete wins unambiguously
+                  setSelectedFile(null);
+                  if (previewUrl) { URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }
+                }}
                 className="text-sm text-red-500 hover:text-red-700 underline disabled:opacity-50"
               >
                 {t('profile.removePhoto', 'Remove photo')}
@@ -161,9 +173,8 @@ const EditProfile = () => {
             category="userProfile"
             onFileSelect={(file) => {
               setSelectedFile(file);
-              if (previewUrl) {
-                URL.revokeObjectURL(previewUrl);
-              }
+              // Selecting a new file cancels any pending delete
+              if (file) setPhotoDeleted(false);
               setPreviewUrl(file ? URL.createObjectURL(file) : null);
             }}
             hideUploadButton={true}

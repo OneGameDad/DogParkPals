@@ -29,6 +29,7 @@ export const FilterTabs = <T extends string>({
                 return (
                     <button
                         key={tab.id}
+                        type="button"
                         className={`py-2 px-4 rounded-full font-medium transition-colors ${isActive ? activeClasses : inactiveClasses}`}
                         onClick={() => onChange(tab.id)}
                     >

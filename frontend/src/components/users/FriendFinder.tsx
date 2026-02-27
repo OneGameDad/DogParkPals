@@ -92,8 +92,8 @@ const FriendFinder = () => {
 
     // Action Handlers
     const handleAddFriend = async (userId: number) => {
-        await addFriend(userId);
-        handleCloseModal();
+        const success = await addFriend(userId);
+        if (success) handleCloseModal();
     };
 
     const handleAddEnemy = async (userId: number) => {

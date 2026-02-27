@@ -24,23 +24,53 @@ export const DEFAULT_IMAGES = {
     parkHero: '/imgs/background.png',
 };
 
+const isExternalOrDataUrl = (value: unknown): value is string => {
+    return typeof value === 'string' && /^(https?:|data:)/.test(value);
+};
+
 export const getUserPhotoUrl = (userId: number | undefined, hasPhoto: boolean | string | null | undefined): string => {
-    if (userId && hasPhoto) {
+    if (!hasPhoto) {
+        return DEFAULT_IMAGES.userProfile;
+    }
+
+    if (isExternalOrDataUrl(hasPhoto)) {
+        return hasPhoto;
+    }
+
+    if (userId) {
         return `${API_BASE_URL}/api/files/users/${userId}/profile-picture`;
     }
+
     return DEFAULT_IMAGES.userProfile;
 };
 
 
 export const getDogPhotoUrl = (dogId: number | undefined, hasPhoto: boolean | string | null | undefined): string => {
-    if (dogId && hasPhoto) {
+    if (!hasPhoto) {
+        return DEFAULT_IMAGES.dogPhoto;
+    }
+
+    if (isExternalOrDataUrl(hasPhoto)) {
+        return hasPhoto;
+    }
+
+    if (dogId) {
         return `${API_BASE_URL}/api/files/dogs/${dogId}/photo`;
     }
+
     return DEFAULT_IMAGES.dogPhoto;
 };
 
 export const getDogDocumentUrl = (dogId: number | undefined, hasDocument: boolean | string | null | undefined): string | null => {
-    if (dogId && hasDocument) {
+    if (!hasDocument) {
+        return null;
+    }
+
+    if (isExternalOrDataUrl(hasDocument)) {
+        return hasDocument;
+    }
+
+    if (dogId) {
         return `${API_BASE_URL}/api/files/dogs/${dogId}/document`;
     }
     return null;

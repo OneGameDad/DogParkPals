@@ -2,12 +2,13 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { Park } from '../../types';
+import type { ParkSearchResult } from '../../services/searchService';
 import { Picture, Badge } from '../common';
 import { DEFAULT_IMAGES } from '../../constants';
 import { formatAmenity } from '../../utils/formatters';
 
 interface ParkCardProps {
-    park: Park;
+    park: Park | ParkSearchResult;
 }
 
 const ParkCard: React.FC<ParkCardProps> = ({ park }) => {

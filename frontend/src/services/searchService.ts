@@ -1,4 +1,5 @@
 import api from './api';
+import type { Amenity, OrgRole, EventPrivacy } from '../types';
 
 // ─── Entity Types ─────────────────────────────────────────────────────────────
 
@@ -18,7 +19,7 @@ export interface ParkSearchResult {
     latitude: number;
     longitude: number;
     description: string | null;
-    amenities: string[];
+    amenities: Amenity[];
     profilePictureUrl: string | null;
     entityType: 'PARK';
 }
@@ -50,7 +51,7 @@ export interface OrganizationSearchResult {
     profilePictureUrl: string | null;
     websiteUrl: string | null;
     ownerId?: number;
-    memberRole?: string;
+    memberRole?: OrgRole;
     entityType: 'ORGANIZATION';
 }
 
@@ -61,7 +62,7 @@ export interface EventSearchResult {
     date: string;
     startTime: string | null;
     endTime: string | null;
-    private: string;
+    private: EventPrivacy;
     parkId: number;
     organizerId: number;
     organizationId: number | null;

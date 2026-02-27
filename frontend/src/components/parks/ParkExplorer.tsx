@@ -11,6 +11,7 @@ import { Amenity } from '../../types';
 import { useEntitySearch } from '../../hooks/search/useEntitySearch';
 import { usePagination } from '../../hooks/search/usePagination';
 import { useDebounce } from '../../hooks/useDebounce';
+import type { ParkSearchResult } from '../../services/searchService';
 import type { SortOrder } from '../common/SortSelect';
 
 const PAGE_SIZE = 12;
@@ -26,7 +27,7 @@ const ParkExplorer = () => {
     const debouncedQuery = useDebounce(searchQuery, 400);
 
     // Advanced search hook
-    const { results: searchResults, loading: searchLoading, error: searchError, isSearching } = useEntitySearch<Park>('PARK', debouncedQuery);
+    const { results: searchResults, loading: searchLoading, error: searchError, isSearching } = useEntitySearch<ParkSearchResult>('PARK', debouncedQuery);
 
     // Filter and Sort state
     const [activeAmenityFilter, setActiveAmenityFilter] = useState<string>('');
@@ -42,7 +43,7 @@ const ParkExplorer = () => {
 
     // Apply filtering and sorting
     const processedParks = useMemo(() => {
-        let filtered: Park[] = [...dataSource];
+        let filtered: Array<Park | ParkSearchResult> = [...dataSource];
 
         // Apply amenity filter
         if (activeAmenityFilter) {

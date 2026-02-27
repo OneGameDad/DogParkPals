@@ -8,6 +8,7 @@ import { Button, Loading, ErrorMessage, FilterTabs, SortSelect, Pagination } fro
 import { SearchBar } from '../features';
 import { useEntitySearch } from '../../hooks/search/useEntitySearch';
 import { usePagination } from '../../hooks/search/usePagination';
+import type { OrganizationSearchResult } from '../../services/searchService';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useAuth } from '../../hooks/useAuth';
 import type { SortOrder } from '../common/SortSelect';
@@ -31,7 +32,7 @@ const OrganizationList = () => {
     const debouncedQuery = useDebounce(searchQuery, 400);
 
     // Advanced search hook
-    const { results: searchResults, loading: searchLoading, error: searchError, isSearching } = useEntitySearch<Organization>('ORGANIZATION', debouncedQuery);
+    const { results: searchResults, loading: searchLoading, error: searchError, isSearching } = useEntitySearch<OrganizationSearchResult>('ORGANIZATION', debouncedQuery);
 
     // Filter and Sort state
     const [activeFilter, setActiveFilter] = useState<FilterType>('all');
@@ -65,11 +66,11 @@ const OrganizationList = () => {
 
     // Apply filtering and sorting
     const processedOrganizations = useMemo(() => {
-        let filtered: Organization[] = [...dataSource];
+        let filtered: Array<Organization | OrganizationSearchResult> = [...dataSource];
 
         // Apply filter tab
         if (activeFilter === 'mine' && user) {
-            filtered = filtered.filter((org: Organization) =>
+            filtered = filtered.filter((org) =>
                 org.ownerId === user.id || (org.memberRole && org.memberRole !== null)
             );
         }

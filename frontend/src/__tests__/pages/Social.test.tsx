@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import Social from '../../pages/Social';
@@ -21,19 +21,7 @@ vi.mock('../../hooks/users/useEnemies');
 vi.mock('../../components/users', () => ({
     FriendFinder: () => <div data-testid="friend-finder">Friend Finder Component</div>,
     FriendRequestList: () => <div data-testid="friend-request-list">Friend Request List Component</div>,
-    RelationshipManager: ({ title, users, type, onRemove }: any) => (
-        <div data-testid={`relationship-manager-${type}`}>
-            <h2>{title}</h2>
-            <ul>
-                {users?.map((u: any) => (
-                    <li key={u.id}>
-                        {u.username}
-                        <button onClick={() => onRemove(u.id, type === 'friend' ? u.id : u.id)}>Remove</button>
-                    </li>
-                ))}
-            </ul>
-        </div>
-    ),
+    DogFinder: () => <div data-testid="dog-finder">Dog Finder Component</div>
 }));
 
 describe('Social Page', () => {
@@ -80,71 +68,17 @@ describe('Social Page', () => {
         expect(screen.getByTestId('friend-finder')).toBeInTheDocument();
     });
 
-    it('renders RelationshipManager for friends and enemies', () => {
-        render(
-            <MemoryRouter>
-                <Social />
-            </MemoryRouter>
-        );
-        expect(screen.getByTestId('relationship-manager-friend')).toBeInTheDocument();
-        expect(screen.getByTestId('relationship-manager-enemy')).toBeInTheDocument();
-    });
-
-    it('passes friends data to RelationshipManager', () => {
-        const mockFriends = [{ id: 2, username: 'friend1' }];
-        (useFriends as any).mockReturnValue({
-            friends: mockFriends,
-            loading: false,
-            error: null,
-            removeFriend: vi.fn(),
-        });
-
+    it('renders DogFinder component when dogs tab is active', () => {
         render(
             <MemoryRouter>
                 <Social />
             </MemoryRouter>
         );
 
-        expect(screen.getByText('friend1')).toBeInTheDocument();
-    });
+        // Find the button and click it, bypassing strict text matching by using regex
+        const dogsTab = screen.getByText(/social\.dogs/i);
+        fireEvent.click(dogsTab);
 
-    it('passes enemies data to RelationshipManager', () => {
-        const mockEnemies = [{ id: 3, username: 'enemy1' }];
-        (useEnemies as any).mockReturnValue({
-            enemies: mockEnemies,
-            loading: false,
-            error: null,
-            removeEnemy: vi.fn(),
-        });
-
-        render(
-            <MemoryRouter>
-                <Social />
-            </MemoryRouter>
-        );
-
-        expect(screen.getByText('enemy1')).toBeInTheDocument();
-    });
-
-    it('calls removeFriend when remove button is clicked', async () => {
-        const mockRemoveFriend = vi.fn();
-        const mockFriends = [{ id: 2, username: 'friend1' }];
-        (useFriends as any).mockReturnValue({
-            friends: mockFriends,
-            loading: false,
-            error: null,
-            removeFriend: mockRemoveFriend,
-        });
-
-        render(
-            <MemoryRouter>
-                <Social />
-            </MemoryRouter>
-        );
-
-        const removeButton = screen.getByText('Remove');
-        removeButton.click();
-
-        expect(mockRemoveFriend).toHaveBeenCalledWith(2, 2);
+        expect(screen.getByTestId('dog-finder')).toBeInTheDocument();
     });
 });

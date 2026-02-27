@@ -81,11 +81,11 @@ const EditDogProfile = () => {
         playstyle: formData.playstyle,
         dateOfBirth: new Date(formData.dateOfBirth).toISOString(),
         fixed: formData.fixed,
+        description: formData.description ?? '',
       };
 
-      if (formData.description) payload.description = formData.description;
-
       let response;
+      if (isEditMode) {
       if (isEditMode) {
         response = await api.put(`/api/dogs/${id}`, payload);
       } else {

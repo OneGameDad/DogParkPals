@@ -6,7 +6,10 @@ import { useSubmit } from '../hooks/useSubmit';
 import { api } from '../services/api';
 import { Header } from '../components/layout';
 import { Button, Picture, InputText, Loading, ErrorMessage } from '../components/common';
+import FileUpload from '../components/features/FileUpload';
+import uploadService from '../services/uploadService';
 import { type Dog, DogBreed, DogSize, DogGender, DogPlaystyle } from '../types';
+import { getDogPhotoUrl } from '../constants';
 
 const EditDogProfile = () => {
   const { t } = useTranslation();
@@ -24,10 +27,23 @@ const EditDogProfile = () => {
     size: '' as DogSize | '',
     playstyle: '' as DogPlaystyle | '',
     description: '',
-    profilePictureUrl: '',
     dateOfBirth: '',
     fixed: false,
   });
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [photoDeleted, setPhotoDeleted] = useState(false);
+  const [selectedVaccinationFile, setSelectedVaccinationFile] = useState<File | null>(null);
+  const [vaccinationFileName, setVaccinationFileName] = useState<string | null>(null);
+  const [vaccinationDeleted, setVaccinationDeleted] = useState(false);
+
+  // Revoke blob URL on unmount or when preview changes to avoid memory leaks
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   useEffect(() => {
     if (dog) {
@@ -38,7 +54,6 @@ const EditDogProfile = () => {
         size: dog.size,
         playstyle: dog.playstyle,
         description: dog.description || '',
-        profilePictureUrl: dog.profilePictureUrl || '',
         dateOfBirth: dog.dateOfBirth ? new Date(dog.dateOfBirth).toISOString().split('T')[0] : '',
         fixed: dog.fixed,
       });
@@ -65,24 +80,37 @@ const EditDogProfile = () => {
     e.preventDefault();
 
     await submit(async () => {
-      const payload = {
+      const payload: any = {
         name: formData.name,
         breed: formData.breed,
         gender: formData.gender,
         size: formData.size,
         playstyle: formData.playstyle,
-        description: formData.description,
-        profilePictureUrl: formData.profilePictureUrl,
         dateOfBirth: new Date(formData.dateOfBirth).toISOString(),
         fixed: formData.fixed,
-        vaccinationRecordUrl: undefined,
+        description: formData.description ?? '',
       };
 
+      let response;
       if (isEditMode) {
-        return await api.put(`/api/dogs/${id}`, payload);
+        response = await api.put(`/api/dogs/${id}`, payload);
       } else {
-        return await api.post('/api/dogs', payload);
+        response = await api.post('/api/dogs', payload);
       }
+
+      const dogId = id ? parseInt(id, 10) : (response as any)?.id;
+      if (photoDeleted && dogId) {
+        await uploadService.deleteDogPhoto(dogId);
+      } else if (selectedFile && dogId) {
+        await uploadService.uploadDogPhoto(dogId, selectedFile);
+      }
+      if (vaccinationDeleted && dogId) {
+        await uploadService.deleteVaccinationRecord(dogId);
+      } else if (selectedVaccinationFile && dogId) {
+        await uploadService.uploadVaccinationRecord(dogId, selectedVaccinationFile);
+      }
+
+      return response;
     });
   };
 
@@ -105,25 +133,111 @@ const EditDogProfile = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="flex justify-center mb-6">
+          {/* Dog Photo Preview + Remove */}
+          <div className="flex flex-col items-center gap-3 mb-6">
             <div className="border-4 border-gray-200 rounded-full">
               <Picture
-                location={formData.profilePictureUrl || (dog?.profilePictureUrl) || '/imgs/exampledogpic.jpg'}
+                location={photoDeleted ? undefined : (previewUrl || getDogPhotoUrl(dog?.id, dog?.profilePictureUrl))}
                 size={128}
                 shape="circle"
                 alt="Dog Preview"
               />
             </div>
+            {!photoDeleted && dog?.profilePictureUrl && !previewUrl && (
+              <button
+                type="button"
+                onClick={() => {
+                  setPhotoDeleted(true);
+                  // Clear pending selection so delete wins
+                  setSelectedFile(null);
+                  if (previewUrl) {
+                    URL.revokeObjectURL(previewUrl);
+                    setPreviewUrl(null);
+                  }
+                }}
+                className="text-sm text-red-500 hover:text-red-700 underline"
+              >
+                {t('dogProfile.removePhoto', 'Remove photo')}
+              </button>
+            )}
+            {previewUrl && (
+              <button
+                type="button"
+                onClick={() => { URL.revokeObjectURL(previewUrl); setPreviewUrl(null); setSelectedFile(null); }}
+                className="text-sm text-gray-400 hover:text-gray-600 underline"
+              >
+                {t('dogProfile.clearSelection', 'Clear selection')}
+              </button>
+            )}
+            {photoDeleted && (
+              <p className="text-sm text-red-400">
+                {t('dogProfile.photoWillBeRemoved', 'Photo will be removed on save')}{' '}
+                <button type="button" onClick={() => setPhotoDeleted(false)} className="underline text-blue-500">
+                  {t('dogProfile.undo', 'Undo')}
+                </button>
+              </p>
+            )}
           </div>
 
-          {/* Won't be required in final push, just messes up the API call if not there */}
-          <InputText
+          <FileUpload
+            category="dogPhoto"
+            onFileSelect={(file) => {
+              setSelectedFile(file);
+              // Selecting a new file cancels any pending delete
+              if (file) setPhotoDeleted(false);
+              setPreviewUrl(file ? URL.createObjectURL(file) : null);
+            }}
+            hideUploadButton={true}
+            hidePreview={true}
             label={t('dogProfile.profilePictureUrl')}
-            value={formData.profilePictureUrl}
-            onChange={(val) => setFormData(prev => ({ ...prev, profilePictureUrl: val }))}
-            placeholder="https://..."
-            required
           />
+
+          {/* Vaccination Record Upload */}
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <p className="font-semibold text-sm text-gray-700 mb-2">
+              {t('dogProfile.vaccinationRecord', 'Vaccination Record')}
+            </p>
+            {isEditMode && dog?.vaccinationRecordUrl && !selectedVaccinationFile && !vaccinationDeleted && (
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-green-600">✓ {t('dogProfile.vaccinationOnFile', 'Record on file')}</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVaccinationDeleted(true);
+                    setSelectedVaccinationFile(null); // Clear pending upload
+                    setVaccinationFileName(null);
+                  }}
+                  className="text-sm text-red-500 hover:text-red-700 underline"
+                >
+                  {t('dogProfile.removeRecord', 'Remove')}
+                </button>
+              </div>
+            )}
+            {vaccinationDeleted && (
+              <p className="text-sm text-red-400 mb-2">
+                {t('dogProfile.recordWillBeRemoved', 'Record will be removed on save')}{' '}
+                <button type="button" onClick={() => setVaccinationDeleted(false)} className="underline text-blue-500">
+                  {t('dogProfile.undo', 'Undo')}
+                </button>
+              </p>
+            )}
+            {vaccinationFileName && (
+              <p className="text-sm text-blue-600 mb-2">📄 {vaccinationFileName}</p>
+            )}
+            {!vaccinationDeleted && (
+              <FileUpload
+                category="document"
+                onFileSelect={(file) => {
+                  setSelectedVaccinationFile(file);
+                  setVaccinationFileName(file ? file.name : null);
+                  if (file) setVaccinationDeleted(false);
+                }}
+                hideUploadButton={true}
+                hidePreview={true}
+                label={t('dogProfile.uploadVaccinationRecord', 'Upload Vaccination Record (PDF/image)')}
+              />
+            )}
+          </div>
 
           <InputText
             label={t('dogProfile.name')}

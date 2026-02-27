@@ -31,7 +31,7 @@ describe('uploadService', () => {
       await uploadService.deleteUserProfilePicture();
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/users/profile-picture'),
+        expect.stringContaining('/users/profile-picture'),
         expect.objectContaining({
           method: 'DELETE',
           credentials: 'include',
@@ -87,7 +87,7 @@ describe('uploadService', () => {
       await uploadService.deleteVaccinationRecord(456);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/dogs/456/vaccination-record'),
+        expect.stringContaining('/api/dogs/456/document'),
         expect.objectContaining({
           method: 'DELETE',
           credentials: 'include',

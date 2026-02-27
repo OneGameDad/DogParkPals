@@ -33,13 +33,15 @@ const uploadService = {
           onProgress(percentComplete);
         }
       };
-      
+
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             const data = JSON.parse(xhr.responseText);
-            if (!data.url) reject(new Error('Upload succeeded but no URL returned'));
-            else resolve(data as UploadResponse);
+            // Backend may return { url } or { profilePictureUrl } depending on endpoint
+            const resolvedUrl = data.url || data.profilePictureUrl || data.vaccinationRecordUrl || data.photoUrl || data.dogPhotoUrl || data.documentUrl;
+            if (!resolvedUrl) reject(new Error('Upload succeeded but no URL returned'));
+            else resolve({ url: resolvedUrl } as UploadResponse);
           } catch {
             reject(new Error('Invalid JSON response from server'));
           }
@@ -60,59 +62,38 @@ const uploadService = {
     });
   },
 
-  async deleteUserProfilePicture(): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/users/profile-picture`, {
+  async _delete(url: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}${url}`, {
       method: 'DELETE',
       credentials: 'include',
     });
-
     if (!response.ok) {
       let errorMsg = 'Delete failed';
       try {
         const data = await response.json();
         if (data?.message) errorMsg = data.message;
-      } catch {}
+      } catch { }
       throw new Error(errorMsg);
     }
+  },
+
+  async deleteUserProfilePicture(): Promise<void> {
+    return this._delete('/users/profile-picture');
   },
 
   async deleteDogPhoto(dogId: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/dogs/${dogId}/photo`, {
-      method: 'DELETE',
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      let errorMsg = 'Delete failed';
-      try {
-        const data = await response.json();
-        if (data?.message) errorMsg = data.message;
-      } catch {}
-      throw new Error(errorMsg);
-    }
+    return this._delete(`/api/dogs/${dogId}/photo`);
   },
 
   async deleteVaccinationRecord(dogId: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/dogs/${dogId}/vaccination-record`, {
-      method: 'DELETE',
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      let errorMsg = 'Delete failed';
-      try {
-        const data = await response.json();
-        if (data?.message) errorMsg = data.message;
-      } catch {}
-      throw new Error(errorMsg);
-    }
+    return this._delete(`/api/dogs/${dogId}/document`);
   },
 
   async uploadUserProfilePicture(
     file: File,
     onProgress?: (percent: number) => void
   ): Promise<UploadResponse> {
-    return this.uploadFile(file, 'userProfile', '/api/users/profile-picture', onProgress);
+    return this.uploadFile(file, 'userProfile', '/users/profile-picture', onProgress);
   },
 
   async uploadDogPhoto(dogId: number, file: File, onProgress?: (percent: number) => void): Promise<UploadResponse> {
@@ -120,7 +101,7 @@ const uploadService = {
   },
 
   async uploadVaccinationRecord(dogId: number, file: File, onProgress?: (percent: number) => void): Promise<UploadResponse> {
-    return this.uploadFile(file, 'document', `/api/dogs/${dogId}/vaccination-record`, onProgress);
+    return this.uploadFile(file, 'document', `/api/dogs/${dogId}/document`, onProgress);
   },
 };
 

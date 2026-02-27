@@ -81,7 +81,7 @@ describe('Profile Component', () => {
     mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
-    
+
     expect(screen.getByText('profile.loadingProfile')).toBeInTheDocument();
   });
 
@@ -90,7 +90,7 @@ describe('Profile Component', () => {
     mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
-    
+
     expect(screen.getByText('profile.failedToLoad')).toBeInTheDocument();
   });
 
@@ -99,7 +99,7 @@ describe('Profile Component', () => {
     mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
-    
+
     expect(screen.getByText('testuser')).toBeInTheDocument();
     expect(screen.getByText('test@example.com')).toBeInTheDocument();
     // ExpPoints now displayed in UserLevelDisplay component with " / 250 XP" format
@@ -111,7 +111,7 @@ describe('Profile Component', () => {
     mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
-    
+
     expect(screen.getByText('John Doe')).toBeInTheDocument();
   });
 
@@ -121,7 +121,7 @@ describe('Profile Component', () => {
     mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
-    
+
     expect(screen.getAllByText('testuser').length).toBeGreaterThan(0);
   });
 
@@ -130,7 +130,7 @@ describe('Profile Component', () => {
     mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
-    
+
     expect(screen.getByText('profile.editProfile')).toBeInTheDocument();
   });
 
@@ -139,10 +139,10 @@ describe('Profile Component', () => {
     mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
-    
+
     const editButton = screen.getByText('profile.editProfile');
     fireEvent.click(editButton);
-    
+
     expect(mockNavigate).toHaveBeenCalledWith('/profile/edit');
   });
 
@@ -151,7 +151,7 @@ describe('Profile Component', () => {
     mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
-    
+
     expect(screen.getByText('profile.noDogs')).toBeInTheDocument();
   });
 
@@ -160,7 +160,7 @@ describe('Profile Component', () => {
     mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
-    
+
     expect(screen.getByText('Buddy')).toBeInTheDocument();
     expect(screen.getByText('Max')).toBeInTheDocument();
     // Note: Profile page no longer displays breed information
@@ -171,7 +171,7 @@ describe('Profile Component', () => {
     mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
-    
+
     expect(screen.getByText('profile.addDog')).toBeInTheDocument();
   });
 
@@ -180,10 +180,10 @@ describe('Profile Component', () => {
     mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
-    
+
     const addButton = screen.getByText('profile.addDog');
     fireEvent.click(addButton);
-    
+
     expect(mockNavigate).toHaveBeenCalledWith('/dog/add');
   });
 
@@ -192,7 +192,7 @@ describe('Profile Component', () => {
     mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
-    
+
     const profileImage = screen.getByAltText('Profile');
     expect(profileImage).toBeInTheDocument();
   });
@@ -203,11 +203,12 @@ describe('Profile Component', () => {
     mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
-    
-    // When no profile picture, Picture component shows initials instead of image
+
+    // When no profile picture, the img src falls back to the placeholder
     const profileElement = screen.getByRole('img', { name: 'Profile' });
     expect(profileElement).toBeInTheDocument();
-    expect(profileElement).toHaveTextContent('JD'); // Initials for John Doe
+    // img elements can't have text content — check the fallback src instead
+    expect(profileElement).toHaveAttribute('src', expect.stringContaining('/imgs/'));
   });
 
   it('should render dog images with correct alt text', () => {
@@ -215,7 +216,7 @@ describe('Profile Component', () => {
     mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
-    
+
     expect(screen.getByAltText('Buddy')).toBeInTheDocument();
     expect(screen.getByAltText('Max')).toBeInTheDocument();
   });
@@ -225,7 +226,7 @@ describe('Profile Component', () => {
     mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
-    
+
     expect(screen.getByText('profile.username:')).toBeInTheDocument();
     expect(screen.getByText('profile.email:')).toBeInTheDocument();
     expect(screen.getByText('profile.experiencePoints:')).toBeInTheDocument();
@@ -237,7 +238,7 @@ describe('Profile Component', () => {
     mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
-    
+
     // The date format is locale-specific, but we can check that it's present
     const dateElements = screen.getAllByText(/January|2026/);
     expect(dateElements.length).toBeGreaterThan(0);
@@ -248,7 +249,7 @@ describe('Profile Component', () => {
     mockUseUserPresence.mockReturnValue({ isOnline: false, lastSeenAt: null });
 
     renderProfile();
-    
+
     expect(screen.getByText('profile.noDogs')).toBeInTheDocument();
   });
 });

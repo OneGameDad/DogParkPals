@@ -9,6 +9,7 @@ import { Header } from '../components/layout';
 import type { Dog } from '../types';
 import { useDogFriends } from '../hooks/users/useDogFriends';
 import DogList from '../components/users/DogList';
+import { getDogPhotoUrl, getDogDocumentUrl } from '../constants';
 
 const DogProfile = () => {
   const { t, i18n } = useTranslation();
@@ -82,7 +83,7 @@ const DogProfile = () => {
             <div className="flex justify-center mb-6">
               <div className="border-4 border-gray-200 rounded-full">
                 <Picture
-                  location={dog.profilePictureUrl || '/imgs/exampledogpic.jpg'}
+                  location={getDogPhotoUrl(dog.id, dog.profilePictureUrl)}
                   size={128}
                   shape="circle"
                   alt={dog.name}
@@ -144,6 +145,22 @@ const DogProfile = () => {
                   <BodyText text={dog.description} />
                 </div>
               )}
+              {/* Vaccination Record */}
+              <div className="flex justify-between border-b pb-2">
+                <span className="font-semibold text-gray-700">{t('dogProfile.vaccinationRecord', 'Vaccination Record')}:</span>
+                {getDogDocumentUrl(dog.id, dog.vaccinationRecordUrl) ? (
+                  <a
+                    href={getDogDocumentUrl(dog.id, dog.vaccinationRecordUrl)!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline text-sm"
+                  >
+                    {t('dogProfile.viewRecord', 'View Record')}
+                  </a>
+                ) : (
+                  <span className="text-gray-400 text-sm">{t('dogProfile.noRecord', 'Not uploaded')}</span>
+                )}
+              </div>
             </div>
           </div>
         </div>

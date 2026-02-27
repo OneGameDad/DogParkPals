@@ -6,6 +6,9 @@ import { useSubmit } from '../hooks/useSubmit';
 import { api } from '../services/api';
 import { Header } from '../components/layout';
 import { Button, Picture, BodyText, InputText, Loading } from '../components/common';
+import FileUpload from '../components/features/FileUpload';
+import uploadService from '../services/uploadService';
+import { getUserPhotoUrl } from '../constants';
 
 const EditProfile = () => {
   const { t } = useTranslation();
@@ -15,15 +18,17 @@ const EditProfile = () => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    profilePictureUrl: '',
   });
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [photoDeleted, setPhotoDeleted] = useState(false);
 
   useEffect(() => {
     if (user) {
       setFormData({
         firstName: user.first_name || '',
         lastName: user.last_name || '',
-        profilePictureUrl: user.profilePictureUrl || '',
       });
     }
   }, [user]);
@@ -45,24 +50,33 @@ const EditProfile = () => {
 
     const updates: any = {};
 
-    if (formData.firstName.trim()) {
+    // Only include a field if it's non-empty AND has changed from the server value.
+    // Treat server `null` the same as an empty string when comparing.
+    const serverFirstName = user?.first_name ?? '';
+    const serverLastName = user?.last_name ?? '';
+
+    if (formData.firstName.trim() && formData.firstName.trim() !== serverFirstName) {
       updates.first_name = formData.firstName.trim();
     }
-    if (formData.lastName.trim()) {
+    if (formData.lastName.trim() && formData.lastName.trim() !== serverLastName) {
       updates.last_name = formData.lastName.trim();
     }
-    if (formData.profilePictureUrl.trim()) {
-      updates.profilePictureUrl = formData.profilePictureUrl.trim();
-    }
+    // profilePictureUrl is managed by the file upload, skip manual URL updates
 
-    if (Object.keys(updates).length === 0) {
-      // No fields were changed; show a localized validation message and skip submit.
+    if (Object.keys(updates).length === 0 && !selectedFile && !photoDeleted) {
       window.alert(t('profile.updateAtLeastOneField'));
       return;
     }
 
     await submit(async () => {
-      await api.patch('/users/profile', updates);
+      if (Object.keys(updates).length > 0) {
+        await api.patch('/users/profile', updates);
+      }
+      if (photoDeleted) {
+        await uploadService.deleteUserProfilePicture();
+      } else if (selectedFile) {
+        await uploadService.uploadUserProfilePicture(selectedFile);
+      }
     });
   };
 
@@ -93,25 +107,68 @@ const EditProfile = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Profile Picture Preview */}
-          <div className="flex justify-center mb-6">
+          {/* Profile Picture Preview + Remove */}
+          <div className="flex flex-col items-center gap-3 mb-6">
             <div className="border-4 border-gray-200 rounded-full">
               <Picture
-                location={formData.profilePictureUrl || user.profilePictureUrl || '/imgs/exampleprofilepic.jpg'}
+                location={photoDeleted ? undefined : (previewUrl || getUserPhotoUrl(user.id, user.profilePictureUrl))}
+                initials={user.first_name?.[0] || user.username?.[0]}
                 size={128}
                 shape="circle"
                 alt="Profile Preview"
               />
             </div>
+            {!photoDeleted && user.profilePictureUrl && !previewUrl && (
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={() => setPhotoDeleted(true)}
+                className="text-sm text-red-500 hover:text-red-700 underline disabled:opacity-50"
+              >
+                {t('profile.removePhoto', 'Remove photo')}
+              </button>
+            )}
+            {previewUrl && (
+              <button
+                type="button"
+                onClick={() => {
+                  URL.revokeObjectURL(previewUrl);
+                  setPreviewUrl(null);
+                  setSelectedFile(null);
+                }}
+                className="text-sm text-gray-400 hover:text-gray-600 underline"
+              >
+                {t('profile.clearSelection', 'Clear selection')}
+              </button>
+            )}
+            {photoDeleted && (
+              <p className="text-sm text-red-400">
+                {t('profile.photoWillBeRemoved', 'Photo will be removed on save')}
+                {' '}
+                <button
+                  type="button"
+                  onClick={() => setPhotoDeleted(false)}
+                  className="underline text-blue-500"
+                >
+                  {t('profile.undo', 'Undo')}
+                </button>
+              </p>
+            )}
           </div>
 
-          {/* Profile Picture URL */}
-          <InputText
+          {/* Profile Picture Upload */}
+          <FileUpload
+            category="userProfile"
+            onFileSelect={(file) => {
+              setSelectedFile(file);
+              if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+              }
+              setPreviewUrl(file ? URL.createObjectURL(file) : null);
+            }}
+            hideUploadButton={true}
+            hidePreview={true}
             label={t('profile.profilePictureUrl')}
-            type="text"
-            value={formData.profilePictureUrl}
-            onChange={(value) => setFormData(prev => ({ ...prev, profilePictureUrl: value }))}
-            placeholder={t('profile.profilePictureUrlPlaceholder')}
           />
 
           {/* First Name */}

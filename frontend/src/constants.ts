@@ -23,3 +23,25 @@ export const DEFAULT_IMAGES = {
     parkCard: '/imgs/background.png',
     parkHero: '/imgs/background.png',
 };
+
+export const getUserPhotoUrl = (userId: number | undefined, hasPhoto: boolean | string | null | undefined): string => {
+    if (userId && hasPhoto) {
+        return `${API_BASE_URL}/api/files/users/${userId}/profile-picture`;
+    }
+    return DEFAULT_IMAGES.userProfile;
+};
+
+
+export const getDogPhotoUrl = (dogId: number | undefined, hasPhoto: boolean | string | null | undefined): string => {
+    if (dogId && hasPhoto) {
+        return `${API_BASE_URL}/api/files/dogs/${dogId}/photo`;
+    }
+    return DEFAULT_IMAGES.dogPhoto;
+};
+
+export const getDogDocumentUrl = (dogId: number | undefined, hasDocument: boolean | string | null | undefined): string | null => {
+    if (dogId && hasDocument) {
+        return `${API_BASE_URL}/api/files/dogs/${dogId}/document`;
+    }
+    return null;
+};

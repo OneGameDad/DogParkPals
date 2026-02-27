@@ -98,6 +98,14 @@ const DogProfileModal = ({ dog, onClose }: DogProfileModalProps) => {
                             <BodyText text={dog.description} />
                         </div>
                     )}
+                    <div className="flex justify-between border-b pb-2">
+                        <span className="font-semibold text-gray-700">{t('dogProfile.vaccinationRecord', 'Vaccination Record')}:</span>
+                        {dog.vaccinationRecordUrl ? (
+                            <span className="text-green-600 font-medium">✓ {t('dogProfile.vaccinated', 'Vaccinated')}</span>
+                        ) : (
+                            <span className="text-gray-400 text-sm">{t('dogProfile.noRecord', 'Not uploaded')}</span>
+                        )}
+                    </div>
                 </div>
 
                 {!isOwner && myDogs && myDogs.length > 0 && (

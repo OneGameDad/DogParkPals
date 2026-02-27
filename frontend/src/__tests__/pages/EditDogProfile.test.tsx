@@ -98,14 +98,12 @@ describe('EditDogProfile Component', () => {
 
         const { container } = renderEditDogProfile();
 
-        // Fill form - get all text inputs (not textareas)
+        // Fill form - profile picture is now a file upload, not a URL text input
         const textInputs = document.querySelectorAll('input[type="text"]');
-        const profilePictureInput = screen.getByPlaceholderText('https://...');
-        const nameInput = textInputs[1] as HTMLInputElement; // Second text input is name
+        const nameInput = textInputs[0] as HTMLInputElement; // First text input is name
         const selects = screen.getAllByRole('combobox');
         const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
 
-        fireEvent.change(profilePictureInput, { target: { value: 'https://example.com/dog.jpg' } });
         fireEvent.change(nameInput, { target: { value: 'New Dog' } });
         fireEvent.change(selects[0], { target: { value: 'GERMAN_SHEPHERD_DOG' } }); // breed
         fireEvent.change(selects[1], { target: { value: 'FEMALE' } }); // gender

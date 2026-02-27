@@ -1,33 +1,40 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import uploadService from '../../services/uploadService';
 import { validateFile } from '../../utils/fileValidation';
-import type { UploadCategory } from '../constants';
-import Button from '../common/Button'; // TODO: Or wherever is located
+import type { UploadCategory } from '../../constants';
+import Button from '../common/Button';
 
 interface FileUploadProps {
   category: UploadCategory;
-  onUpload: (url: string) => void;
+  onUpload?: (url: string) => void;
+  onFileSelect?: (file: File | null) => void;
   onError?: (error: string) => void;
   initialPreview?: string;
   accept?: string;
   label?: string;
   itemId?: number;
+  hideUploadButton?: boolean;
+  hidePreview?: boolean;
 }
 
 const FileUpload = ({
   category,
   onUpload,
+  onFileSelect,
   onError,
   initialPreview,
   accept = 'image/*,.pdf',
   label = 'Upload File',
   itemId,
+  hideUploadButton = false,
+  hidePreview = false,
 }: FileUploadProps) => {
   const [preview, setPreview] = useState<string | null>(initialPreview || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -41,6 +48,7 @@ const FileUpload = ({
     }
 
     setSelectedFile(file);
+    onFileSelect?.(file);
     setError(null);
 
     // Preview for images
@@ -48,6 +56,15 @@ const FileUpload = ({
       const reader = new FileReader();
       reader.onload = (e) => setPreview(e.target?.result as string);
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedFile(null);
+    setPreview(null);
+    onFileSelect?.(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -71,7 +88,7 @@ const FileUpload = ({
         response = await uploadService.uploadFile(selectedFile, category, '/api/upload');
       }
 
-      onUpload(response.url);
+      onUpload?.(response.url);
       setSelectedFile(null);
       if (selectedFile && selectedFile.type.startsWith('image/')) setPreview(null);
     } catch (err) {
@@ -103,7 +120,8 @@ const FileUpload = ({
 
       setPreview(null);
       setSelectedFile(null);
-      onUpload('');
+      onFileSelect?.(null);
+      onUpload?.('');
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Delete failed';
       setError(errorMsg);
@@ -116,17 +134,38 @@ const FileUpload = ({
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <label className="block text-sm font-medium mb-2">{label}</label>
+        {label && <label className="block text-sm font-semibold mb-2">{label}</label>}
+        <div className="flex items-center gap-4">
+          <Button
+            text="Choose File"
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={loading}
+            className="bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 whitespace-nowrap"
+          />
+          <span className="text-sm text-gray-500 truncate max-w-[200px]">
+            {selectedFile ? selectedFile.name : 'No file chosen'}
+          </span>
+          {selectedFile && hideUploadButton && (
+            <Button
+              text="Clear"
+              type="button"
+              onClick={handleClearSelection}
+              className="bg-transparent hover:bg-gray-100 text-red-500 font-normal px-2 py-1 text-sm border border-red-200 ml-auto"
+            />
+          )}
+        </div>
         <input
+          ref={fileInputRef}
           type="file"
           accept={accept}
           onChange={handleFileSelect}
           disabled={loading}
-          className="block w-full text-sm"
+          className="hidden"
         />
       </div>
 
-      {preview && (
+      {!hidePreview && preview && (
         <div className="mt-2">
           <img src={preview} alt="Preview" className="max-w-xs max-h-48 rounded" />
         </div>
@@ -145,14 +184,16 @@ const FileUpload = ({
         </div>
       )}
 
-      <div className="flex gap-2">
-        {selectedFile && (
-          <Button onClick={handleUpload} disabled={loading} text={loading ? 'Uploading...' : 'Upload'} />
-        )}
-        {(preview || selectedFile === null) && !loading && (
-          <Button onClick={handleDelete} text="Delete" className="bg-red-500 hover:bg-red-600" />
-        )}
-      </div>
+      {!hideUploadButton && (
+        <div className="flex gap-2">
+          {selectedFile && (
+            <Button onClick={handleUpload} disabled={loading} text={loading ? 'Uploading...' : 'Upload'} />
+          )}
+          {(preview || selectedFile === null) && !loading && (
+            <Button onClick={handleDelete} text="Delete" className="bg-red-500 hover:bg-red-600" />
+          )}
+        </div>
+      )}
     </div>
   );
 };

@@ -11,6 +11,7 @@ export const es = {
     memberSince: "Spanish Member Since",
     exampleDate: "Spanish January 2026",
     owner: "Spanish Owner",
+    navlang: "Languages in Spanish",
     common: {
       goBack: "Spanish Go Back",
       loading: "Spanish Loading...",

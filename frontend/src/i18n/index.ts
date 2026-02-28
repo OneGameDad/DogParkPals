@@ -4,10 +4,12 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 
 import { en } from './locales/en';
 import { es } from './locales/es';
+import { fi } from './locales/fi';
 
 const resources = {
   en,
-  es
+  es,
+  fi
 } as const;
 
 i18next

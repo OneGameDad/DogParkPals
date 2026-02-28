@@ -1,10 +1,17 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
+import { useState } from 'react';
 
 const Navbar = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { isAuthenticated, loading } = useAuth();
+    const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
+    const handleLanguageChange = (lang: string) => {
+        i18n.changeLanguage(lang);
+        setOpenDropdown(null);
+    };
 
     if (loading) {
         return (
@@ -33,6 +40,38 @@ const Navbar = () => {
                     <Link to="/register" className="text-gray-600 hover:underline font-medium">{t('navregister')}</Link>
                 </>
             )}
+            <div 
+                        className="relative"
+                        onMouseEnter={() => setOpenDropdown('languages')}
+                        onMouseLeave={() => setOpenDropdown(null)}
+                    >
+                        <button className="text-gray-600 hover:underline font-medium">
+                            {t('navlang')}
+                        </button>
+                        
+                        {openDropdown === 'languages' && (
+                            <div className="absolute left-0 mt-0 w-48 bg-white border border-gray-200 rounded shadow-lg z-50">
+                                <button
+                                    onClick={() => handleLanguageChange('en')}
+                                    className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+                                >
+                                    English
+                                </button>
+                                <button
+                                    onClick={() => handleLanguageChange('es')}
+                                    className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 border-t border-gray-200"
+                                >
+                                    Español
+                                </button>
+                                <button
+                                    onClick={() => handleLanguageChange('fi')}
+                                    className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 border-t border-gray-200"
+                                >
+                                    Suomi
+                                </button>
+                            </div>
+                        )}
+                    </div>
         </nav>
     );
 }

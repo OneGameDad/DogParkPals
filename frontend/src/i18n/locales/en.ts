@@ -12,6 +12,7 @@ export const en = {
     memberSince: "Member Since",
     exampleDate: "January 2026",
     owner: "Owner",
+    navlang: "Languages",
     common: {
       back: "Back",
       goBack: "Go Back",

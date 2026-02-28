@@ -1,6 +1,6 @@
 export const en = {
   translation: {
-    welcome: "Welcome to Dog Tinder",
+    welcome: "Welcome to DogParkPals",
     home: "Home",
     login: "Login",
     navlogout: "Logout",

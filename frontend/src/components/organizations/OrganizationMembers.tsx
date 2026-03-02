@@ -161,20 +161,39 @@ const OrganizationMembers: React.FC<OrganizationMembersProps> = ({
 
                         {canManageMembers && member.role !== 'OWNER' && (
                             <div className="flex flex-col gap-1 items-end ml-2">
-                                <select
-                                    className="text-[10px] py-1 pl-1 pr-6 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                    value={member.role}
-                                    onChange={(e) => handleUpdateRole(member.userId, e.target.value as OrgRole)}
-                                >
-                                    <option value="MEMBER">Member</option>
-                                    <option value="MODERATOR">Moderator</option>
-                                </select>
-                                <button
-                                    onClick={() => handleRemoveMember(member.userId)}
-                                    className="text-red-500 hover:text-red-700 text-[10px] font-medium px-1"
-                                >
-                                    {t('common.remove', 'Remove')}
-                                </button>
+                                {member.role === 'INVITEE' ? (
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => handleUpdateRole(member.userId, 'MEMBER')}
+                                            className="text-green-600 hover:text-green-800 text-xs font-medium px-2 py-1 bg-green-50 hover:bg-green-100 rounded transition-colors"
+                                        >
+                                            {t('organizations.approve', 'Approve')}
+                                        </button>
+                                        <button
+                                            onClick={() => handleRemoveMember(member.userId)}
+                                            className="text-red-600 hover:text-red-800 text-xs font-medium px-2 py-1 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                                        >
+                                            {t('organizations.reject', 'Reject')}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <select
+                                            className="text-[10px] py-1 pl-1 pr-6 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                            value={member.role}
+                                            onChange={(e) => handleUpdateRole(member.userId, e.target.value as OrgRole)}
+                                        >
+                                            <option value="MEMBER">Member</option>
+                                            <option value="MODERATOR">Moderator</option>
+                                        </select>
+                                        <button
+                                            onClick={() => handleRemoveMember(member.userId)}
+                                            className="text-red-500 hover:text-red-700 text-[10px] font-medium px-1"
+                                        >
+                                            {t('common.remove', 'Remove')}
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>

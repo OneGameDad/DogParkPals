@@ -23,6 +23,7 @@ import OrganizationList from './components/organizations/OrganizationList';
 import OrganizationProfile from './pages/OrganizationProfile';
 import OrganizationUpdate from './pages/OrganizationUpdate';
 import Messages from './pages/Messages';
+import Events from './pages/Events';
 
 function AppContent() {
   const { user } = useAuth();
@@ -142,6 +143,11 @@ function AppContent() {
             <Route path="/organizations/:id/edit" element={
               <ProtectedRoute>
                 <OrganizationUpdate />
+              </ProtectedRoute>
+            } />
+            <Route path="/events" element={
+              <ProtectedRoute>
+                <Events />
               </ProtectedRoute>
             } />
           </Routes>

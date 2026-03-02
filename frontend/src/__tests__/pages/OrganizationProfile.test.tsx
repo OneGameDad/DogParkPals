@@ -30,7 +30,7 @@ vi.mock('../../components/organizations/OrganizationMembers', () => ({
 }));
 
 vi.mock('../../components/organizations/OrganizationEvents', () => ({
-    default: ({ events }: any) => <div data-testid="org-events">Events count: {events.length}</div>,
+    default: ({ organizationId }: any) => <div data-testid="org-events">Events for org: {organizationId}</div>,
 }));
 
 vi.mock('../../components/common', () => ({
@@ -128,7 +128,7 @@ describe('OrganizationProfile Component', () => {
 
         // Click Events tab
         fireEvent.click(screen.getByText('Events'));
-        expect(screen.getByTestId('org-events')).toHaveTextContent('Events count: 1');
+        expect(screen.getByTestId('org-events')).toHaveTextContent('Events for org: 1');
 
         // Click About tab back
         fireEvent.click(screen.getByText('About'));

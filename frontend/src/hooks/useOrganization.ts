@@ -16,9 +16,10 @@ interface UseOrganizationResult {
   error: string | null;
   refresh: () => Promise<void>;
   isOwner: boolean;
-  isModerator: boolean;
   isAdmin: boolean;
+  isModerator: boolean;
   isMember: boolean;
+  isInvitee: boolean;
   canEdit: boolean;
 }
 
@@ -55,6 +56,7 @@ export const useOrganization = (organizationId: string | undefined): UseOrganiza
   const isModerator = accessLevel === 'MODERATOR';
   const isAdmin = accessLevel === 'ADMIN';
   const isMember = ['MEMBER', 'MODERATOR', 'OWNER'].includes(accessLevel);
+  const isInvitee = accessLevel === 'INVITEE';
 
   // Edit permission: Owner, Moderator, or Admin
   const canEdit = isOwner || isModerator || isAdmin;
@@ -65,9 +67,9 @@ export const useOrganization = (organizationId: string | undefined): UseOrganiza
     error,
     refresh: fetchOrganization,
     isOwner,
-    isModerator,
     isAdmin,
     isMember,
+    isInvitee,
     canEdit,
   };
 };

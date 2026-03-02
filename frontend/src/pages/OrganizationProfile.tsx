@@ -18,7 +18,9 @@ const OrganizationProfile = () => {
         refresh,
         canEdit,
         isOwner,
-        isModerator
+        isModerator,
+        isMember,
+        isInvitee
     } = useOrganization(id);
 
     const { t } = useTranslation();
@@ -46,7 +48,13 @@ const OrganizationProfile = () => {
                 <span className="text-gray-800 font-medium">{organization.name}</span>
             </div>
 
-            <OrganizationHeader organization={organization} canEdit={canEdit} />
+            <OrganizationHeader
+                organization={organization}
+                canEdit={canEdit}
+                isMember={isMember}
+                isInvitee={isInvitee}
+                onJoinRequest={refresh}
+            />
 
             {/* Tabs Navigation */}
             <div className="flex border-b border-gray-200 mb-6">
@@ -83,7 +91,7 @@ const OrganizationProfile = () => {
 
                 {activeTab === 'events' && (
                     <OrganizationEvents
-                        events={organization.events}
+                        organizationId={organization.id}
                         canCreateEvent={canEdit}
                     />
                 )}

@@ -7,3 +7,4 @@ export * from './parks';
 export * from './users';
 export { useOrganization } from './useOrganization';
 export * from './search';
+export * from './events';

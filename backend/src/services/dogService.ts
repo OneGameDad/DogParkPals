@@ -33,6 +33,7 @@ const dogService = {
             dateOfBirth,
             playstyle: validated.playstyle as DogPlaystyle,
             size: validated.size as DogSize,
+            fixed: validated.fixed,
             description: validated.description,
             profilePictureUrl: validated.profilePictureUrl,
             vaccinationRecordUrl: validated.vaccinationRecordUrl,
@@ -159,6 +160,7 @@ const dogService = {
       if (validated.gender !== undefined) data.gender = validated.gender as DogGender;
       if (validated.playstyle !== undefined) data.playstyle = validated.playstyle as DogPlaystyle;
       if (validated.size !== undefined) data.size = validated.size as DogSize;
+      if (validated.fixed !== undefined) data.fixed = validated.fixed;
       if (validated.description !== undefined) data.description = validated.description;
       if (validated.profilePictureUrl !== undefined) data.profilePictureUrl = validated.profilePictureUrl;
       if (validated.vaccinationRecordUrl !== undefined) data.vaccinationRecordUrl = validated.vaccinationRecordUrl;

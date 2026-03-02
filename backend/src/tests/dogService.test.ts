@@ -173,6 +173,37 @@ describe('Dog Service', () => {
 
       await expect(dogService.addDog(dogInput)).rejects.toThrow();
     });
+
+    test('creates a dog with fixed status set to true', async () => {
+      const dogInput = {
+        name: 'Bella',
+        breed: 'GOLDEN_RETRIEVER',
+        gender: 'FEMALE',
+        dateOfBirth: new Date('2021-06-10'),
+        playstyle: 'CALM',
+        size: 'MEDIUM',
+        fixed: true,
+      };
+
+      const bellaWithFixed = {
+        ...mockDogData,
+        name: 'Bella',
+        fixed: true,
+      };
+      mockPrisma.dog.create.mockResolvedValue(bellaWithFixed);
+
+      const result = await dogService.addDog(dogInput);
+
+      expect(mockPrisma.dog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            name: 'Bella',
+            fixed: true,
+          }),
+        })
+      );
+      expect(result.fixed).toBe(true);
+    });
   });
 
   describe('getDogById', () => {
@@ -356,6 +387,25 @@ describe('Dog Service', () => {
       mockPrisma.dog.update.mockRejectedValue(new Error('Dog not found'));
 
       await expect(dogService.updateDog(999, { name: 'Updated' })).rejects.toThrow();
+    });
+
+    test('updates dog fixed status', async () => {
+      const updateData = {
+        fixed: true,
+      };
+
+      const updatedDog = { ...mockDogData, fixed: true };
+      mockPrisma.dog.update.mockResolvedValue(updatedDog);
+
+      const result = await dogService.updateDog(1, updateData);
+
+      expect(mockPrisma.dog.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: expect.objectContaining({
+          fixed: true,
+        }),
+      });
+      expect(result.fixed).toBe(true);
     });
   });
 

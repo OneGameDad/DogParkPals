@@ -27,6 +27,27 @@ describe("dogs CRUD and ownership", () => {
     expect(res.body).toHaveProperty("id");
   });
 
+  test("create dog with fixed status succeeds", async () => {
+    const res = await request(app)
+      .post("/api/dogs")
+      .set("Authorization", `Bearer ${userAToken()}`)
+      .send({
+        name: "SpaydogZelda",
+        breed: "MIXED_BREED",
+        gender: "FEMALE",
+        dateOfBirth: "2022-01-01T00:00:00.000Z",
+        playstyle: "SOCIAL",
+        size: "MEDIUM",
+        fixed: true,
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.name).toBe("SpaydogZelda");
+    expect(res.body.fixed).toBe(true);
+    expect(res.body).toHaveProperty("id");
+  });
+
+
   test("create dog fails validation", async () => {
     const res = await request(app)
       .post("/api/dogs")
@@ -84,6 +105,17 @@ describe("dogs CRUD and ownership", () => {
     expect(res.status).toBe(200);
     expect(res.body.description).toBe("Updated by owner");
   });
+
+  test("update dog fixed status allowed for owner", async () => {
+    const res = await request(app)
+      .put(`/api/dogs/${ids.dogs.dogA}`)
+      .set("Authorization", `Bearer ${userAToken()}`)
+      .send({ fixed: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body.fixed).toBe(true);
+  });
+
 
   test("update dog forbidden for non-owner", async () => {
     const res = await request(app)

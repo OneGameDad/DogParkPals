@@ -1,19 +1,46 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Organization } from '../../types';
 import { Picture, Button } from '../common';
 import { DEFAULT_IMAGES } from '../../constants';
+import api from '../../services/api';
+import toast from 'react-hot-toast';
 
 interface OrganizationHeaderProps {
     organization: Organization;
     canEdit: boolean;
+    isMember?: boolean;
+    isInvitee?: boolean;
+    onJoinRequest?: () => Promise<void>;
 }
 
-const OrganizationHeader: React.FC<OrganizationHeaderProps> = ({ organization, canEdit }) => {
+const OrganizationHeader: React.FC<OrganizationHeaderProps> = ({
+    organization,
+    canEdit,
+    isMember = false,
+    isInvitee = false,
+    onJoinRequest
+}) => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const [isJoining, setIsJoining] = useState(false);
+
+    const handleJoin = async () => {
+        setIsJoining(true);
+        try {
+            await api.post(`/api/organizations/${organization.id}/join`);
+            toast.success(t('organizations.joinRequested', 'Join request sent successfully'));
+            if (onJoinRequest) {
+                await onJoinRequest();
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || t('organizations.joinFailed', 'Failed to send join request'));
+        } finally {
+            setIsJoining(false);
+        }
+    };
 
     return (
         <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6 relative">
@@ -59,15 +86,28 @@ const OrganizationHeader: React.FC<OrganizationHeaderProps> = ({ organization, c
                 </div>
 
                 {/* Actions */}
-                {canEdit && (
-                    <div className="flex-shrink-0 mt-4 sm:mt-0">
+                <div className="flex-shrink-0 mt-4 sm:mt-0 flex gap-2">
+                    {!isMember && (
+                        <Button
+                            text={isInvitee
+                                ? t('organizations.joinRequested', 'Join Requested')
+                                : isJoining
+                                    ? t('common.loading', 'Requesting...')
+                                    : t('organizations.join', 'Join Organization')}
+                            onClick={handleJoin}
+                            disabled={isInvitee || isJoining}
+                            variant={isInvitee ? "outline" : "primary"}
+                        />
+                    )}
+
+                    {canEdit && (
                         <Button
                             text={t('organizations.edit', 'Edit Organization')}
                             onClick={() => navigate(`/organizations/${organization.id}/edit`)}
-                            variant="outline"
+                            variant="primary"
                         />
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );

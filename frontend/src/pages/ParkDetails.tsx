@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useParkDetails, useParkCheckIn, useParkFavorite } from '../hooks';
-import { Loading, ErrorMessage, BodyText } from '../components/common';
+import { useParkDetails, useParkCheckIn, useParkFavorite, useParkEvents } from '../hooks';
+import { Loading, ErrorMessage, BodyText, Button, Modal } from '../components/common';
 import { ParkHero, ParkAmenities, ParkActions, ParkLocationMap, CheckInList } from '../components/parks';
+import { EventList, CreateEventForm } from '../components/events';
 import { Header } from '../components/layout';
 
 const ParkDetails = () => {
@@ -15,6 +16,8 @@ const ParkDetails = () => {
   const { park, checkIns, loading, error, refetch } = useParkDetails(id);
   const { isCheckedIn, toggleCheckIn } = useParkCheckIn(id, checkIns);
   const { isFavorite, toggleFavorite } = useParkFavorite(id);
+  const { events, loading: eventsLoading, refetch: refetchEvents } = useParkEvents(id);
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -22,10 +25,10 @@ const ParkDetails = () => {
 
   const handleCheckInToggle = async () => {
     if (actionLoading) return;
-    
+
     setActionLoading(true);
     setActionError(null);
-    
+
     try {
       await toggleCheckIn();
       await refetch();
@@ -40,10 +43,10 @@ const ParkDetails = () => {
 
   const handleFavoriteToggle = async () => {
     if (actionLoading) return;
-    
+
     setActionLoading(true);
     setActionError(null);
-    
+
     try {
       await toggleFavorite();
     } catch (error) {
@@ -56,7 +59,7 @@ const ParkDetails = () => {
   };
 
   if (loading) return <Loading />;
-  
+
   if (error || !park) {
     return <ErrorMessage message={t('parks.error', 'Failed to load park details')} />;
   }
@@ -79,7 +82,7 @@ const ParkDetails = () => {
         {actionError && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-center justify-between">
             <span>{actionError}</span>
-            <button 
+            <button
               onClick={() => setActionError(null)}
               className="text-red-500 hover:text-red-700"
             >
@@ -99,14 +102,33 @@ const ParkDetails = () => {
             <ParkAmenities amenities={park.amenities} />
 
             <div className="mb-8">
-              <Header 
-                text={t('parkDetails.description', 'Description')} 
-                level="h3" 
-                className="mb-4" 
+              <Header
+                text={t('parkDetails.description', 'Description')}
+                level="h3"
+                className="mb-4"
               />
               <BodyText
                 text={park.description || t('parks.noDescription', 'No description available')}
                 className="text-gray-700 leading-relaxed"
+              />
+            </div>
+
+            <div className="mb-8 border-t border-gray-100 pt-8">
+              <div className="flex justify-between items-center mb-4">
+                <Header
+                  text={t('parkDetails.events', 'Upcoming Events')}
+                  level="h3"
+                />
+                <Button
+                  text={t('events.createButton', 'Create Event')}
+                  size="sm"
+                  onClick={() => setIsEventModalOpen(true)}
+                />
+              </div>
+              <EventList
+                events={events}
+                loading={eventsLoading}
+                onDelete={refetchEvents}
               />
             </div>
           </div>
@@ -129,6 +151,21 @@ const ParkDetails = () => {
           </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={isEventModalOpen}
+        onClose={() => setIsEventModalOpen(false)}
+        title={t('events.createTitle', 'Create New Event')}
+      >
+        <CreateEventForm
+          parkId={Number(id)}
+          onCancel={() => setIsEventModalOpen(false)}
+          onSuccess={() => {
+            setIsEventModalOpen(false);
+            refetchEvents();
+          }}
+        />
+      </Modal>
     </div>
   );
 };

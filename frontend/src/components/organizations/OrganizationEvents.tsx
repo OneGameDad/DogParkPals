@@ -1,16 +1,18 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Event } from '../../types';
-import { Button } from '../common';
+import { Button, Modal } from '../common';
+import { EventList, CreateEventForm } from '../events';
+import { useOrganizationEvents } from '../../hooks';
 
 interface OrganizationEventsProps {
-    events: Event[];
+    organizationId: number;
     canCreateEvent: boolean;
 }
 
-const OrganizationEvents: React.FC<OrganizationEventsProps> = ({ events, canCreateEvent }) => {
+const OrganizationEvents: React.FC<OrganizationEventsProps> = ({ organizationId, canCreateEvent }) => {
     const { t } = useTranslation();
+    const { events, loading, refetch } = useOrganizationEvents(organizationId.toString());
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     return (
         <div className="bg-white rounded-xl shadow-md p-6">
@@ -22,43 +24,27 @@ const OrganizationEvents: React.FC<OrganizationEventsProps> = ({ events, canCrea
                     <Button
                         text={t('organizations.createEvent', 'Create Event')}
                         size="sm"
+                        onClick={() => setIsCreateModalOpen(true)}
                     />
                 )}
             </div>
 
-            {events.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                    <p>{t('organizations.noEvents', 'No upcoming events.')}</p>
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    {events.map((event) => (
-                        <div
-                            key={event.id}
-                            className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                        >
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <h3 className="font-semibold text-lg text-gray-800">{event.title}</h3>
-                                    <div className="text-sm text-gray-500 mt-1 space-y-1">
-                                        <p>
-                                            📅 {new Date(event.date).toLocaleDateString()} • 🕒 {new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </p>
-                                        {event.description && (
-                                            <p className="line-clamp-2">{event.description}</p>
-                                        )}
-                                    </div>
-                                </div>
-                                {/* Add event specific actions or status here */}
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium 
-                    ${event.private === 'PRIVATE' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>
-                                    {event.private === 'PRIVATE' ? t('common.private', 'Private') : t('common.public', 'Public')}
-                                </span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+            <EventList events={events} loading={loading} onDelete={refetch} />
+
+            <Modal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                title={t('events.createTitle', 'Create New Event')}
+            >
+                <CreateEventForm
+                    organizationId={organizationId}
+                    onCancel={() => setIsCreateModalOpen(false)}
+                    onSuccess={() => {
+                        setIsCreateModalOpen(false);
+                        refetch();
+                    }}
+                />
+            </Modal>
         </div>
     );
 };

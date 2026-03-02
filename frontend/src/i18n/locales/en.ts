@@ -307,7 +307,33 @@ export const en = {
         descriptionPlaceholder: "Brief description of your organization",
         submit: "Create Organization",
         submitting: "Creating..."
-      }
+      },
+      join: "Join Organization",
+      joinRequested: "Join Requested",
+      joinFailed: "Failed to send join request",
+      approve: "Approve",
+      reject: "Reject",
+      memberAdded: "Member added successfully",
+      addMemberFailed: "Failed to add member.",
+      confirmAddMember: "Add {{username}} to organization?",
+      searchUsers: "Search Users to Add",
+      searchPlaceholderUser: "Enter exact username...",
+      noUserFound: "No user found with that name.",
+      confirmRemoveMember: "Are you sure you want to remove this member?",
+      memberRemoved: "Member removed successfully",
+      removeMemberFailed: "Failed to remove member",
+      roleUpdated: "Role updated successfully",
+      updateRoleFailed: "Failed to update role",
+      members: "Members",
+      addMember: "Add Member",
+      notFound: "Organization not found",
+      breadcrumb: "Organizations",
+      tabs: {
+        about: "About",
+        members: "Members",
+        events: "Events"
+      },
+      edit: "Edit Organization"
     },
     chat: {
       conversations: "Conversations",
@@ -319,6 +345,14 @@ export const en = {
       noMessagesStartConversation: "No messages yet. Say hello!",
       selectConversation: "Select a conversation",
       startTalking: "Choose a friend from the list to start chatting."
+    },
+    events: {
+      timeError: "End time must be after start time.",
+      deleteConfirm: "Are you sure you want to delete this event?",
+      deleteSuccess: "Event deleted successfully!",
+      deleteError: "Failed to delete event.",
+      deletingEvent: "Deleting...",
+      deleteEvent: "Delete Event"
     }
   }
 };

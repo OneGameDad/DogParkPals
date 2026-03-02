@@ -22,7 +22,7 @@ const ParkSelector: React.FC<ParkSelectorProps> = ({ onSelect, selectedParkId })
     return (
         <div className="flex flex-col gap-2">
             <label htmlFor="parkSelect" className="font-semibold text-sm">
-                {t('events.selectParkLabel', 'Location (Park) *')}
+                {t('events.selectParkLabel', 'Location (Park)')}
                 <span className="text-red-500 ml-1">*</span>
             </label>
 

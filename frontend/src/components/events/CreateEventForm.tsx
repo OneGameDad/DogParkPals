@@ -153,7 +153,7 @@ const CreateEventForm: React.FC<CreateEventFormProps> = ({
                 <Button
                     type="submit"
                     text={t('events.createButton', 'Create Event')}
-                    loading={loading}
+                    disabled={loading}
                 />
             </div>
         </form>

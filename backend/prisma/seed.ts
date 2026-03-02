@@ -279,22 +279,22 @@ async function main() {
     {
       name: "Level 2",
       type: AchievementType.TROPHY,
-      badgeUrl: "/badges/trophy_level_2.png",
+      badgeUrl: "/trophies/trophy_level_2.png",
     },
     {
       name: "Level 3",
       type: AchievementType.TROPHY,
-      badgeUrl: "/badges/trophy_level_3.png",
+      badgeUrl: "/trophies/trophy_level_3.png",
     },
     {
       name: "Level 4",
       type: AchievementType.TROPHY,
-      badgeUrl: "/badges/trophy_level_4.png",
+      badgeUrl: "/trophies/trophy_level_4.png",
     },
     {
       name: "Level 5",
       type: AchievementType.TROPHY,
-      badgeUrl: "/badges/trophy_level_5.png",
+      badgeUrl: "/trophies/trophy_level_5.png",
     },
     {
       name: "Best Friend",
@@ -334,7 +334,7 @@ async function main() {
     {
       name: "Sir Barks-A-Lot",
       type: AchievementType.BADGE,
-      badgeUrl: "/badges/badge_sir_barks_a_lot.png",
+      badgeUrl: "/badges/badge_Sir_Barks_A_Lot.png",
     },
     {
       name: "Fought The Post Man",

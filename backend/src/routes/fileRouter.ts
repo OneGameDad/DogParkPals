@@ -4,10 +4,9 @@ import { requireAuth } from "../middlewares/authMiddleware";
 
 const router = express.Router();
 
-// Dog photo endpoint is public
-// Dog document (vaccination record) endpoint requires authentication
-// User profile picture endpoint is public
-router.use("/dogs/:dogId/document", requireAuth);
+// All file retrieval endpoints require authentication
+// Additional authorization checks are enforced in controllers where needed
+router.use(requireAuth);
 router.use("/", fileController);
 
 export default router;

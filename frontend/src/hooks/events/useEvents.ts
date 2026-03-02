@@ -3,8 +3,7 @@ import { eventService } from '../../services/eventService';
 import type { Event } from '../../types';
 
 export const useLocationEvents = (
-    fetcher: () => Promise<Event[]>,
-    dependencies: any[] = []
+    fetcher: () => Promise<Event[]>
 ) => {
     const [events, setEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
@@ -21,7 +20,7 @@ export const useLocationEvents = (
         } finally {
             setLoading(false);
         }
-    }, dependencies);
+    }, [fetcher]);
 
     useEffect(() => {
         fetchEvents();
@@ -35,8 +34,7 @@ export const useParkEvents = (parkId: string | undefined) => {
         useCallback(async () => {
             if (!parkId) return [];
             return await eventService.getEventsByPark(Number(parkId));
-        }, [parkId]),
-        [parkId]
+        }, [parkId])
     );
 };
 
@@ -45,8 +43,7 @@ export const useOrganizationEvents = (organizationId: string | undefined) => {
         useCallback(async () => {
             if (!organizationId) return [];
             return await eventService.getEventsByOrganization(Number(organizationId));
-        }, [organizationId]),
-        [organizationId]
+        }, [organizationId])
     );
 };
 
@@ -54,8 +51,7 @@ export const useUpcomingEvents = () => {
     return useLocationEvents(
         useCallback(async () => {
             return await eventService.getUpcomingEvents();
-        }, []),
-        []
+        }, [])
     );
 };
 

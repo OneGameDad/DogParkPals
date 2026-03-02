@@ -99,6 +99,11 @@ export const useEventAttendance = (eventId: number) => {
         }
     }, [eventId]);
 
+    useEffect(() => {
+        setAttendees([]);
+        setError(null);
+        fetchAttendees();
+    }, [fetchAttendees]);
     const attendEvent = async () => {
         try {
             setActionLoading(true);

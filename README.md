@@ -73,6 +73,9 @@ chmod +x scripts/docker-seed.sh
 chmod +x scripts/docker-reset.sh
 ./scripts/docker-reset.sh
 
+# Generate test logs (verify Elasticsearch is working)
+bash elasticsearch/generate-test-logs.sh
+
 # Access backend shell
 docker exec -it dogparkpals-backend sh
 
@@ -136,6 +139,34 @@ DogParkPals includes an ELK stack (Elasticsearch, Logstash, Kibana) for centrali
 - Kibana: `http://localhost:5601`
 - Elasticsearch: `http://localhost:9200` (HTTP API)
 - Logstash: Receives logs on TCP/UDP port 5000 (not user-facing)
+
+**Verifying Logs (Fresh Deployments):**
+
+In a fresh deployment, logs are generated automatically but may be minimal initially. To verify Elasticsearch is working:
+
+1. **Wait for automatic logs** (1-2 minutes after startup):
+   - Server startup: `"Server listening"` log
+   - Auto-checkout job: Runs every 15 minutes
+   - Event consumer & outbox publisher startup logs
+
+2. **Generate test logs immediately** (recommended for evaluations):
+   ```bash
+   bash elasticsearch/generate-test-logs.sh
+   ```
+   This hits health/status endpoints 20 times to populate Elasticsearch with verifiable logs.
+
+3. **Verify logs exist in Elasticsearch**:
+   ```bash
+   # Check total log count
+   curl 'http://localhost:9200/dogparkpals-logs-*/_count'
+   
+   # View 5 most recent logs
+   curl -s 'http://localhost:9200/dogparkpals-logs-*/_search?size=5&sort=@timestamp:desc' | jq '.hits.hits[]._source | {timestamp: .["@timestamp"], severity, log_message}'
+   ```
+
+4. **Open Kibana** to browse logs visually at `http://localhost:5601`
+
+**Note:** Logs take 5-10 seconds to flow from backend → Logstash → Elasticsearch → Kibana indexing.
 
 **Setup:**
 After starting Docker services, initialize Kibana with dashboards and saved searches:
@@ -246,6 +277,7 @@ Incident Response:
 **No logs appearing in Kibana?**
 - Verify Logstash is running: `docker compose logs logstash`
 - Check Elasticsearch has data: `curl http://localhost:9200/dogparkpals-logs-*/_count`
+- Generate test logs: `bash elasticsearch/generate-test-logs.sh`
 - Run setup script: `bash kibana/setup-kibana.sh`
 - Ensure backend is logging (check `docker compose logs backend`)
 
@@ -282,6 +314,9 @@ Incident Response:
    - `./scripts/docker-seed.sh`
 - Reset all data:
    - `./scripts/docker-reset.sh`
+- Verify ELK stack (logs are flowing to Elasticsearch):
+   - `bash elasticsearch/generate-test-logs.sh`
+   - `curl 'http://localhost:9200/dogparkpals-logs-*/_count'`
 
 ### Backup event emission (docker task)
 - Emit backup started:

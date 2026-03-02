@@ -196,6 +196,26 @@ describe('Dog Controller', () => {
 
       expect(mockNext).toHaveBeenCalledTimes(1);
     });
+
+    test('creates dog with fixed status', async () => {
+      mockReq.body = {
+        name: 'Bella',
+        breed: 'GOLDEN_RETRIEVER',
+        gender: 'FEMALE',
+        dateOfBirth: '2021-06-10T00:00:00Z',
+        playstyle: 'CALM',
+        size: 'MEDIUM',
+        fixed: true,
+      };
+      const dogWithFixed = { ...mockDog, name: 'Bella', fixed: true };
+      mockAddDog.mockResolvedValue(dogWithFixed);
+
+      await dogController.addDog(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockAddDog).toHaveBeenCalled();
+      expect(mockStatus).toHaveBeenCalledWith(201);
+      expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ fixed: true }));
+    });
   });
 
   describe('getDogById', () => {
@@ -348,6 +368,22 @@ describe('Dog Controller', () => {
       expect(mockNext).toHaveBeenCalledTimes(1);
       const error = mockNext.mock.calls[0][0] as AppError;
       expect(error.statusCode).toBe(404);
+    });
+
+    test('updates dog fixed status when user is owner', async () => {
+      mockReq.params = { id: '1' };
+      mockReq.body = { fixed: true };
+      mockReq.userId = 1;
+      (mockReq as any).user = { id: 1, role: 'CLIENT' };
+      mockGetDogById.mockResolvedValue(mockDog);
+      mockGetOwnersOfDog.mockResolvedValue([mockOwner]);
+      mockUpdateDog.mockResolvedValue({ ...mockDog, fixed: true });
+
+      await dogController.updateDog(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockUpdateDog).toHaveBeenCalledWith(1, { fixed: true });
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ fixed: true }));
     });
   });
 

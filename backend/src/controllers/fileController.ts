@@ -19,13 +19,8 @@ const resolveStoredPath = (storedPath: string) => {
 router.get("/dogs/:dogId/photo", async (req, res, next) => {
   try {
     const dogId = parseInt(ensureString(req.params.dogId), 10);
-    const userId = req.userId;
-    const userRole = req.user?.role;
 
-    // Ensure user can access this dog's files
-    await checkDogAuthorization(dogId, userId, userRole);
-
-    // Get the file path from DB
+    // Get the file path from DB - route is authentication-protected in fileRouter
     const dog = await dogService.getDogById(dogId);
     if (!dog?.profilePictureUrl) {
       return res.status(404).json({ message: "Dog photo not found" });
@@ -48,6 +43,7 @@ router.get("/dogs/:dogId/document", async (req, res, next) => {
     const userId = req.userId;
     const userRole = req.user?.role;
 
+    // Only dog owner or admin/developer can view vaccination records
     await checkDogAuthorization(dogId, userId, userRole);
 
     const dog = await dogService.getDogById(dogId);
@@ -74,13 +70,8 @@ router.get("/dogs/:dogId/document", async (req, res, next) => {
 router.get("/users/:userId/profile-picture", async (req, res, next) => {
   try {
     const requestedUserId = parseInt(ensureString(req.params.userId), 10);
-    const requesterId = req.userId;
-    const requesterRole = req.user?.role;
 
-    if (requestedUserId !== requesterId && requesterRole !== "ADMIN") {
-      return res.status(403).json({ message: "Access denied" });
-    }
-
+    // Route is authentication-protected in fileRouter
     const user = await userService.getUserById(requestedUserId);
     if (!user?.profilePictureUrl) {
       return res.status(404).json({ message: "Profile picture not found" });

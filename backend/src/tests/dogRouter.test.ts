@@ -256,6 +256,42 @@ describe('Dog Router', () => {
     });
   });
 
+  describe('Media route exposure', () => {
+    test('exposes all four media routes and maps to expected handlers', async () => {
+      mockUploadDogPhoto.mockImplementation((req: Request, res: Response) => {
+        res.status(200).json({ ok: true });
+      });
+      mockUploadDocument.mockImplementation((req: Request, res: Response) => {
+        res.status(200).json({ ok: true });
+      });
+      mockDeleteDogPhoto.mockImplementation((req: Request, res: Response) => {
+        res.status(204).send();
+      });
+      mockDeleteDocument.mockImplementation((req: Request, res: Response) => {
+        res.status(204).send();
+      });
+
+      const uploadPhotoRes = await request(app)
+        .post('/42/photo')
+        .attach('file', Buffer.from('photo data'), 'photo.jpg');
+      const uploadDocumentRes = await request(app)
+        .post('/42/document')
+        .attach('file', Buffer.from('document data'), 'document.pdf');
+      const deletePhotoRes = await request(app).delete('/42/photo');
+      const deleteDocumentRes = await request(app).delete('/42/document');
+
+      expect(uploadPhotoRes.status).toBe(200);
+      expect(uploadDocumentRes.status).toBe(200);
+      expect(deletePhotoRes.status).toBe(204);
+      expect(deleteDocumentRes.status).toBe(204);
+
+      expect(mockUploadDogPhoto).toHaveBeenCalledTimes(1);
+      expect(mockUploadDocument).toHaveBeenCalledTimes(1);
+      expect(mockDeleteDogPhoto).toHaveBeenCalledTimes(1);
+      expect(mockDeleteDocument).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('POST /:id/photo', () => {
     test('calls uploadDogPhoto controller method with correct dog ID', async () => {
       mockUploadDogPhoto.mockImplementation((req: Request, res: Response) => {

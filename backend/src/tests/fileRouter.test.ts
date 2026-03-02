@@ -92,20 +92,17 @@ describe('File Router', () => {
     });
 
     describe('GET /dogs/:dogId/photo', () => {
-        test('returns photo URL when authorized dog owner requests it', async () => {
-            mockCheckDogAuthorization.mockResolvedValue(undefined);
+        test('returns photo URL for anyone requesting it', async () => {
             mockGetDogById.mockResolvedValue(mockDogWithPhoto);
 
             const response = await request(app).get('/dogs/1/photo');
 
-            expect(mockCheckDogAuthorization).toHaveBeenCalledWith(1, 1, 'CLIENT');
             expect(mockGetDogById).toHaveBeenCalledWith(1);
             expect(response.status).toBe(200);
             expect(response.body.filePath).toContain('/uploads/dogs/1/photo.jpg');
         });
 
         test('returns 404 when dog has no photo', async () => {
-            mockCheckDogAuthorization.mockResolvedValue(undefined);
             mockGetDogById.mockResolvedValue({ id: 1, profilePictureUrl: null });
 
             const response = await request(app).get('/dogs/1/photo');
@@ -114,8 +111,8 @@ describe('File Router', () => {
             expect(response.body.message).toBe('Dog photo not found');
         });
 
-        test('forwards authorization error when user is unauthorized', async () => {
-            mockCheckDogAuthorization.mockRejectedValue(new Error('Unauthorized'));
+        test('returns 404 when dog is not found', async () => {
+            mockGetDogById.mockRejectedValue(new Error('Dog not found'));
 
             const response = await request(app).get('/dogs/1/photo');
 
@@ -146,8 +143,8 @@ describe('File Router', () => {
             expect(response.body.message).toBe('Document not found');
         });
 
-        test('forwards authorization error when user is unauthorized', async () => {
-            mockCheckDogAuthorization.mockRejectedValue(new Error('Unauthorized'));
+        test('returns 403 when user is not authorized', async () => {
+            mockCheckDogAuthorization.mockRejectedValue(new Error('Not authorized to modify this dog'));
 
             const response = await request(app).get('/dogs/1/document');
 
@@ -166,14 +163,14 @@ describe('File Router', () => {
             expect(response.body.filePath).toContain('/uploads/users/1/profile.jpg');
         });
 
-        test('returns 403 when user tries to access another user\'s profile picture', async () => {
+        test('returns profile picture URL when anyone requests any user\'s picture', async () => {
             mockGetUserById.mockResolvedValue(mockUser);
 
             const response = await request(app).get('/users/2/profile-picture');
 
-            expect(response.status).toBe(403);
-            expect(response.body.message).toBe('Access denied');
-            expect(mockGetUserById).not.toHaveBeenCalled();
+            expect(mockGetUserById).toHaveBeenCalledWith(2);
+            expect(response.status).toBe(200);
+            expect(response.body.filePath).toContain('/uploads/users/1/profile.jpg');
         });
 
         test('returns 404 when user has no profile picture', async () => {
@@ -183,29 +180,6 @@ describe('File Router', () => {
 
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('Profile picture not found');
-        });
-
-        test('allows admin to access any user\'s profile picture', async () => {
-            app = express();
-            app.use(express.json());
-            // Mock admin user
-            jest.resetModules();
-            jest.mock('../middlewares/authMiddleware', () => ({
-                requireAuth: (req: Request, res: Response, next: NextFunction) => {
-                    (req as any).userId = 99;
-                    (req as any).user = { id: 99, role: 'ADMIN' };
-                    next();
-                },
-            }));
-
-            mockGetUserById.mockResolvedValue(mockUser);
-
-            mockExistsSync.mockReturnValue(true);
-
-            const response = await request(app).get('/users/1/profile-picture');
-
-            // Note: Due to how mocking works, this would need app recreation
-            // In practice, you'd set up admin user in beforeEach if needed
         });
 
         test('forwards error when service fails', async () => {

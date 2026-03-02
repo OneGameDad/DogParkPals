@@ -370,6 +370,7 @@ export const addDogSchema = z.object({
   dateOfBirth: z.string().datetime('Invalid date format').or(z.instanceof(Date)),
   playstyle: z.string().min(1, 'Playstyle is required'),
   size: z.string().min(1, 'Size is required'),
+  fixed: z.boolean().optional(),
   description: z.string().optional(),
   profilePictureUrl: z.string().url('Invalid URL').optional(),
   vaccinationRecordUrl: z.string().url('Invalid URL').optional(),

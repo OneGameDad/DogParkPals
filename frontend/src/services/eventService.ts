@@ -2,7 +2,7 @@ import api from './api';
 import type { Event } from '../types';
 
 export const eventService = {
-    createEvent: async (eventData: any) => {
+    createEvent: async (eventData: Partial<Event>) => {
         return await api.post<Event>('/api/events', eventData);
     },
 
@@ -39,7 +39,7 @@ export const eventService = {
     },
 
     getEventAttendees: async (eventId: number) => {
-        return await api.get<any[]>(`/api/events/${eventId}/attendees`);
+        return await api.get<{ id: number, email: string, username: string, first_name?: string, last_name?: string, profilePictureUrl?: string }[]>(`/api/events/${eventId}/attendees`);
     },
 
     deleteEvent: async (eventId: number) => {

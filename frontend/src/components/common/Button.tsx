@@ -14,6 +14,7 @@ const Button: React.FC<ButtonProps> = ({
   text,
   onClick,
   type = 'button',
+  disabled = false,
   className = '',
   variant = 'primary',
   fullWidth = false,

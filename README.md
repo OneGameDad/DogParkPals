@@ -69,6 +69,13 @@ docker compose restart backend
 chmod +x scripts/docker-seed.sh
 ./scripts/docker-seed.sh
 
+# One-command deployment initialization (seed + ELK setup + test logs)
+chmod +x scripts/deployment-init.sh
+./scripts/deployment-init.sh
+
+# Run full evaluation initializer through Docker Compose service
+docker compose up -d evaluation
+
 # Reset everything (WARNING: deletes all data)
 chmod +x scripts/docker-reset.sh
 ./scripts/docker-reset.sh
@@ -173,6 +180,18 @@ After starting Docker services, initialize Kibana with dashboards and saved sear
 ```bash
 bash kibana/setup-kibana.sh
 ```
+
+For 42 evaluation-ready setup in one command (seed DB + Kibana/Elasticsearch setup + test logs), run:
+```bash
+bash scripts/deployment-init.sh
+```
+
+Or run it as a Docker Compose service (keyword: `evaluation`):
+```bash
+docker compose up -d evaluation
+```
+
+Note: Compose syntax is `docker compose up -d evaluation` (not `docker compose -d up evaluation`).
 
 This creates:
 - Elasticsearch ILM (Index Lifecycle Management) policy for automatic log retention

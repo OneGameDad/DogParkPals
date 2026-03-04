@@ -6,3 +6,4 @@ export * from './useDogSearch';
 export * from './useDogFriends';
 export * from './useUserPresence';
 export * from './useHeartbeat';
+export * from './useUserAchievements';

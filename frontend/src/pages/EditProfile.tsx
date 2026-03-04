@@ -13,7 +13,7 @@ import { getUserPhotoUrl } from '../constants';
 const EditProfile = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, refreshUser } = useAuth();
 
   const [formData, setFormData] = useState({
     username: '',
@@ -98,6 +98,7 @@ const EditProfile = () => {
       } else if (selectedFile) {
         await uploadService.uploadUserProfilePicture(selectedFile);
       }
+      await refreshUser();
     });
   };
 

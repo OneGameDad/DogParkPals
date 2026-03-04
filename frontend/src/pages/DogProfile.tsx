@@ -18,7 +18,7 @@ const DogProfile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const { data: dog, loading, error } = useFetch<Dog>(
+  const { data: dog, loading, error, refetch } = useFetch<Dog>(
     id ? `/api/dogs/${id}` : ''
   );
 
@@ -69,7 +69,7 @@ const DogProfile = () => {
       alert(t('dogProfile.addOwnerSuccess', 'Successfully added owner!'));
       setShowAddOwner(false);
       setNewOwnerId('');
-      // Optionally trigger a refresh of the dog's data here
+      await refetch();
     } catch (err: unknown) {
       console.error('Failed to add owner:', err);
       const msg = err instanceof Error ? err.message : String(err);

@@ -37,18 +37,21 @@ export const UserAchievementsList: React.FC<Props> = ({ userId }) => {
                         className="flex flex-col items-center p-4 bg-gray-50 rounded-lg border border-gray-200 text-center transition-transform hover:scale-105"
                         title={achievement.description || achievement.name}
                     >
-                        <div className="text-4xl mb-2">
+                        <div className="text-4xl mb-2 relative flex justify-center items-center h-12 w-12">
                             {achievement.badgeUrl ? (
-                                <img
-                                    src={achievement.badgeUrl}
-                                    alt={achievement.name}
-                                    className="w-12 h-12 object-contain"
-                                    onError={(e) => {
-                                        // Fallback to emoji if badge url fails to load or isn't a valid url
-                                        (e.target as HTMLImageElement).style.display = 'none';
-                                        e.currentTarget.parentElement!.innerHTML += '🏆';
-                                    }}
-                                />
+                                <>
+                                    {/* Fallback emoji sits behind the image */}
+                                    <span className="absolute text-4xl -z-10">🏆</span>
+                                    <img
+                                        src={achievement.badgeUrl}
+                                        alt={achievement.name}
+                                        className="w-12 h-12 object-contain bg-gray-50 z-10"
+                                        onError={(e) => {
+                                            // Just hide the broken image, revealing the emoji behind it
+                                            e.currentTarget.style.display = 'none';
+                                        }}
+                                    />
+                                </>
                             ) : (
                                 '🏆'
                             )}

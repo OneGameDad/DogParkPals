@@ -79,7 +79,7 @@ const EditProfile = () => {
     }
     // profilePictureUrl is managed by the file upload, skip manual URL updates
 
-    const usernameChanged = formData.username.trim() && formData.username.trim() !== serverUsername;
+    const usernameChanged = formData.username.trim().length > 0 && formData.username.trim() !== serverUsername;
 
     if (Object.keys(updates).length === 0 && !selectedFile && !photoDeleted && !usernameChanged) {
       window.alert(t('profile.updateAtLeastOneField'));

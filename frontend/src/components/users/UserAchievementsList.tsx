@@ -2,7 +2,6 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useUserAchievements } from '../../hooks/users/useUserAchievements';
 import { Loading, ErrorMessage } from '../common';
-import { Header } from '../layout';
 
 interface Props {
     userId: number;

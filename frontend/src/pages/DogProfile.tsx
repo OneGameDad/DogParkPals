@@ -80,7 +80,7 @@ const DogProfile = () => {
   };
 
   const { friends, loading: friendsLoading, removeFriend } = useDogFriends(dogId || undefined);
-  const { friends: userFriends } = useFriends(user?.id);
+  const { friends: userFriends } = useFriends(showAddOwner && isOwner ? user?.id : undefined);
 
   if (loading) {
     return <Loading message={t('dogProfile.loading')} />;

@@ -8,6 +8,7 @@ import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import { api } from '../../services/api';
 import { getUserInitials } from '../../utils/formatters';
+import { getUserPhotoUrl } from '../../constants';
 
 interface MessageThreadProps {
     friendId: number;
@@ -184,7 +185,7 @@ const MessageThread = ({ friendId, currentUserId }: MessageThreadProps) => {
             {/* Header */}
             <div className="p-4 border-b border-gray-200 bg-gray-50 flex items-center space-x-3">
                 <Picture
-                    location={friend?.profilePictureUrl}
+                    location={getUserPhotoUrl(friend?.id, friend?.profilePictureUrl)}
                     initials={friend ? getUserInitials(friend) : '?'}
                     alt={friend?.username || 'User'}
                     size="40px"

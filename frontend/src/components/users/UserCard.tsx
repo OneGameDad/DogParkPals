@@ -1,6 +1,7 @@
 import { Picture } from '../common';
 import type { User } from '../../types';
 import { getUserInitials } from '../../utils/formatters';
+import { getUserPhotoUrl } from '../../constants';
 
 interface UserCardProps {
     user: User;
@@ -28,7 +29,7 @@ export default function UserCard({
         >
             <div className="flex items-center space-x-4 pointer-events-none">
                 <Picture
-                    location={user.profilePictureUrl}
+                    location={getUserPhotoUrl(user.id, user.profilePictureUrl)}
                     initials={getUserInitials(user)}
                     size={50}
                     shape="circle"

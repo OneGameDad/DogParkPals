@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Picture } from '../common';
 import type { Dog } from '../../types';
+import { getDogPhotoUrl } from '../../constants';
 
 interface DogCardProps {
     dog: Dog;
@@ -17,7 +18,7 @@ const DogCard = ({ dog, onClick, onRemove }: DogCardProps) => {
             onClick={() => onClick?.(dog)}
         >
             <Picture
-                location={dog.profilePictureUrl || '/imgs/exampledogpic.jpg'}
+                location={getDogPhotoUrl(dog.id, dog.profilePictureUrl)}
                 size={64}
                 shape="circle"
                 alt={dog.name}

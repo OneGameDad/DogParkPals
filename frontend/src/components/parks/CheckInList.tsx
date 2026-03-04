@@ -3,6 +3,7 @@ import { Header } from '../layout';
 import { Picture } from '../common';
 import { formatTime, getUserInitials } from '../../utils/formatters';
 import type { CheckIn } from '../../types';
+import { getUserPhotoUrl } from '../../constants';
 
 interface CheckInListProps {
     checkIns: CheckIn[];
@@ -38,9 +39,9 @@ export default function CheckInList({ checkIns, loading }: CheckInListProps) {
                                 key={checkIn.id}
                                 className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-white hover:shadow-md transition-all border border-gray-100"
                             >
-                                {profilePicture ? (
+                                {getUserPhotoUrl(checkIn.user?.id, profilePicture) !== '/imgs/exampleprofilepic.jpg' ? (
                                     <Picture
-                                        location={profilePicture}
+                                        location={getUserPhotoUrl(checkIn.user?.id, profilePicture)}
                                         size={56}
                                         shape="circle"
                                         alt={username}

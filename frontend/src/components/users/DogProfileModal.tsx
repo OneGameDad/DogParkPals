@@ -6,6 +6,7 @@ import { useFetch } from '../../hooks/useFetch';
 import { useFriendActions } from '../../hooks/users/useFriendActions';
 import { useDogFriends } from '../../hooks/users/useDogFriends';
 import type { Dog } from '../../types';
+import { getDogPhotoUrl } from '../../constants';
 
 interface DogProfileModalProps {
     dog: Dog | null;
@@ -66,7 +67,7 @@ const DogProfileModal = ({ dog, onClose }: DogProfileModalProps) => {
         >
             <div className="flex flex-col items-center space-y-6">
                 <Picture
-                    location={dog.profilePictureUrl || '/imgs/exampledogpic.jpg'}
+                    location={getDogPhotoUrl(dog.id, dog.profilePictureUrl)}
                     size={120}
                     shape="circle"
                     alt={dog.name}

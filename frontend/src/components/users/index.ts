@@ -9,6 +9,7 @@ import FriendRequestList from './FriendRequestList';
 import InfoRow from './InfoRow';
 import UserLevelDisplay from './UserLevelDisplay';
 import UserProfileHeader from './UserProfileHeader';
+import { UserAchievementsList } from './UserAchievementsList';
 
 export {
     UserList,
@@ -21,5 +22,6 @@ export {
     FriendRequestList,
     InfoRow,
     UserLevelDisplay,
-    UserProfileHeader
+    UserProfileHeader,
+    UserAchievementsList
 };

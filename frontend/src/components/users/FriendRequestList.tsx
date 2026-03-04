@@ -3,6 +3,7 @@ import { useFetch } from '../../hooks/useFetch';
 import { useFriendActions } from '../../hooks/users/useFriendActions';
 import { Loading, ErrorMessage, Button, Picture } from '../common';
 import type { User, Dog } from '../../types';
+import { getDogPhotoUrl, getUserPhotoUrl } from '../../constants';
 
 interface FriendRequestListProps {
     userId?: number;
@@ -51,7 +52,9 @@ const FriendRequestList = ({ userId, dogId }: FriendRequestListProps) => {
             <div className="space-y-4">
                 {requests.map((req) => {
                     const name = req.requesterDog ? req.requesterDog.name : req.requester?.username || 'Unknown';
-                    const pic = req.requesterDog?.profilePictureUrl || req.requester?.profilePictureUrl || '/imgs/exampledogpic.jpg';
+                    const pic = req.requesterDog
+                        ? getDogPhotoUrl(req.requesterDog.id, req.requesterDog.profilePictureUrl)
+                        : getUserPhotoUrl(req.requester?.id, req.requester?.profilePictureUrl);
                     const type = req.requesterDog ? 'Dog' : 'User';
 
                     return (

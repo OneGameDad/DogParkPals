@@ -8,6 +8,7 @@ import { useUserSearch } from '../../hooks';
 import api from '../../services/api';
 import { toast } from 'react-hot-toast';
 import UserList from '../users/UserList';
+import { getUserPhotoUrl } from '../../constants';
 
 interface OrganizationMembersProps {
     organizationId: number;
@@ -138,7 +139,7 @@ const OrganizationMembers: React.FC<OrganizationMembersProps> = ({
                     >
                         <div className="flex-shrink-0 mr-3">
                             <Picture
-                                location={member.user?.profilePictureUrl}
+                                location={getUserPhotoUrl(member.user?.id, member.user?.profilePictureUrl)}
                                 size={40}
                                 shape="circle"
                                 alt={member.user?.username || `User ${member.userId}`}

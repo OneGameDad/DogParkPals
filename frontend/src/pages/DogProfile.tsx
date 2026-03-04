@@ -8,6 +8,7 @@ import { Loading, ErrorMessage, Button, Picture, BodyText } from '../components/
 import { Header } from '../components/layout';
 import type { Dog } from '../types';
 import { useDogFriends } from '../hooks/users/useDogFriends';
+import { useFriends } from '../hooks/users/useFriends';
 import DogList from '../components/users/DogList';
 import { getDogPhotoUrl, getDogDocumentUrl } from '../constants';
 
@@ -17,7 +18,7 @@ const DogProfile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const { data: dog, loading, error } = useFetch<Dog>(
+  const { data: dog, loading, error, refetch } = useFetch<Dog>(
     id ? `/api/dogs/${id}` : ''
   );
 
@@ -31,6 +32,9 @@ const DogProfile = () => {
 
   const [isOwner, setIsOwner] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showAddOwner, setShowAddOwner] = useState(false);
+  const [newOwnerId, setNewOwnerId] = useState('');
+  const [isAddingOwner, setIsAddingOwner] = useState(false);
 
   useEffect(() => {
     if (userDogs && dogId) {
@@ -55,7 +59,28 @@ const DogProfile = () => {
     }
   };
 
+  const handleAddOwner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dogId || !newOwnerId) return;
+
+    setIsAddingOwner(true);
+    try {
+      await api.post(`/api/dogs/${dogId}/owners`, { userId: parseInt(newOwnerId, 10) });
+      alert(t('dogProfile.addOwnerSuccess', 'Successfully added owner!'));
+      setShowAddOwner(false);
+      setNewOwnerId('');
+      await refetch();
+    } catch (err: unknown) {
+      console.error('Failed to add owner:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      alert(msg || t('dogProfile.addOwnerFailed', 'Failed to add owner.'));
+    } finally {
+      setIsAddingOwner(false);
+    }
+  };
+
   const { friends, loading: friendsLoading, removeFriend } = useDogFriends(dogId || undefined);
+  const { friends: userFriends } = useFriends(showAddOwner && isOwner ? user?.id : undefined);
 
   if (loading) {
     return <Loading message={t('dogProfile.loading')} />;
@@ -110,9 +135,52 @@ const DogProfile = () => {
                     disabled={isDeleting}
                     className="bg-red-600 hover:bg-red-700 px-6"
                   />
+                  <Button
+                    text={t('dogProfile.addOwnerButton', 'Add Owner')}
+                    onClick={() => setShowAddOwner(!showAddOwner)}
+                    className="bg-green-600 hover:bg-green-700 px-6"
+                  />
                 </>
               )}
             </div>
+
+            {showAddOwner && isOwner && (
+              <form onSubmit={handleAddOwner} className="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h4 className="font-semibold mb-2">{t('dogProfile.addOwnerTitle', 'Add New Owner')}</h4>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <select
+                      value={newOwnerId}
+                      onChange={(e) => setNewOwnerId(e.target.value)}
+                      className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[42px]"
+                      disabled={isAddingOwner}
+                      required
+                    >
+                      <option value="" disabled>
+                        {t('dogProfile.selectFriend', 'Select a friend')}
+                      </option>
+                      {userFriends.map((friend) => {
+                        const hasName = friend.first_name || friend.last_name;
+                        const fullName = hasName ? ` (${[friend.first_name, friend.last_name].filter(Boolean).join(' ')})` : '';
+                        return (
+                          <option key={friend.id} value={friend.id}>
+                            {friend.username}{fullName}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                  <div className="flex items-end">
+                    <Button
+                      type="submit"
+                      text={isAddingOwner ? t('common.saving', 'Saving...') : t('common.submit', 'Submit')}
+                      disabled={isAddingOwner || !newOwnerId}
+                      className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap mb-[6px]"
+                    />
+                  </div>
+                </div>
+              </form>
+            )}
 
             <div className="space-y-4">
               <div className="flex justify-between border-b pb-2">

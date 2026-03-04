@@ -5,6 +5,7 @@ import { Modal, Button, Picture } from '../common';
 import UserDogsList from './UserDogsList';
 import type { User } from '../../types';
 import { getUserInitials } from '../../utils/formatters';
+import { getUserPhotoUrl } from '../../constants';
 
 // ... imports
 interface UserProfileModalProps {
@@ -42,7 +43,7 @@ export default function UserProfileModal({
         >
             <div className="flex flex-col items-center space-y-6">
                 <Picture
-                    location={user.profilePictureUrl}
+                    location={getUserPhotoUrl(user.id, user.profilePictureUrl)}
                     initials={getUserInitials(user)}
                     size={120}
                     shape="circle"
@@ -56,7 +57,7 @@ export default function UserProfileModal({
                             {user.first_name} {user.last_name}
                         </p>
                     )}
-                    <Link 
+                    <Link
                         to={`/user/${user.id}`}
                         className="inline-block mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline"
                     >

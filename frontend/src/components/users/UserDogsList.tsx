@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useFetch } from '../../hooks';
 import { Picture } from '../common';
 import type { Dog } from '../../types';
+import { getDogPhotoUrl } from '../../constants';
 
 interface UserDogsListProps {
     userId: number;
@@ -38,7 +39,7 @@ const UserDogsList: React.FC<UserDogsListProps> = ({ userId, dogs: propDogs, edi
                     >
                         <div className="mb-3">
                             <Picture
-                                location={dog.profilePictureUrl || '/imgs/exampledogpic.jpg'}
+                                location={getDogPhotoUrl(dog.id, dog.profilePictureUrl)}
                                 size={96}
                                 shape="circle"
                                 alt={dog.name}
@@ -57,7 +58,7 @@ const UserDogsList: React.FC<UserDogsListProps> = ({ userId, dogs: propDogs, edi
             {dogs.map((dog) => (
                 <div key={dog.id} className="flex flex-col items-center">
                     <Picture
-                        location={dog.profilePictureUrl}
+                        location={getDogPhotoUrl(dog.id, dog.profilePictureUrl)}
                         size={50}
                         shape="circle"
                         alt={dog.name}

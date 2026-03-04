@@ -3,6 +3,7 @@ import { Header } from '../layout';
 import { Picture } from '../common';
 import { formatTime, getUserInitials } from '../../utils/formatters';
 import type { CheckIn } from '../../types';
+import { getUserPhotoUrl, DEFAULT_IMAGES } from '../../constants';
 
 interface CheckInListProps {
     checkIns: CheckIn[];
@@ -31,16 +32,16 @@ export default function CheckInList({ checkIns, loading }: CheckInListProps) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {checkIns.map((checkIn) => {
                         const username = checkIn.user?.username || 'Unknown';
-                        const profilePicture = checkIn.user?.profilePictureUrl;
+                        const photoUrl = getUserPhotoUrl(checkIn.user?.id, checkIn.user?.profilePictureUrl);
 
                         return (
                             <div
                                 key={checkIn.id}
                                 className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-white hover:shadow-md transition-all border border-gray-100"
                             >
-                                {profilePicture ? (
+                                {photoUrl !== DEFAULT_IMAGES.userProfile ? (
                                     <Picture
-                                        location={profilePicture}
+                                        location={photoUrl}
                                         size={56}
                                         shape="circle"
                                         alt={username}

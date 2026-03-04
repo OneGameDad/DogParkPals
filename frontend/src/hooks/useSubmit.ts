@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 interface UseSubmitOptions<T> {
   onSuccess?: (data: T) => void | Promise<void>;
   successMessage?: string;
-  errorMessage?: string;
+  errorMessage?: string | ((err: unknown) => string);
   loadingMessage?: string;
 }
 
@@ -17,12 +17,12 @@ interface UseSubmitReturn<T> {
 export function useSubmit<T = any>(options: UseSubmitOptions<T> = {}): UseSubmitReturn<T> {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Safety check to prevent setting state on unmounted component
   const isMounted = useRef(true);
   useEffect(() => {
-    return () => { 
-      isMounted.current = false; 
+    return () => {
+      isMounted.current = false;
     };
   }, []);
 
@@ -38,7 +38,10 @@ export function useSubmit<T = any>(options: UseSubmitOptions<T> = {}): UseSubmit
         {
           loading: options.loadingMessage || 'Processing...',
           success: options.successMessage || 'Success!',
-          error: (err) => {
+          error: (err: unknown) => {
+            if (typeof options.errorMessage === 'function') {
+              return options.errorMessage(err);
+            }
             const message = err instanceof Error ? err.message : 'An error occurred';
             return options.errorMessage || message;
           },
@@ -48,7 +51,7 @@ export function useSubmit<T = any>(options: UseSubmitOptions<T> = {}): UseSubmit
       if (options.onSuccess) {
         await options.onSuccess(result);
       }
-      
+
       return result;
     } catch (err) {
       if (isMounted.current) {

@@ -16,6 +16,7 @@ const EditProfile = () => {
   const { user, loading: authLoading } = useAuth();
 
   const [formData, setFormData] = useState({
+    username: '',
     firstName: '',
     lastName: '',
   });
@@ -34,6 +35,7 @@ const EditProfile = () => {
   useEffect(() => {
     if (user) {
       setFormData({
+        username: user.username || '',
         firstName: user.first_name || '',
         lastName: user.last_name || '',
       });
@@ -47,7 +49,13 @@ const EditProfile = () => {
     },
     successMessage: t('profile.profileUpdated'),
     loadingMessage: t('profile.updatingProfile'),
-    errorMessage: t('profile.failedToUpdate'),
+    errorMessage: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.toLowerCase().includes('in use')) {
+        return t('profile.usernameTaken', 'Username is already taken. Please choose another.');
+      }
+      return t('profile.failedToUpdate');
+    },
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,6 +67,7 @@ const EditProfile = () => {
 
     // Only include a field if it's non-empty AND has changed from the server value.
     // Treat server `null` the same as an empty string when comparing.
+    const serverUsername = user?.username ?? '';
     const serverFirstName = user?.first_name ?? '';
     const serverLastName = user?.last_name ?? '';
 
@@ -70,12 +79,17 @@ const EditProfile = () => {
     }
     // profilePictureUrl is managed by the file upload, skip manual URL updates
 
-    if (Object.keys(updates).length === 0 && !selectedFile && !photoDeleted) {
+    const usernameChanged = formData.username.trim() && formData.username.trim() !== serverUsername;
+
+    if (Object.keys(updates).length === 0 && !selectedFile && !photoDeleted && !usernameChanged) {
       window.alert(t('profile.updateAtLeastOneField'));
       return;
     }
 
     await submit(async () => {
+      if (usernameChanged) {
+        await api.post('/users/change-username', { newUsername: formData.username.trim() });
+      }
       if (Object.keys(updates).length > 0) {
         await api.patch('/users/profile', updates);
       }
@@ -182,12 +196,20 @@ const EditProfile = () => {
             label={t('profile.profilePictureUrl')}
           />
 
+          {/* Username */}
+          <InputText
+            label={t('profile.username', 'Username')}
+            type="text"
+            value={formData.username}
+            onChange={(value: string) => setFormData((prev: typeof formData) => ({ ...prev, username: value }))}
+          />
+
           {/* First Name */}
           <InputText
             label={t('profile.firstName')}
             type="text"
             value={formData.firstName}
-            onChange={(value) => setFormData(prev => ({ ...prev, firstName: value }))}
+            onChange={(value: string) => setFormData((prev: typeof formData) => ({ ...prev, firstName: value }))}
           />
 
           {/* Last Name */}
@@ -195,7 +217,7 @@ const EditProfile = () => {
             label={t('profile.lastName')}
             type="text"
             value={formData.lastName}
-            onChange={(value) => setFormData(prev => ({ ...prev, lastName: value }))}
+            onChange={(value: string) => setFormData((prev: typeof formData) => ({ ...prev, lastName: value }))}
           />
 
           {/* Submit Button */}

@@ -80,13 +80,13 @@ This document describes the complete WebSocket-based real-time notification syst
 
 ## Authentication Flow
 
-1. User logs in via `/auth/login` - receives httpOnly JWT cookie
-2. Frontend requests socket token from `/auth/socket-token`
-3. Backend returns JWT token from cookie
-4. Socket.io client connects with token in auth handshake
-5. Backend validates JWT and attaches userId to socket
-6. User joins personal room: `user:${userId}`
-7. Notifications emit to specific user room
+1. User logs in via `/auth/login` and receives a long-lived `authToken` httpOnly cookie.
+2. Frontend requests a dedicated socket token from `/auth/socket-token`.
+3. Backend issues a short-lived JWT (90 seconds) with `aud: "socket"` and `tokenType: "socket"`.
+4. Socket.io client connects with that socket token in the auth handshake.
+5. Backend validates signature, audience, token type, and blacklist state.
+6. Backend attaches `userId` to the socket.
+7. User joins personal room: `user:${userId}` and receives targeted notifications.
 
 ## Notification Types
 
@@ -194,7 +194,7 @@ No additional environment variables required. Uses existing:
 
 ✅ Socket.io server initialized in `server.ts`  
 ✅ Notification service enhanced with Socket.io  
-✅ `/auth/socket-token` endpoint created (supports Bearer tokens)  
+✅ `/auth/socket-token` endpoint issues short-lived scoped tokens  
 ✅ Socket service created on frontend  
 ✅ NotificationContext wraps App  
 ✅ NotifContainer displays notifications  
@@ -212,7 +212,7 @@ No additional environment variables required. Uses existing:
 
 **Endpoint:** `GET /auth/socket-token`
 
-**Authentication:** Requires valid JWT (via httpOnly cookie or Bearer token)
+**Authentication:** Requires valid app authentication (via httpOnly cookie or Bearer token)
 
 **Request:**
 ```bash
@@ -228,11 +228,14 @@ curl --cookie "authToken=<jwt_token>" http://localhost:3000/auth/socket-token
 }
 ```
 
-**Implementation Note:** The endpoint supports both:
-- httpOnly cookies (standard login flow)
-- Bearer tokens in Authorization header (API testing, mobile apps)
+**Response Token Semantics:**
+- This endpoint returns a dedicated socket token, not the long-lived app session token.
+- Token lifetime is short (`90s`).
+- Required claims include `aud: "socket"` and `tokenType: "socket"`.
 
-This flexibility ensures the endpoint works across different authentication scenarios.
+**Security Note:**
+- Keeping the main session JWT in an httpOnly cookie limits direct JavaScript access.
+- Socket authentication uses a narrowly scoped token to reduce blast radius if frontend code is compromised.
 
 ## Testing
 
@@ -264,7 +267,7 @@ The WebSocket notification system is comprehensively tested with **61 passing te
 
 **Integration Tests** (`backend/src/tests/integration/socketNotifications.test.ts`)
 - ✅ 10 tests passing
-- Socket token endpoint authentication (Bearer token support)
+- Socket token endpoint authentication and scoped token claims validation
 - Notification retrieval with pagination
 - Notification filtering (unread only)
 - Mark notification as read
@@ -278,7 +281,7 @@ The WebSocket notification system is comprehensively tested with **61 passing te
 - ✅ 18 tests passing
 - Socket token retrieval from backend
 - Socket.io client initialization
-- Bearer token authentication flow
+- Scoped short-lived socket token authentication flow
 - Connection state management
 - Event subscription/unsubscription
 - Reconnection with exponential backoff
@@ -370,8 +373,8 @@ Check backend logs for:
 ### Socket Not Connecting
 
 1. Check if user is authenticated (`isAuthenticated = true`)
-2. Check `/auth/socket-token` endpoint returns token
-   - Works with both httpOnly cookies and Bearer tokens
+2. Check `/auth/socket-token` endpoint returns a token with socket scope
+   - Decode and verify `aud: "socket"` and `tokenType: "socket"`
 3. Verify JWT_SECRET is configured
 4. Check browser console for connection errors
 5. Verify CORS settings allow frontend URL

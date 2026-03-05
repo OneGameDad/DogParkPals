@@ -16,8 +16,6 @@ const mockUpdateMemberRole = jest.fn<any>();
 const mockGetMember = jest.fn<any>();
 const mockGetMembers = jest.fn<any>();
 const mockIsMember = jest.fn<any>();
-const mockUploadProfilePicture = jest.fn<any>();
-const mockDeleteProfilePicture = jest.fn<any>();
 
 const mockGetOrganizationWithDetails = jest.fn<any>();
 
@@ -41,8 +39,6 @@ jest.mock('../services/organizationService', () => ({
     getMembers: mockGetMembers,
     isMember: mockIsMember,
     getOrganizationWithDetails: mockGetOrganizationWithDetails,
-    uploadProfilePicture: mockUploadProfilePicture,
-    deleteProfilePicture: mockDeleteProfilePicture,
   },
 }));
 
@@ -735,172 +731,6 @@ describe('Organization Controller', () => {
       // Should still add member even if XP fails
       expect(mockAddMember).toHaveBeenCalled();
       expect(mockNext).toHaveBeenCalled();
-    });
-  });
-
-  describe('uploadProfilePicture', () => {
-    test('forwards forbidden when not authenticated', async () => {
-      mockReq.file = { path: 'uploads/pic.jpg' } as any;
-
-      await organizationController.uploadProfilePicture(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext as any
-      );
-
-      const error = mockNext.mock.calls[0][0] as AppError;
-      expect(error.statusCode).toBe(403);
-    });
-
-    test('forwards error when no file is uploaded', async () => {
-      (mockReq as any).userId = 1;
-      mockReq.params = { id: '1' };
-
-      await organizationController.uploadProfilePicture(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext as any
-      );
-
-      const error = mockNext.mock.calls[0][0] as AppError;
-      expect(error.statusCode).toBe(400);
-      expect(error.code).toBe('NO_FILE_UPLOADED');
-    });
-
-    test('uploads profile picture successfully', async () => {
-      (mockReq as any).userId = 5;
-      (mockReq as any).user = { id: 5, role: 'CLIENT' };
-      mockReq.params = { id: '1' };
-      mockReq.file = { path: 'uploads/pic.jpg' } as any;
-
-      mockGetOrganizationById.mockResolvedValue(mockOrgData);
-      mockGetMember.mockResolvedValue({ role: 'OWNER' });
-      mockUploadProfilePicture.mockResolvedValue(undefined);
-
-      await organizationController.uploadProfilePicture(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext as any
-      );
-
-      expect(mockUploadProfilePicture).toHaveBeenCalledWith(1, 'uploads/pic.jpg');
-      expect(mockStatus).toHaveBeenCalledWith(200);
-
-      const response = mockJson.mock.calls[0][0];
-      expect(response.profilePictureUrl).toBe('/api/files/organizations/1/profile-picture');
-    });
-
-    test('forwards 500 when service throws', async () => {
-      (mockReq as any).userId = 1;
-      (mockReq as any).user = { id: 1, role: 'CLIENT' };
-      mockReq.params = { id: '1' };
-      mockReq.file = { path: 'uploads/pic.jpg' } as any;
-
-      mockGetOrganizationById.mockResolvedValue(mockOrgData);
-      mockGetMember.mockResolvedValue({ role: 'OWNER' });
-      mockUploadProfilePicture.mockRejectedValue(new Error('boom'));
-
-      await organizationController.uploadProfilePicture(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext as any
-      );
-
-      const error = mockNext.mock.calls[0][0] as AppError;
-      expect(error.statusCode).toBe(500);
-    });
-
-    test('forwards error when user not authorized', async () => {
-      (mockReq as any).userId = 5;
-      (mockReq as any).user = { id: 5, role: 'CLIENT' };
-      mockReq.params = { id: '1' };
-      mockReq.file = { path: 'uploads/pic.jpg' } as any;
-
-      mockGetOrganizationById.mockResolvedValue(mockOrgData);
-      mockGetMember.mockResolvedValue({ role: 'MEMBER' });
-
-      await organizationController.uploadProfilePicture(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext as any
-      );
-
-      const error = mockNext.mock.calls[0][0] as AppError;
-      expect(error.statusCode).toBe(403);
-    });
-  });
-
-  describe('deleteProfilePicture', () => {
-    test('forwards forbidden when not authenticated', async () => {
-      mockReq.params = { id: '1' };
-
-      await organizationController.deleteProfilePicture(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext as any
-      );
-
-      const error = mockNext.mock.calls[0][0] as AppError;
-      expect(error.statusCode).toBe(403);
-    });
-
-    test('deletes profile picture successfully', async () => {
-      (mockReq as any).userId = 3;
-      (mockReq as any).user = { id: 3, role: 'CLIENT' };
-      mockReq.params = { id: '1' };
-
-      mockGetOrganizationById.mockResolvedValue(mockOrgData);
-      mockGetMember.mockResolvedValue({ role: 'OWNER' });
-      mockDeleteProfilePicture.mockResolvedValue(undefined);
-
-      await organizationController.deleteProfilePicture(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext as any
-      );
-
-      expect(mockDeleteProfilePicture).toHaveBeenCalledWith(1);
-      expect(mockStatus).toHaveBeenCalledWith(200);
-
-      const response = mockJson.mock.calls[0][0];
-      expect(response.message).toBe('Profile picture deleted successfully');
-    });
-
-    test('forwards 500 when service throws', async () => {
-      (mockReq as any).userId = 3;
-      (mockReq as any).user = { id: 3, role: 'CLIENT' };
-      mockReq.params = { id: '1' };
-
-      mockGetOrganizationById.mockResolvedValue(mockOrgData);
-      mockGetMember.mockResolvedValue({ role: 'OWNER' });
-      mockDeleteProfilePicture.mockRejectedValue(new Error('boom'));
-
-      await organizationController.deleteProfilePicture(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext as any
-      );
-
-      const error = mockNext.mock.calls[0][0] as AppError;
-      expect(error.statusCode).toBe(500);
-    });
-
-    test('forwards error when user not authorized', async () => {
-      (mockReq as any).userId = 5;
-      (mockReq as any).user = { id: 5, role: 'CLIENT' };
-      mockReq.params = { id: '1' };
-
-      mockGetOrganizationById.mockResolvedValue(mockOrgData);
-      mockGetMember.mockResolvedValue({ role: 'MEMBER' });
-
-      await organizationController.deleteProfilePicture(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext as any
-      );
-
-      const error = mockNext.mock.calls[0][0] as AppError;
-      expect(error.statusCode).toBe(403);
     });
   });
 });

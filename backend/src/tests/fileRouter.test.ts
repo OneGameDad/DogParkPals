@@ -92,17 +92,20 @@ describe('File Router', () => {
     });
 
     describe('GET /dogs/:dogId/photo', () => {
-        test('returns photo URL for anyone requesting it', async () => {
+        test('returns photo URL when authorized user requests it', async () => {
+            mockCheckDogAuthorization.mockResolvedValue(undefined);
             mockGetDogById.mockResolvedValue(mockDogWithPhoto);
 
             const response = await request(app).get('/dogs/1/photo');
 
+            expect(mockCheckDogAuthorization).toHaveBeenCalledWith(1, 1, 'CLIENT');
             expect(mockGetDogById).toHaveBeenCalledWith(1);
             expect(response.status).toBe(200);
             expect(response.body.filePath).toContain('/uploads/dogs/1/photo.jpg');
         });
 
         test('returns 404 when dog has no photo', async () => {
+            mockCheckDogAuthorization.mockResolvedValue(undefined);
             mockGetDogById.mockResolvedValue({ id: 1, profilePictureUrl: null });
 
             const response = await request(app).get('/dogs/1/photo');
@@ -111,7 +114,16 @@ describe('File Router', () => {
             expect(response.body.message).toBe('Dog photo not found');
         });
 
+        test('returns 500 when not authorized', async () => {
+            mockCheckDogAuthorization.mockRejectedValue(new Error('Not authorized'));
+
+            const response = await request(app).get('/dogs/1/photo');
+
+            expect(response.status).toBe(500);
+        });
+
         test('returns 404 when dog is not found', async () => {
+            mockCheckDogAuthorization.mockResolvedValue(undefined);
             mockGetDogById.mockRejectedValue(new Error('Dog not found'));
 
             const response = await request(app).get('/dogs/1/photo');
@@ -163,14 +175,13 @@ describe('File Router', () => {
             expect(response.body.filePath).toContain('/uploads/users/1/profile.jpg');
         });
 
-        test('returns profile picture URL when anyone requests any user\'s picture', async () => {
+        test('returns 403 when user requests another user\'s picture', async () => {
             mockGetUserById.mockResolvedValue(mockUser);
 
             const response = await request(app).get('/users/2/profile-picture');
 
-            expect(mockGetUserById).toHaveBeenCalledWith(2);
-            expect(response.status).toBe(200);
-            expect(response.body.filePath).toContain('/uploads/users/1/profile.jpg');
+            expect(response.status).toBe(403);
+            expect(response.body.message).toBe('Not authorized to access this profile picture');
         });
 
         test('returns 404 when user has no profile picture', async () => {

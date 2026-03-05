@@ -311,7 +311,7 @@ describe("Message Flows", () => {
       .set("Authorization", `Bearer ${userAToken()}`);
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+    expect(Array.isArray(res.body.data)).toBe(true);
   });
 
   test("get all messages returns user's messages", async () => {
@@ -320,7 +320,7 @@ describe("Message Flows", () => {
       .set("Authorization", `Bearer ${userAToken()}`);
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+    expect(Array.isArray(res.body.data)).toBe(true);
   });
 
   test("update message status succeeds", async () => {
@@ -378,9 +378,9 @@ describe("Message Flows", () => {
       .set("Authorization", `Bearer ${userAToken()}`);
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+    expect(Array.isArray(res.body.data)).toBe(true);
     // Check that all returned messages have status other than READ
-    res.body.forEach((msg: any) => {
+    res.body.data.forEach((msg: any) => {
       expect(msg.status).not.toBe("READ");
     });
   });

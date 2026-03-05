@@ -35,11 +35,8 @@ class SocketService {
       }
 
       // Create socket connection
-      // Socket.io connects to the base URL (not /api endpoint)
-      // Convert http/https to ws/wss for WebSocket protocol
-      const baseUrl = API_BASE_URL.replace(/^http/, 'ws');
-      
-      this.socket = io(baseUrl, {
+      // Socket.io handles protocol upgrade from HTTP to WebSocket internally
+      this.socket = io(API_BASE_URL, {
         auth: {
           token: this.token,
         },

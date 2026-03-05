@@ -31,12 +31,46 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       return;
     }
 
+    // Show the notification in the UI
+    const showVisualNotification = (notification: Notification) => {
+      // Convert notification type to message type format expected by NotifContainer
+      // e.g., MESSAGE_RECEIVED -> messageReceived
+      const messageType = notification.type
+        .split('_')
+        .map((word, index) => 
+          index === 0 
+            ? word.toLowerCase() 
+            : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        )
+        .join('');
+      
+      if (notifContainerRef.current) {
+        notifContainerRef.current.addNotification(messageType, notification.payload);
+      }
+    };
+
+    // Handle incoming notifications
+    const handleNewNotification = (notification: Notification) => {
+      console.log('Received notification:', notification);
+
+      // Add to notifications list
+      setNotifications((prev) => [notification, ...prev]);
+
+      // Increment unread count if not already read
+      if (!notification.read) {
+        setUnreadCount((prev) => prev + 1);
+      }
+
+      // Show visual notification using NotifContainer
+      showVisualNotification(notification);
+    };
+
     // Initialize socket connection when component mounts
     const initSocket = async () => {
       try {
         await socketService.connect();
         
-        // Subscribe to notifications
+        // Subscribe to notifications with the correctly scoped handler
         socketService.onNotification(handleNewNotification);
       } catch (error) {
         console.error('Failed to initialize socket:', error);
@@ -47,44 +81,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
     // Cleanup on unmount or when user logs out
     return () => {
+      // Unsubscribe with the same function reference that was subscribed
       socketService.offNotification(handleNewNotification);
       socketService.disconnect();
     };
   }, [isAuthenticated, user]);
-
-  // Handle incoming notifications
-  const handleNewNotification = (notification: Notification) => {
-    console.log('Received notification:', notification);
-
-    // Add to notifications list
-    setNotifications((prev) => [notification, ...prev]);
-
-    // Increment unread count if not already read
-    if (!notification.read) {
-      setUnreadCount((prev) => prev + 1);
-    }
-
-    // Show visual notification using NotifContainer
-    showVisualNotification(notification);
-  };
-
-  // Show the notification in the UI
-  const showVisualNotification = (notification: Notification) => {
-    // Convert notification type to message type format expected by NotifContainer
-    // e.g., MESSAGE_RECEIVED -> messageReceived
-    const messageType = notification.type
-      .split('_')
-      .map((word, index) => 
-        index === 0 
-          ? word.toLowerCase() 
-          : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-      )
-      .join('');
-    
-    if (notifContainerRef.current) {
-      notifContainerRef.current.addNotification(messageType, notification.payload);
-    }
-  };
 
   const markAsRead = (notificationId: number) => {
     setNotifications((prev) =>

@@ -1,4 +1,5 @@
 import request from "supertest";
+import jwt from "jsonwebtoken";
 import app from "../../app";
 import { makeToken, ids } from "../fixtures/integrationFixtures";
 
@@ -12,7 +13,7 @@ describe("Notifications & Auth Integration", () => {
       expect(res.status).toBe(401);
     });
 
-    test("returns token with valid authentication", async () => {
+    test("returns scoped socket token with valid authentication", async () => {
       const res = await request(app)
         .get("/auth/socket-token")
         .set("Authorization", `Bearer ${userAToken()}`);
@@ -21,6 +22,19 @@ describe("Notifications & Auth Integration", () => {
       expect(res.body).toHaveProperty("token");
       expect(typeof res.body.token).toBe("string");
       expect(res.body.token.length).toBeGreaterThan(0);
+
+      const secret = process.env.JWT_SECRET;
+      expect(secret).toBeDefined();
+
+      const decoded = jwt.verify(res.body.token, secret as string, {
+        audience: "socket",
+      }) as jwt.JwtPayload & { tokenType?: string };
+
+      expect(decoded.tokenType).toBe("socket");
+      expect(decoded.userId).toBe(ids.users.userA);
+      expect(typeof decoded.exp).toBe("number");
+      expect(typeof decoded.iat).toBe("number");
+      expect((decoded.exp as number) - (decoded.iat as number)).toBeLessThanOrEqual(120);
     });
   });
 

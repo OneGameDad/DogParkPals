@@ -194,4 +194,40 @@ describe('Auth Controller', () => {
       expect(forwarded).toBeDefined();
     });
   });
+
+  describe('getSocketToken', () => {
+    test('returns short-lived scoped socket token for authenticated user', async () => {
+      mockReq.userId = 42;
+      mockReq.user = { id: 42, role: 'CLIENT' } as any;
+      mockJwtSign.mockReturnValue('socket-token-123');
+
+      await authController.getSocketToken(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockJwtSign).toHaveBeenCalledWith(
+        {
+          userId: 42,
+          role: 'CLIENT',
+          tokenType: 'socket',
+        },
+        expect.any(String),
+        {
+          expiresIn: '90s',
+          audience: 'socket',
+        }
+      );
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      expect(mockJson).toHaveBeenCalledWith({ token: 'socket-token-123' });
+    });
+
+    test('forwards auth error when userId is missing', async () => {
+      mockReq.userId = undefined;
+
+      await authController.getSocketToken(mockReq as Request, mockRes as Response, mockNext);
+
+      const forwarded = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwarded).toBeInstanceOf(AppError);
+      expect(forwarded.code).toBe('AUTH_ERROR');
+      expect(forwarded.statusCode).toBe(401);
+    });
+  });
 });

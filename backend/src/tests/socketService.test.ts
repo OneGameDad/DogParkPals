@@ -37,51 +37,52 @@ describe('Socket.io Infrastructure', () => {
   });
 
   describe('Socket Authentication', () => {
-    test('should validate JWT token correctly', () => {
+    test('should validate scoped socket JWT token correctly', () => {
       const secret = process.env.JWT_SECRET || 'test-secret';
       const token = jwt.sign(
-        { userId: 123, email: 'test@example.com', role: 'user' },
+        { userId: 123, role: 'user', tokenType: 'socket' },
         secret,
-        { expiresIn: '7d' }
+        { expiresIn: '90s', audience: 'socket' }
       );
 
-      // Verify token works
-      const decoded = jwt.verify(token, secret) as any;
+      // Verify token works with the socket audience.
+      const decoded = jwt.verify(token, secret, { audience: 'socket' }) as any;
       expect(decoded.userId).toBe(123);
-      expect(decoded.email).toBe('test@example.com');
+      expect(decoded.tokenType).toBe('socket');
     });
 
     test('should reject invalid tokens', () => {
       const secret = process.env.JWT_SECRET || 'test-secret';
       
       expect(() => {
-        jwt.verify('invalid-token', secret);
+        jwt.verify('invalid-token', secret, { audience: 'socket' });
       }).toThrow();
     });
 
     test('should reject expired tokens', () => {
       const secret = process.env.JWT_SECRET || 'test-secret';
       const expiredToken = jwt.sign(
-        { userId: 789, email: 'expired@example.com' },
+        { userId: 789, tokenType: 'socket' },
         secret,
-        { expiresIn: '-1h' }
+        { expiresIn: '-1h', audience: 'socket' }
       );
 
       expect(() => {
-        jwt.verify(expiredToken, secret);
+        jwt.verify(expiredToken, secret, { audience: 'socket' });
       }).toThrow();
     });
 
-    test('should extract userId from token', () => {
+    test('should reject non-socket tokens when socket audience is required', () => {
       const secret = process.env.JWT_SECRET || 'test-secret';
-      const userId = 999;
-      const token = jwt.sign(
-        { userId, email: 'test@example.com' },
-        secret
+      const regularAuthToken = jwt.sign(
+        { userId: 999, email: 'test@example.com' },
+        secret,
+        { expiresIn: '7d' }
       );
 
-      const decoded = jwt.verify(token, secret) as any;
-      expect(decoded.userId).toBe(userId);
+      expect(() => {
+        jwt.verify(regularAuthToken, secret, { audience: 'socket' });
+      }).toThrow();
     });
   });
 

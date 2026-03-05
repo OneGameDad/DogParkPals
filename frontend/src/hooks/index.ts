@@ -3,6 +3,7 @@ export { useFetch } from './useFetch';
 export { useSubmit } from './useSubmit';
 export { useDebounce } from './useDebounce';
 export { usePolling } from './usePolling';
+export { useNotifications } from '../context/NotificationContext';
 export * from './parks';
 export * from './users';
 export { useOrganization } from './useOrganization';

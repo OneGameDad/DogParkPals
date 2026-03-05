@@ -159,6 +159,10 @@ const notificationService = {
         if (uniqueIds.length === 0) {
           return 0;
         }
+        
+        // Track creation time to query back created notifications reliably
+        const beforeCreation = new Date();
+        
         await prisma.notification.createMany({
           data: uniqueIds.map((userId) => ({
             userId,
@@ -167,20 +171,33 @@ const notificationService = {
           })),
         });
 
-        // Emit to all users via Socket.io
-        if (io) {
-          const now = new Date();
-          uniqueIds.forEach((userId) => {
-            io?.to(`user:${userId}`).emit("notification", {
-              type,
-              payload,
-              read: false,
-              createdAt: now,
+        // Query back the created notifications using reliable filters
+        // Newly created bulk notifications will be unread, have the correct type,
+        // and be created after beforeCreation timestamp
+        const createdNotifications = await prisma.notification.findMany({
+          where: {
+            userId: { in: uniqueIds },
+            type,
+            read: false,
+            createdAt: { gte: beforeCreation },
+          },
+          orderBy: { createdAt: "desc" },
+        });
+
+        // Emit to all users via Socket.io with correct IDs
+        if (io && createdNotifications.length > 0) {
+          createdNotifications.forEach((notification) => {
+            io?.to(`user:${notification.userId}`).emit("notification", {
+              id: notification.id,
+              type: notification.type,
+              payload: notification.payload,
+              read: notification.read,
+              createdAt: notification.createdAt,
             });
           });
           
           typeSafeLogger.debug("Bulk notifications emitted via Socket.io", {
-            count: uniqueIds.length,
+            count: createdNotifications.length,
             type,
           });
         }

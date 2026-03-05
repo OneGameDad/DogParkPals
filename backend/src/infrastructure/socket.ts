@@ -6,8 +6,9 @@ import typeSafeLogger from "../utils/typeSafeLogger";
 
 interface JwtPayload {
   userId: number;
-  email: string;
+  email?: string;
   role?: string;
+  tokenType?: string;
 }
 
 interface AuthenticatedSocket extends Socket {
@@ -43,8 +44,17 @@ export function initializeSocket(httpServer: HttpServer): Server {
         return next(new Error("Server configuration error"));
       }
 
-      // Verify JWT token
-      const decoded = jwt.verify(token as string, secret) as JwtPayload;
+      // Verify that this is a dedicated socket token, not the main session token.
+      const decoded = jwt.verify(token as string, secret, {
+        audience: "socket",
+      }) as JwtPayload;
+
+      if (decoded.tokenType !== "socket" || !decoded.userId) {
+        typeSafeLogger.warn("Socket connection attempt with invalid token scope", {
+          socketId: socket.id,
+        });
+        return next(new Error("Invalid token"));
+      }
 
       // Check if token is blacklisted
       if (isTokenBlacklisted(token as string)) {

@@ -128,6 +128,10 @@ export async function seedFriendsEnemies() {
   await prisma.enemies.createMany({
     data: [
       { ownerId: ids.users.userA, enemyUserId: ids.users.userB },
+      // Dog enemies: dogA's owner (userA) marks dogB as enemy
+      { ownerId: ids.users.userA, ownerDogId: ids.dogs.dogA, enemyDogId: ids.dogs.dogB },
+      // dogC's owners (userA and userB) mark dogD as enemy
+      { ownerId: ids.users.userB, ownerDogId: ids.dogs.dogC, enemyDogId: ids.dogs.dogD },
     ],
   });
 }

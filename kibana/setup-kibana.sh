@@ -32,56 +32,64 @@ fi
 
 # Step 2: Wait for Kibana to be ready
 echo "⏳ Waiting for Kibana to be ready..."
-for i in {1..60}; do
-  if curl -s "$KIBANA_URL/api/status" > /dev/null 2>&1; then
+for i in {1..120}; do
+  # Check both status endpoint and that we can reach the API
+  status=$(curl -s "$KIBANA_URL/api/status" 2>&1)
+  if echo "$status" | grep -q "state"; then
     echo "✓ Kibana is ready"
     break
   fi
-  if [ $i -eq 60 ]; then
+  if [ $i -eq 120 ]; then
     echo "✗ Kibana did not become ready in time"
     exit 1
   fi
   sleep 1
 done
 
-# Step 3: Create index pattern
+# Step 2b: Wait for Kibana saved objects API to be available
+echo "⏳ Waiting for Kibana API to be ready..."
+for i in {1..60}; do
+  http_code=$(curl -s -w "%{http_code}" -o /dev/null "$KIBANA_URL/api/saved_objects/search")
+  if [ "$http_code" != "000" ] && [ "$http_code" != "503" ]; then
+    echo "✓ Kibana API is ready"
+    break
+  fi
+  if [ $i -eq 60 ]; then
+    echo "⚠ Kibana API readiness check timed out, continuing anyway..."
+    break
+  fi
+  sleep 1
+done
+
+# Step 3: Create index pattern (optional - logs will auto-discover)
 echo ""
 echo "📊 Creating index pattern 'dogparkpals-logs-*'..."
-response=$(curl -s -w "\n%{http_code}" -X POST \
+
+# Try primary endpoint
+http_code=$(curl -s -w "%{http_code}" -X POST \
   -H "Content-Type: application/json" \
   -H "kbn-xsrf: true" \
   "$KIBANA_URL/api/index_patterns/index_pattern" \
-  -d '{
-    "index_pattern": {
-      "title": "dogparkpals-logs-*",
-      "timeFieldName": "@timestamp"
-    }
-  }' 2>/dev/null)
+  -d '{"index_pattern":{"title":"dogparkpals-logs-*","timeFieldName":"@timestamp"}}' \
+  -o /dev/null 2>/dev/null)
 
-http_code=$(echo "$response" | tail -n1)
-if [ "$http_code" = "200" ] || [ "$http_code" = "409" ]; then
-  echo "✓ Index pattern ready (409 = already exists, which is fine)"
+if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
+  echo "✓ Index pattern created"
+elif [ "$http_code" = "409" ]; then
+  echo "✓ Index pattern already exists"
 else
-  echo "⚠ Warning: Index pattern creation returned HTTP $http_code (trying alternative endpoint...)"
-  # Try alternative endpoint if first one fails
-  response=$(curl -s -w "\n%{http_code}" -X POST \
+  # Try fallback endpoint for data views
+  http_code=$(curl -s -w "%{http_code}" -X POST \
     -H "Content-Type: application/json" \
     -H "kbn-xsrf: true" \
     "$KIBANA_URL/api/data_views" \
-    -d '{
-      "data_view": {
-        "title": "dogparkpals-logs-*",
-        "timeFieldName": "@timestamp",
-        "allowNoIndex": true,
-        "id": "dogparkpals-logs"
-      }
-    }' 2>/dev/null)
+    -d '{"data_view":{"title":"dogparkpals-logs-*","timeFieldName":"@timestamp"}}' \
+    -o /dev/null 2>/dev/null)
   
-  http_code=$(echo "$response" | tail -n1)
-  if [ "$http_code" = "200" ] || [ "$http_code" = "409" ]; then
-    echo "✓ Index pattern created with alternative endpoint"
+  if [ "$http_code" = "200" ] || [ "$http_code" = "201" ] || [ "$http_code" = "409" ]; then
+    echo "✓ Index pattern created with fallback endpoint"
   else
-    echo "⚠ Warning: Index pattern creation returned HTTP $http_code"
+    echo "⚠ Could not create index pattern (HTTP $http_code) - logs will be discoverable when data arrives"
   fi
 fi
 
@@ -94,6 +102,7 @@ if [ -f "$SAVED_SEARCHES_FILE" ]; then
   echo "📌 Importing saved searches..."
   
   count=0
+  imported=0
   while IFS= read -r line; do
     if [ ! -z "$line" ]; then
       count=$((count + 1))
@@ -115,6 +124,7 @@ if [ -f "$SAVED_SEARCHES_FILE" ]; then
         
         if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
           echo "  ✓ $title"
+          imported=$((imported + 1))
         else
           echo "  ⚠ $title (HTTP $http_code)"
         fi
@@ -124,7 +134,7 @@ if [ -f "$SAVED_SEARCHES_FILE" ]; then
     fi
   done < "$SAVED_SEARCHES_FILE"
   
-  echo "✓ Saved searches imported ($count found)"
+  echo "✓ Saved searches: $imported/$count imported"
 else
   echo "✗ Saved searches file not found: $SAVED_SEARCHES_FILE"
 fi

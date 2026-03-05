@@ -123,6 +123,37 @@ const authController = {
       return next(toAppError(error, { message: 'Google authentication failed', code: 'GOOGLE_AUTH_FAILED', statusCode: 500 }));
     }
   },
+
+  /**
+   * Get a token specifically for Socket.io authentication
+   * This extracts the JWT from the httpOnly cookie or Authorization header and returns it
+   * so the frontend can use it for WebSocket connection
+   */
+  getSocketToken: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Token is already validated by requireAuth middleware
+      let token = req.cookies.authToken;
+      
+      // If no cookie, try to extract from Authorization header
+      if (!token) {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          token = authHeader.replace('Bearer ', '');
+        }
+      }
+      
+      if (!token) {
+        throw AuthError('No authentication token found');
+      }
+
+      res.status(200).json({ token });
+    } catch (error) {
+      if (isAppError(error)) {
+        return next(error);
+      }
+      return next(toAppError(error, { message: 'Failed to get socket token', code: 'SOCKET_TOKEN_FAILED', statusCode: 500 }));
+    }
+  },
 };
 
 export default authController;

@@ -284,6 +284,8 @@ export type EventPayloadMap = {
   [EventTypes.OrganizationJoinApproved]: OrganizationJoinApprovedPayload;
   [EventTypes.OrganizationRoleUpdated]: OrganizationRoleUpdatedPayload;
   [EventTypes.OrganizationMemberRemoved]: OrganizationMemberRemovedPayload;
+  [EventTypes.OrganizationProfilePictureUploaded]: OrganizationProfilePictureUploadedPayload;
+  [EventTypes.OrganizationProfilePictureDeleted]: OrganizationProfilePictureDeletedPayload;
   [EventTypes.OrganizationDeleted]: OrganizationDeletedPayload;
   [EventTypes.DogOwnershipAdded]: DogOwnershipAddedPayload;
   [EventTypes.DogOwnershipRemoved]: DogOwnershipRemovedPayload;

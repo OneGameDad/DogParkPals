@@ -65,10 +65,15 @@ const OrganizationUpdate = () => {
             });
 
             // Handle photo delete or upload
+            const orgId = Number(id);
+            if (!Number.isFinite(orgId)) {
+                throw new Error('Invalid organization ID');
+            }
+
             if (photoDeleted) {
-                await uploadService.deleteOrganizationProfilePicture(Number(id));
+                await uploadService.deleteOrganizationProfilePicture(orgId);
             } else if (selectedFile) {
-                await uploadService.uploadOrganizationProfilePicture(Number(id), selectedFile);
+                await uploadService.uploadOrganizationProfilePicture(orgId, selectedFile);
             }
 
             toast.success(t('organizations.updateSuccess', 'Organization updated successfully'));

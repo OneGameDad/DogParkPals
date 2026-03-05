@@ -10,6 +10,7 @@ const router = express.Router();
 router.post('/login', authLimiter, (req, res, next) => authController.login(req, res, next));
 router.post('/logout', requireAuth, (req, res) => authController.logout(req, res));
 router.get('/me', requireAuth, (req, res, next) => userController.getUserById(req, res, next));
+router.get('/socket-token', requireAuth, (req, res, next) => authController.getSocketToken(req, res, next));
 
 // Google OAuth routes
 router.get('/google',

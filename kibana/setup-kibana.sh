@@ -93,32 +93,38 @@ if [ -f "$SAVED_SEARCHES_FILE" ]; then
   echo ""
   echo "📌 Importing saved searches..."
   
+  count=0
   while IFS= read -r line; do
     if [ ! -z "$line" ]; then
+      count=$((count + 1))
+      
       # Extract title and id for display
       title=$(echo "$line" | grep -oP '"title":\s*"\K[^"]+' || echo "search")
       id=$(echo "$line" | grep -oP '"id":\s*"\K[^"]+' || echo "unknown")
       
-      # Extract just the attributes and references for the POST body
-      # Remove the type and id fields, keep only attributes and references
-      body=$(echo "$line" | sed 's/^{"type":"[^"]*","id":"[^"]*",//;s/}$/}/')
+      # Extract attributes and references by removing type and id fields
+      body=$(echo "$line" | sed 's/"type":"search",//g' | sed 's/"id":"[^"]*",//g')
       
-      # Import the search object with id in URL
-      http_code=$(curl -s -w "%{http_code}" -X POST \
-        -H "Content-Type: application/json" \
-        -H "kbn-xsrf: true" \
-        "$KIBANA_URL/api/saved_objects/search/$id?overwrite=true" \
-        -d "$body" 2>/dev/null -o /dev/null)
-      
-      if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
-        echo "  ✓ $title"
+      if [ ! -z "$body" ] && [ "$body" != "{}" ]; then
+        # Import the search object with id in URL
+        http_code=$(curl -s -w "%{http_code}" -X POST \
+          -H "Content-Type: application/json" \
+          -H "kbn-xsrf: true" \
+          "$KIBANA_URL/api/saved_objects/search/$id?overwrite=true" \
+          -d "$body" 2>/dev/null -o /dev/null)
+        
+        if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
+          echo "  ✓ $title"
+        else
+          echo "  ⚠ $title (HTTP $http_code)"
+        fi
       else
-        echo "  ⚠ $title (HTTP $http_code, may have failed)"
+        echo "  ⚠ Could not parse $title"
       fi
     fi
   done < "$SAVED_SEARCHES_FILE"
   
-  echo "✓ Saved searches imported"
+  echo "✓ Saved searches imported ($count found)"
 else
   echo "✗ Saved searches file not found: $SAVED_SEARCHES_FILE"
 fi

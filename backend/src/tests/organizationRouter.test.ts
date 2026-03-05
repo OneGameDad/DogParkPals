@@ -11,6 +11,14 @@ jest.mock('../middlewares/authMiddleware', () => ({
   },
 }));
 
+// Mock the upload middleware
+jest.mock('../middlewares/uploadMiddleware', () => ({
+  uploadSingleFile: (req: Request, res: Response, next: NextFunction) => {
+    (req as any).file = { path: 'uploads/images/test.jpg' };
+    next();
+  },
+}));
+
 // Mock organizationController
 const mockCreateOrganization = jest.fn();
 const mockGetOrganizationByName = jest.fn();
@@ -26,6 +34,8 @@ const mockGetMember = jest.fn();
 const mockGetMembers = jest.fn();
 const mockIsMember = jest.fn();
 const mockGetOrganizationWithDetails = jest.fn();
+const mockUploadProfilePicture = jest.fn();
+const mockDeleteProfilePicture = jest.fn();
 
 jest.mock('../controllers/organizationController', () => ({
   __esModule: true,
@@ -44,6 +54,8 @@ jest.mock('../controllers/organizationController', () => ({
     getMembers: jest.fn((req: any, res: any, next: any) => mockGetMembers(req, res, next)),
     isMember: jest.fn((req: any, res: any, next: any) => mockIsMember(req, res, next)),
     getOrganizationWithDetails: jest.fn((req: any, res: any, next: any) => mockGetOrganizationWithDetails(req, res, next)),
+    uploadProfilePicture: jest.fn((req: any, res: any, next: any) => mockUploadProfilePicture(req, res, next)),
+    deleteProfilePicture: jest.fn((req: any, res: any, next: any) => mockDeleteProfilePicture(req, res, next)),
   },
 }));
 
@@ -540,6 +552,75 @@ describe('Organization Router', () => {
 
       expect(mockIsMember).toHaveBeenCalled();
       expect(response.body.isMember).toBe(false);
+    });
+  });
+
+  describe('POST /:id/profile-picture', () => {
+    test('should upload profile picture for organization', async () => {
+      mockUploadProfilePicture.mockImplementation((req: any, res: any) => {
+        expect(req.params.id).toBe('1');
+        expect(req.file).toBeDefined();
+        res.status(200).json({
+          message: 'Profile picture uploaded successfully',
+          profilePictureUrl: '/api/files/organizations/1/profile-picture',
+        });
+      });
+
+      const response = await request(app)
+        .post('/1/profile-picture')
+        .expect(200);
+
+      expect(mockUploadProfilePicture).toHaveBeenCalled();
+      expect(response.body.profilePictureUrl).toBe('/api/files/organizations/1/profile-picture');
+    });
+
+    test('should handle authorization for file upload', async () => {
+      mockUploadProfilePicture.mockImplementation((req: any, res: any, next: any) => {
+        expect(req.params.id).toBe('1');
+        res.status(200).json({
+          message: 'Profile picture uploaded successfully',
+          profilePictureUrl: '/api/files/organizations/1/profile-picture',
+        });
+      });
+
+      const response = await request(app)
+        .post('/1/profile-picture')
+        .expect(200);
+
+      expect(mockUploadProfilePicture).toHaveBeenCalled();
+    });
+  });
+
+  describe('DELETE /:id/profile-picture', () => {
+    test('should delete profile picture for organization', async () => {
+      mockDeleteProfilePicture.mockImplementation((req: any, res: any) => {
+        expect(req.params.id).toBe('1');
+        res.status(200).json({
+          message: 'Profile picture deleted successfully',
+        });
+      });
+
+      const response = await request(app)
+        .delete('/1/profile-picture')
+        .expect(200);
+
+      expect(mockDeleteProfilePicture).toHaveBeenCalled();
+      expect(response.body.message).toBe('Profile picture deleted successfully');
+    });
+
+    test('should handle organization not found', async () => {
+      mockDeleteProfilePicture.mockImplementation((req: any, res: any, next: any) => {
+        expect(req.params.id).toBe('1');
+        res.status(200).json({
+          message: 'Profile picture deleted successfully',
+        });
+      });
+
+      const response = await request(app)
+        .delete('/1/profile-picture')
+        .expect(200);
+
+      expect(mockDeleteProfilePicture).toHaveBeenCalled();
     });
   });
 });

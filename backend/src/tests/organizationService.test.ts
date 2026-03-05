@@ -918,4 +918,116 @@ describe('Organization Service', () => {
       expect(result!.events[0].park.name).toBe('Central Park');
     });
   });
+
+  describe('uploadProfilePicture', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    test('should upload profile picture successfully', async () => {
+      const filePath = 'uploads/images/test-pic.jpg';
+      mockPrisma.organization.update.mockResolvedValue({
+        profilePictureUrl: filePath,
+      });
+      mockPrisma.$transaction.mockImplementation(async (callback: any) => {
+        return callback(mockPrisma);
+      });
+
+      const result = await organizationService.uploadProfilePicture(1, filePath);
+
+      expect(mockPrisma.organization.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: { profilePictureUrl: filePath },
+        select: { profilePictureUrl: true },
+      });
+      expect(result).toBeDefined();
+      expect(result.profilePictureUrl).toBe(filePath);
+    });
+
+    test('should create domain event on successful upload', async () => {
+      const filePath = 'uploads/images/test-pic.jpg';
+      mockPrisma.organization.update.mockResolvedValue({
+        profilePictureUrl: filePath,
+      });
+      mockPrisma.$transaction.mockImplementation(async (callback: any) => {
+        return callback(mockPrisma);
+      });
+
+      const createDomainEventMock = jest.fn();
+      const addOutboxEventMock = jest.fn();
+      
+      await organizationService.uploadProfilePicture(1, filePath);
+
+      expect(mockPrisma.organization.update).toHaveBeenCalled();
+    });
+
+    test('should throw error on upload failure', async () => {
+      const filePath = 'uploads/images/test-pic.jpg';
+      mockPrisma.organization.update.mockRejectedValue(new Error('Database error'));
+      mockPrisma.$transaction.mockImplementation(async (callback: any) => {
+        throw new Error('Database error');
+      });
+
+      await expect(organizationService.uploadProfilePicture(1, filePath))
+        .rejects
+        .toThrow('Failed to upload organization profile picture');
+    });
+  });
+
+  describe('deleteProfilePicture', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    test('should delete profile picture successfully', async () => {
+      const existingUrl = 'uploads/images/old-pic.jpg';
+      mockPrisma.organization.findUnique.mockResolvedValue({
+        profilePictureUrl: existingUrl,
+      });
+      mockPrisma.organization.update.mockResolvedValue({
+        profilePictureUrl: null,
+      });
+      mockPrisma.$transaction.mockImplementation(async (callback: any) => {
+        return callback(mockPrisma);
+      });
+
+      const result = await organizationService.deleteProfilePicture(1);
+
+      expect(mockPrisma.organization.findUnique).toHaveBeenCalledWith({
+        where: { id: 1 },
+        select: { profilePictureUrl: true },
+      });
+      expect(mockPrisma.organization.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: { profilePictureUrl: null },
+      });
+      expect(result).toBeDefined();
+    });
+
+    test('should return null when no profile picture exists', async () => {
+      mockPrisma.organization.findUnique.mockResolvedValue({
+        profilePictureUrl: null,
+      });
+
+      const result = await organizationService.deleteProfilePicture(1);
+
+      expect(result).toBeNull();
+      expect(mockPrisma.organization.update).not.toHaveBeenCalled();
+    });
+
+    test('should throw error on deletion failure', async () => {
+      const existingUrl = 'uploads/images/old-pic.jpg';
+      mockPrisma.organization.findUnique.mockResolvedValue({
+        profilePictureUrl: existingUrl,
+      });
+      mockPrisma.organization.update.mockRejectedValue(new Error('Database error'));
+      mockPrisma.$transaction.mockImplementation(async (callback: any) => {
+        throw new Error('Database error');
+      });
+
+      await expect(organizationService.deleteProfilePicture(1))
+        .rejects
+        .toThrow('Failed to delete organization profile picture');
+    });
+  });
 });

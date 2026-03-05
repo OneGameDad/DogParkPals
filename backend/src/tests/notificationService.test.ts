@@ -24,6 +24,9 @@ jest.mock('../utils/typeSafeLogger', () => ({
   info: jest.fn(),
   logUserAction: jest.fn(),
   logError: jest.fn(),
+  debug: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
 }));
 
 describe('notificationService', () => {
@@ -186,4 +189,77 @@ describe('notificationService', () => {
       ).rejects.toThrow();
     });
   });
+
+  describe('Socket.io Integration', () => {
+    let mockIO: any;
+
+    beforeEach(() => {
+      mockIO = {
+        to: jest.fn().mockReturnThis(),
+        emit: jest.fn(),
+      };
+    });
+
+    test('emits notification via Socket.io when creating single notification', async () => {
+      // Import the init function
+      const { initializeNotificationSocket } = require('../services/notificationService');
+      initializeNotificationSocket(mockIO);
+
+      const fakeNotification = {
+        id: 1,
+        userId: 123,
+        type: 'MESSAGE_RECEIVED',
+        payload: { messageId: 456, senderId: 789 },
+        read: false,
+        createdAt: new Date(),
+      };
+      prisma.notification.create.mockResolvedValue(fakeNotification);
+
+      await notificationService.createNotification(123, 'MESSAGE_RECEIVED', {
+        messageId: 456,
+        senderId: 789,
+      });
+
+      expect(mockIO.to).toHaveBeenCalledWith('user:123');
+      expect(mockIO.emit).toHaveBeenCalledWith('notification', expect.objectContaining({
+        id: 1,
+        type: 'MESSAGE_RECEIVED',
+        read: false,
+      }));
+    });
+
+    test('emits notifications via Socket.io when creating bulk notifications', async () => {
+      const { initializeNotificationSocket } = require('../services/notificationService');
+      initializeNotificationSocket(mockIO);
+
+      prisma.notification.createMany.mockResolvedValue({ count: 2 });
+
+      await notificationService.createNotifications([123, 456], 'EVENT_CREATED', {
+        eventId: 789,
+        eventName: 'Park Walk',
+      });
+
+      expect(mockIO.to).toHaveBeenCalledWith('user:123');
+      expect(mockIO.to).toHaveBeenCalledWith('user:456');
+      expect(mockIO.emit).toHaveBeenCalledTimes(2);
+    });
+
+    test('handles Socket.io not initialized gracefully', async () => {
+      // Call without initializing Socket.io
+      const fakeNotification = {
+        id: 1,
+        userId: 123,
+        type: 'MESSAGE_RECEIVED',
+        payload: {},
+        read: false,
+        createdAt: new Date(),
+      };
+      prisma.notification.create.mockResolvedValue(fakeNotification);
+
+      // Should not throw even if Socket.io is null
+      const result = await notificationService.createNotification(123, 'MESSAGE_RECEIVED', {});
+      expect(result).toEqual(fakeNotification);
+    });
+  });
 });
+

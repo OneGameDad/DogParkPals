@@ -38,11 +38,13 @@ import typeSafeLogger from "./utils/typeSafeLogger";
 import { requestIdMiddleware } from "./middlewares/requestId";
 import { errorHandler } from "./middlewares/errorHandler";
 import { httpsRedirect } from "./middlewares/httpsRedirect";
+import { securityHeaders } from "./middlewares/securityHeaders";
 import { register } from "./config/metrics";
 
 const app = express();
 
 app.use(httpsRedirect);
+app.use(securityHeaders);
 
 app.use(cors({
   // Hardcoded for development purposes

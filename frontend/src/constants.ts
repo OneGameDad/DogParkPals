@@ -79,7 +79,7 @@ export const getOrgPhotoUrl = (orgId: number | undefined, hasPhoto: boolean | st
         return `${API_BASE_URL}/api/files/organizations/${orgId}/profile-picture`;
     }
 
-    return DEFAULT_IMAGES.parkCard;
+    return DEFAULT_IMAGES.orgPhoto;
 };
 
 export const getDogDocumentUrl = (dogId: number | undefined, hasDocument: boolean | string | null | undefined): string | null => {

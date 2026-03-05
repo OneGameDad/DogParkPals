@@ -1,6 +1,7 @@
 import { PrismaClient, Prisma, NotificationType } from "@prisma/client";
 import typeSafeLogger from "../utils/typeSafeLogger";
 import { toAppError } from "../utils/errors";
+import { Server as SocketServer } from "socket.io";
 
 const prisma = new PrismaClient();
 
@@ -8,6 +9,14 @@ type PrismaClientOrTx = PrismaClient | Prisma.TransactionClient;
 
 function getClient(tx?: PrismaClientOrTx) {
   return tx ?? prisma;
+}
+
+// Socket.io instance for real-time notifications
+let io: SocketServer | null = null;
+
+export function initializeNotificationSocket(socketIo: SocketServer) {
+  io = socketIo;
+  typeSafeLogger.info("NotificationService initialized with Socket.io");
 }
 
 const notificationService = {
@@ -104,13 +113,32 @@ const notificationService = {
       ) {
         try {
             const client = getClient(tx);
-            return await client.notification.create({
+            const notification = await client.notification.create({
                 data: {
                     userId,
                     type,
                     payload,
                 },
             });
+
+            // Emit notification via Socket.io for real-time delivery
+            if (io) {
+                io.to(`user:${userId}`).emit("notification", {
+                    id: notification.id,
+                    type: notification.type,
+                    payload: notification.payload,
+                    read: notification.read,
+                    createdAt: notification.createdAt,
+                });
+                
+                typeSafeLogger.debug("Notification emitted via Socket.io", {
+                    notificationId: notification.id,
+                    userId,
+                    type,
+                });
+            }
+
+            return notification;
         } catch (error) {
             const appError = toAppError(error, {
                 message: "Failed to create notification",
@@ -138,6 +166,25 @@ const notificationService = {
             payload,
           })),
         });
+
+        // Emit to all users via Socket.io
+        if (io) {
+          const now = new Date();
+          uniqueIds.forEach((userId) => {
+            io?.to(`user:${userId}`).emit("notification", {
+              type,
+              payload,
+              read: false,
+              createdAt: now,
+            });
+          });
+          
+          typeSafeLogger.debug("Bulk notifications emitted via Socket.io", {
+            count: uniqueIds.length,
+            type,
+          });
+        }
+
         return uniqueIds.length;
       } catch (error) {
         const appError = toAppError(error, {

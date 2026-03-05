@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState, ReactNode, useMemo } from 'react';
 import socketService, { Notification } from '../services/socketService';
 import { useTranslation } from 'react-i18next';
 import NotifContainer, { NotifContainerHandle } from '../components/features/Notif';
@@ -20,7 +20,12 @@ interface NotificationProviderProps {
 
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  
+  // Derive unreadCount from notifications to prevent drift
+  const unreadCount = useMemo(() => {
+    return notifications.filter(n => !n.read).length;
+  }, [notifications]);
+  
   const notifContainerRef = useRef<NotifContainerHandle>(null);
   const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
@@ -56,11 +61,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       // Add to notifications list
       setNotifications((prev) => [notification, ...prev]);
 
-      // Increment unread count if not already read
-      if (!notification.read) {
-        setUnreadCount((prev) => prev + 1);
-      }
-
       // Show visual notification using NotifContainer
       showVisualNotification(notification);
     };
@@ -93,21 +93,19 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         notif.id === notificationId ? { ...notif, read: true } : notif
       )
     );
-    
-    setUnreadCount((prev) => Math.max(0, prev - 1));
+    // unreadCount is automatically derived from notifications, no manual update needed
   };
 
   const markAllAsRead = () => {
     setNotifications((prev) =>
       prev.map((notif) => ({ ...notif, read: true }))
     );
-    
-    setUnreadCount(0);
+    // unreadCount is automatically derived from notifications, no manual update needed
   };
 
   const clearNotifications = () => {
     setNotifications([]);
-    setUnreadCount(0);
+    // unreadCount is automatically derived from notifications, no manual update needed
   };
 
   const contextValue: NotificationContextType = {

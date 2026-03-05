@@ -34,6 +34,14 @@ httpServer.listen(PORT, () => {
 });
 
 try {
+  // Validate certificate files exist
+  if (!fs.existsSync(certPath)) {
+    throw new Error(`Certificate file not found at ${certPath}`);
+  }
+  if (!fs.existsSync(keyPath)) {
+    throw new Error(`Key file not found at ${keyPath}`);
+  }
+
   const cert = fs.readFileSync(certPath, 'utf8');
   const key = fs.readFileSync(keyPath, 'utf8');
 
@@ -42,11 +50,17 @@ try {
     key,
   };
 
-  https.createServer(httpsOptions, app).listen(PORT, () => {
-    typeSafeLogger.info("HTTPS Server listening", { port: PORT });
+  const server = https.createServer(httpsOptions, app);
+  server.listen(PORT, () => {
+    typeSafeLogger.info("HTTPS Server listening", { 
+      port: PORT,
+      certPath,
+      keyPath
+    });
   });
 } catch (error) {
-  typeSafeLogger.error('Failed to start HTTPS server', error instanceof Error ? error : new Error(String(error)));
+  const errorMsg = error instanceof Error ? error.message : String(error);
+  typeSafeLogger.error('Failed to start HTTPS server', error instanceof Error ? error : new Error(errorMsg));
   process.exit(1);
 }
 

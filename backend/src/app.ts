@@ -37,9 +37,12 @@ import searchRouter from "./routes/searchRouter";
 import typeSafeLogger from "./utils/typeSafeLogger";
 import { requestIdMiddleware } from "./middlewares/requestId";
 import { errorHandler } from "./middlewares/errorHandler";
+import { httpsRedirect } from "./middlewares/httpsRedirect";
 import { register } from "./config/metrics";
 
 const app = express();
+
+app.use(httpsRedirect);
 
 app.use(cors({
   // Hardcoded for development purposes

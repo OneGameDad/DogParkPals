@@ -3,8 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useOrganization } from '../hooks';
-import { InputText, Button, ErrorMessage, Loading } from '../components/common';
+import { InputText, Button, ErrorMessage, Loading, Picture } from '../components/common';
+import FileUpload from '../components/features/FileUpload';
 import api from '../services/api';
+import uploadService from '../services/uploadService';
+import { getOrgPhotoUrl } from '../constants';
 import { toast } from 'react-hot-toast';
 
 const OrganizationUpdate = () => {
@@ -24,8 +27,17 @@ const OrganizationUpdate = () => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [websiteUrl, setWebsiteUrl] = useState('');
-    const [profilePictureUrl, setProfilePictureUrl] = useState(''); // Not used in UI yet but good for state
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [photoDeleted, setPhotoDeleted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Revoke blob URL on unmount or when preview changes
+    useEffect(() => {
+        return () => {
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+        };
+    }, [previewUrl]);
 
     // Prefill form when data loads
     useEffect(() => {
@@ -38,7 +50,6 @@ const OrganizationUpdate = () => {
             setName(organization.name);
             setDescription(organization.description || '');
             setWebsiteUrl(organization.websiteUrl || '');
-            setProfilePictureUrl(organization.profilePictureUrl || '');
         }
     }, [organization, canEdit, navigate, id, t]);
 
@@ -52,10 +63,18 @@ const OrganizationUpdate = () => {
                 description,
                 websiteUrl
             });
+
+            // Handle photo delete or upload
+            if (photoDeleted) {
+                await uploadService.deleteOrganizationProfilePicture(Number(id));
+            } else if (selectedFile) {
+                await uploadService.uploadOrganizationProfilePicture(Number(id), selectedFile);
+            }
+
             toast.success(t('organizations.updateSuccess', 'Organization updated successfully'));
             navigate(`/organizations/${id}`);
         } catch (error: any) {
-            const message = error.response?.data?.message || t('organizations.updateError', 'Failed to update organization');
+            const message = error.message || t('organizations.updateError', 'Failed to update organization');
             toast.error(message);
         } finally {
             setIsSubmitting(false);
@@ -118,7 +137,75 @@ const OrganizationUpdate = () => {
                         />
                     </div>
 
-                    {/* TODO: Profile Picture Upload Component */}
+                    {/* Profile Picture Preview + Remove */}
+                    <div className="flex flex-col items-center gap-3">
+                        <label className="block text-sm font-medium text-gray-700 self-start">
+                            {t('organizations.form.profilePicture', 'Profile Picture')}
+                        </label>
+                        <div className="border-4 border-gray-200 rounded-lg overflow-hidden">
+                            <Picture
+                                location={photoDeleted ? undefined : (previewUrl || getOrgPhotoUrl(organization.id, organization.profilePictureUrl))}
+                                initials={organization.name?.[0]}
+                                size={128}
+                                shape="square"
+                                alt={t('organizations.profilePictureAlt', 'Organization profile picture')}
+                            />
+                        </div>
+                        {!photoDeleted && organization.profilePictureUrl && !previewUrl && (
+                            <button
+                                type="button"
+                                disabled={isSubmitting}
+                                onClick={() => {
+                                    setPhotoDeleted(true);
+                                    setSelectedFile(null);
+                                    if (previewUrl) { URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }
+                                }}
+                                className="text-sm text-red-500 hover:text-red-700 underline disabled:opacity-50"
+                            >
+                                {t('organizations.form.removePhoto', 'Remove photo')}
+                            </button>
+                        )}
+                        {previewUrl && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    URL.revokeObjectURL(previewUrl);
+                                    setPreviewUrl(null);
+                                    setSelectedFile(null);
+                                }}
+                                className="text-sm text-gray-400 hover:text-gray-600 underline"
+                            >
+                                {t('organizations.form.clearSelection', 'Clear selection')}
+                            </button>
+                        )}
+                        {photoDeleted && (
+                            <p className="text-sm text-red-400">
+                                {t('organizations.form.photoWillBeRemoved', 'Photo will be removed on save')}
+                                {' '}
+                                <button
+                                    type="button"
+                                    onClick={() => setPhotoDeleted(false)}
+                                    className="underline text-blue-500"
+                                >
+                                    {t('common.undo', 'Undo')}
+                                </button>
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Profile Picture File Upload */}
+                    <FileUpload
+                        category="organizationProfile"
+                        itemId={organization.id}
+                        onFileSelect={(file) => {
+                            setSelectedFile(file);
+                            if (file) setPhotoDeleted(false);
+                            setPreviewUrl(file ? URL.createObjectURL(file) : null);
+                        }}
+                        hideUploadButton={true}
+                        hidePreview={true}
+                        label={t('organizations.form.uploadPhoto', 'Upload new photo')}
+                    />
 
                     <div className="flex justify-end gap-3 pt-4">
                         <Button

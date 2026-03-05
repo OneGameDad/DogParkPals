@@ -13,13 +13,18 @@ export const UPLOAD_RULES = {
         types: ['application/pdf', 'image/jpeg', 'image/png'],
         maxSizeMB: 10,
     },
+    organizationProfile: {
+        types: ['image/jpeg', 'image/png'],
+        maxSizeMB: 5,
+    },
 } as const;
 
 export type UploadCategory = keyof typeof UPLOAD_RULES;
 
 export const DEFAULT_IMAGES = {
-    userProfile: '/imgs/exampleprofilepic.jpg',
-    dogPhoto: '/imgs/exampledogpic.jpg',
+    userProfile: '/imgs/default_user.png',
+    dogPhoto: '/imgs/default_dog.png',
+    orgPhoto: '/imgs/default_organization.png',
     parkCard: '/imgs/background.png',
     parkHero: '/imgs/background.png',
 };
@@ -59,6 +64,22 @@ export const getDogPhotoUrl = (dogId: number | undefined, hasPhoto: boolean | st
     }
 
     return DEFAULT_IMAGES.dogPhoto;
+};
+
+export const getOrgPhotoUrl = (orgId: number | undefined, hasPhoto: boolean | string | null | undefined): string => {
+    if (!hasPhoto) {
+        return DEFAULT_IMAGES.orgPhoto;
+    }
+
+    if (isExternalOrDataUrl(hasPhoto)) {
+        return hasPhoto;
+    }
+
+    if (orgId) {
+        return `${API_BASE_URL}/api/files/organizations/${orgId}/profile-picture`;
+    }
+
+    return DEFAULT_IMAGES.parkCard;
 };
 
 export const getDogDocumentUrl = (dogId: number | undefined, hasDocument: boolean | string | null | undefined): string | null => {

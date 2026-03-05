@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Organization } from '../../types';
 import { Picture, Button } from '../common';
-import { DEFAULT_IMAGES } from '../../constants';
+import { getOrgPhotoUrl } from '../../constants';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -51,7 +51,7 @@ const OrganizationHeader: React.FC<OrganizationHeaderProps> = ({
                 {/* Profile Picture */}
                 <div className="relative">
                     <Picture
-                        location={organization.profilePictureUrl || DEFAULT_IMAGES.parkCard}
+                        location={getOrgPhotoUrl(organization.id, organization.profilePictureUrl)}
                         size={120}
                         shape="square"
                         alt={organization.name}

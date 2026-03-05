@@ -84,6 +84,9 @@ const FileUpload = ({
       } else if (category === 'document') {
         if (!itemId) throw new Error('Dog ID is required for vaccination record upload');
         response = await uploadService.uploadVaccinationRecord(itemId, selectedFile, (percent) => setProgress(percent));
+      } else if (category === 'organizationProfile') {
+        if (!itemId) throw new Error('Organization ID is required for organization photo upload');
+        response = await uploadService.uploadOrganizationProfilePicture(itemId, selectedFile, (percent) => setProgress(percent));
       } else {
         response = await uploadService.uploadFile(selectedFile, category, '/api/upload');
       }
@@ -116,6 +119,9 @@ const FileUpload = ({
       } else if (category === 'document') {
         if (!itemId) throw new Error('Dog ID required for deletion');
         await uploadService.deleteVaccinationRecord(itemId);
+      } else if (category === 'organizationProfile') {
+        if (!itemId) throw new Error('Organization ID required for deletion');
+        await uploadService.deleteOrganizationProfilePicture(itemId);
       }
 
       setPreview(null);

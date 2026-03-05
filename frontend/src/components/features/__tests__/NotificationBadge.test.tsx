@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import NotificationBadge from '../../components/features/NotificationBadge';
+import NotificationBadge from '../NotificationBadge';
+import * as NotificationContextModule from '../../../context/NotificationContext';
 
 // Mock the useNotifications hook
-vi.mock('../../context/NotificationContext', () => ({
+vi.mock('../../../context/NotificationContext', () => ({
   useNotifications: vi.fn(),
 }));
 
@@ -11,8 +12,7 @@ describe('NotificationBadge', () => {
   let mockUseNotifications: any;
 
   beforeEach(() => {
-    const notificationContext = require('../../context/NotificationContext');
-    mockUseNotifications = notificationContext.useNotifications;
+    mockUseNotifications = vi.mocked(NotificationContextModule.useNotifications);
     mockUseNotifications.mockClear();
   });
 

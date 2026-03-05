@@ -607,20 +607,5 @@ describe('Organization Router', () => {
       expect(mockDeleteProfilePicture).toHaveBeenCalled();
       expect(response.body.message).toBe('Profile picture deleted successfully');
     });
-
-    test('should handle organization not found', async () => {
-      mockDeleteProfilePicture.mockImplementation((req: any, res: any, next: any) => {
-        expect(req.params.id).toBe('1');
-        res.status(200).json({
-          message: 'Profile picture deleted successfully',
-        });
-      });
-
-      const response = await request(app)
-        .delete('/1/profile-picture')
-        .expect(200);
-
-      expect(mockDeleteProfilePicture).toHaveBeenCalled();
-    });
   });
 });

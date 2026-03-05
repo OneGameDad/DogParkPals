@@ -53,8 +53,14 @@ As this is an MVP it is limited in scope to only included the public dog parks i
 ### Docker Commands
 
 ```bash
-# Start services
+# Start all services (full stack with observability)
 docker compose up -d
+
+# Start minimal services only (core app without observability)
+docker compose up -d backend frontend rabbitmq db-init
+
+# Stop observability services (if already running)
+docker compose stop elasticsearch logstash kibana prometheus grafana rabbitmq-exporter
 
 # View logs
 docker compose logs -f
@@ -64,10 +70,30 @@ docker compose down
 
 # Restart a service
 docker compose restart backend
+```
 
+**Service Options:**
+- **Minimal** (core app only): backend, frontend, rabbitmq, db-init
+  - Fully functional app with events/messaging
+  - Lower resource usage (ideal for 42 evaluation)
+  - Startup time: ~30-60 seconds
+- **Full stack** (with observability): All minimal services + elasticsearch, logstash, kibana, prometheus, grafana, rabbitmq-exporter
+  - Adds centralized logging, metrics, and dashboards
+  - Higher resource usage
+  - Startup time: 3-5 minutes (Kibana alone takes 2-5 min first run)
+
+```bash
 # Seed database
 chmod +x scripts/docker-seed.sh
 ./scripts/docker-seed.sh
+
+# Minimal evaluation setup (core app only + seed database)
+docker compose up -d backend frontend rabbitmq db-init && bash scripts/docker-seed.sh
+
+# Full evaluation setup (all services + seed + ELK/Prometheus setup + test logs)
+chmod +x scripts/deployment-init.sh
+docker compose up -d && bash scripts/deployment-init.sh
+# ⏱️ Note: Kibana can take 2-5 minutes to fully initialize on first run; the script will wait
 
 # Reset everything (WARNING: deletes all data)
 chmod +x scripts/docker-reset.sh
@@ -173,6 +199,18 @@ After starting Docker services, initialize Kibana with dashboards and saved sear
 ```bash
 bash kibana/setup-kibana.sh
 ```
+
+**For 42 evaluation-ready setup** (starts all services + seeds DB + configures Kibana + generates test logs):
+```bash
+docker compose up -d && bash scripts/deployment-init.sh
+```
+
+This will:
+1. Start all services (backend, frontend, Elasticsearch, Logstash, Kibana, Prometheus, Grafana, RabbitMQ)
+2. Wait for services to be healthy
+3. Seed the database with sample data
+4. Configure Kibana dashboards and index patterns
+5. Generate test logs for verification
 
 This creates:
 - Elasticsearch ILM (Index Lifecycle Management) policy for automatic log retention

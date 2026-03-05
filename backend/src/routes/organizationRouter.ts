@@ -1,12 +1,15 @@
 import express from "express";
 import organizationController from "../controllers/organizationController";
 import { requireAuth } from "../middlewares/authMiddleware";
+import { uploadSingleFile } from "../middlewares/uploadMiddleware";
 
 const router = express.Router();
 
 router.use(requireAuth);
 router.get("/name/:name", organizationController.getOrganizationByName);
 router.get("/:id/details", organizationController.getOrganizationWithDetails);
+router.post("/:id/profile-picture", uploadSingleFile, organizationController.uploadProfilePicture);
+router.delete("/:id/profile-picture", organizationController.deleteProfilePicture);
 router.post("/:id/join", organizationController.joinOrganization);
 router.post("/:id/members", organizationController.addMember);
 router.delete("/:id/members/:memberId", organizationController.removeMember);

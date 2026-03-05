@@ -135,6 +135,12 @@ export const handlerRegistry: Record<EventType, RegisteredHandler[]> = {
     { name: 'notifications.organizationDeleted', handler: handleOrganizationDeletedNotifications },
     { name: 'elasticsearch.eventAudit', handler: handleEventAuditLogging },
   ],
+  [EventTypes.OrganizationProfilePictureUploaded]: [
+    { name: 'elasticsearch.eventAudit', handler: handleEventAuditLogging },
+  ],
+  [EventTypes.OrganizationProfilePictureDeleted]: [
+    { name: 'elasticsearch.eventAudit', handler: handleEventAuditLogging },
+  ],
   [EventTypes.DogOwnershipAdded]: [
     { name: 'notifications.dogOwnershipAdded', handler: handleDogOwnershipAddedNotifications },
     { name: 'achievements.dogOwnershipAdded', handler: handleDogOwnershipAddedAchievements },

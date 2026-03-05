@@ -6,6 +6,7 @@ import { ensureString } from "../utils/queryHelpers";
 import { checkDogAuthorization } from "./dogController";
 import dogService from "../services/dogService";
 import userService from "../services/userServices";
+import organizationService from "../services/organizationService";
 
 const router = express.Router();
 
@@ -78,6 +79,32 @@ router.get("/users/:userId/profile-picture", async (req, res, next) => {
     }
 
     const resolvedPath = resolveStoredPath(user.profilePictureUrl);
+    if (!fs.existsSync(resolvedPath)) {
+      return res.status(404).json({ message: "Profile picture not found" });
+    }
+
+    res.sendFile(resolvedPath);
+  } catch (err) {
+    next(
+      toAppError(err, {
+        message: "Failed to fetch profile picture",
+        code: "FILE_ACCESS_DENIED",
+      })
+    );
+  }
+});
+
+router.get("/organizations/:organizationId/profile-picture", async (req, res, next) => {
+  try {
+    const organizationId = parseInt(ensureString(req.params.organizationId), 10);
+
+    // Route is authentication-protected in fileRouter
+    const organization = await organizationService.getOrganizationById(organizationId);
+    if (!organization?.profilePictureUrl) {
+      return res.status(404).json({ message: "Profile picture not found" });
+    }
+
+    const resolvedPath = resolveStoredPath(organization.profilePictureUrl);
     if (!fs.existsSync(resolvedPath)) {
       return res.status(404).json({ message: "Profile picture not found" });
     }

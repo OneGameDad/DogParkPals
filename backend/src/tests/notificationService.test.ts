@@ -159,7 +159,13 @@ describe('notificationService', () => {
 
   describe('createNotifications', () => {
     test('creates notifications for unique users', async () => {
+      const fakeNotifications = [
+        { id: 1, userId: 1, type: 'MESSAGE_RECEIVED', payload: { eventId: 10 }, read: false, createdAt: new Date() },
+        { id: 2, userId: 2, type: 'MESSAGE_RECEIVED', payload: { eventId: 10 }, read: false, createdAt: new Date() },
+      ];
+      
       prisma.notification.createMany.mockResolvedValue({ count: 2 });
+      prisma.notification.findMany.mockResolvedValue(fakeNotifications);
 
       const result = await notificationService.createNotifications(
         [1, 2, 1],
@@ -174,6 +180,7 @@ describe('notificationService', () => {
           { userId: 2, type: 'MESSAGE_RECEIVED', payload: { eventId: 10 } },
         ],
       });
+      expect(prisma.notification.findMany).toHaveBeenCalled();
     });
 
     test('skips when user list is empty', async () => {
@@ -232,7 +239,13 @@ describe('notificationService', () => {
       const { initializeNotificationSocket } = require('../services/notificationService');
       initializeNotificationSocket(mockIO);
 
+      const fakeNotifications = [
+        { id: 10, userId: 123, type: 'EVENT_CREATED', payload: { eventId: 789, eventName: 'Park Walk' }, read: false, createdAt: new Date() },
+        { id: 11, userId: 456, type: 'EVENT_CREATED', payload: { eventId: 789, eventName: 'Park Walk' }, read: false, createdAt: new Date() },
+      ];
+
       prisma.notification.createMany.mockResolvedValue({ count: 2 });
+      prisma.notification.findMany.mockResolvedValue(fakeNotifications);
 
       await notificationService.createNotifications([123, 456], 'EVENT_CREATED', {
         eventId: 789,
@@ -242,6 +255,8 @@ describe('notificationService', () => {
       expect(mockIO.to).toHaveBeenCalledWith('user:123');
       expect(mockIO.to).toHaveBeenCalledWith('user:456');
       expect(mockIO.emit).toHaveBeenCalledTimes(2);
+      expect(mockIO.emit).toHaveBeenCalledWith('notification', expect.objectContaining({ id: 10 }));
+      expect(mockIO.emit).toHaveBeenCalledWith('notification', expect.objectContaining({ id: 11 }));
     });
 
     test('handles Socket.io not initialized gracefully', async () => {

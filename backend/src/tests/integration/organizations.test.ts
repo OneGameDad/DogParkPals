@@ -154,15 +154,16 @@ describe("organizations profile picture management", () => {
       .attach("file", Buffer.from("fake-image-data"), "test.jpg");
 
     expect(uploadRes.status).toBe(200);
+    expect(uploadRes.body).toHaveProperty("profilePictureUrl");
 
-    // Extract the org ID from the URL or use the known ID
+    // Retrieve the profile picture and verify it exists and is served correctly
     const res = await request(app)
       .get(`/api/files/organizations/${ids.orgs.org1}/profile-picture`)
       .set("Authorization", `Bearer ${ownerToken()}`);
 
-    // Will return 404 if file doesn't actually exist on disk (expected in mock/test environment)
-    // but the endpoint should be accessible
-    expect([200, 404]).toContain(res.status);
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toBeDefined();
+    expect(res.body).toBeDefined();
   });
 
   test("admin can upload profile picture for any organization", async () => {

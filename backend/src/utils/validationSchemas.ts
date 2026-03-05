@@ -344,6 +344,37 @@ export const checkEnemySchema = z.object({
 
 export type CheckEnemyRequest = z.infer<typeof checkEnemySchema>;
 
+export const addDogEnemySchema = z.object({
+  ownerDogId: z.number().int().positive('Owner Dog ID must be a positive integer'),
+  enemyDogId: z.number().int().positive('Enemy Dog ID must be a positive integer'),
+  confirmed: z.boolean().optional().default(false),
+}).refine((data) => data.ownerDogId !== data.enemyDogId, {
+  message: 'Owner Dog ID and Enemy Dog ID must be different',
+  path: ['enemyDogId'],
+});
+
+export type AddDogEnemyRequest = z.infer<typeof addDogEnemySchema>;
+
+export const removeDogEnemySchema = z.object({
+  ownerDogId: z.number().int().positive('Owner Dog ID must be a positive integer'),
+  enemyDogId: z.number().int().positive('Enemy Dog ID must be a positive integer'),
+}).refine((data) => data.ownerDogId !== data.enemyDogId, {
+  message: 'Owner Dog ID and Enemy Dog ID must be different',
+  path: ['enemyDogId'],
+});
+
+export type RemoveDogEnemyRequest = z.infer<typeof removeDogEnemySchema>;
+
+export const checkDogEnemySchema = z.object({
+  ownerDogId: z.number().int().positive('Owner Dog ID must be a positive integer'),
+  potentialEnemyDogId: z.number().int().positive('Potential Enemy Dog ID must be a positive integer'),
+}).refine((data) => data.ownerDogId !== data.potentialEnemyDogId, {
+  message: 'Owner Dog ID and Potential Enemy Dog ID must be different',
+  path: ['potentialEnemyDogId'],
+});
+
+export type CheckDogEnemyRequest = z.infer<typeof checkDogEnemySchema>;
+
 export const sendMessageSchema = z.object({
   senderId: z.number().int().positive('Sender ID must be a positive integer'),
   receiverId: z.number().int().positive('Receiver ID must be a positive integer'),

@@ -953,12 +953,25 @@ describe('Organization Service', () => {
         return callback(mockPrisma);
       });
 
-      const createDomainEventMock = jest.fn();
-      const addOutboxEventMock = jest.fn();
-      
       await organizationService.uploadProfilePicture(1, filePath);
 
-      expect(mockPrisma.organization.update).toHaveBeenCalled();
+      // Verify domain event was created with correct type and payload
+      expect(mockCreateDomainEvent).toHaveBeenCalledWith(
+        'organization.profile.picture.uploaded',
+        {
+          organizationId: 1,
+          profilePictureUrl: filePath,
+        },
+        { actorId: undefined }
+      );
+
+      // Verify event was stored in outbox for reliable delivery
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'organization.profile.picture.uploaded',
+        }),
+      });
     });
 
     test('should throw error on upload failure', async () => {
@@ -1002,6 +1015,39 @@ describe('Organization Service', () => {
         data: { profilePictureUrl: null },
       });
       expect(result).toBeDefined();
+    });
+
+    test('should create domain event on successful delete', async () => {
+      const existingUrl = 'uploads/images/old-pic.jpg';
+      mockPrisma.organization.findUnique.mockResolvedValue({
+        profilePictureUrl: existingUrl,
+      });
+      mockPrisma.organization.update.mockResolvedValue({
+        profilePictureUrl: null,
+      });
+      mockPrisma.$transaction.mockImplementation(async (callback: any) => {
+        return callback(mockPrisma);
+      });
+
+      await organizationService.deleteProfilePicture(1);
+
+      // Verify domain event was created with correct type and payload
+      expect(mockCreateDomainEvent).toHaveBeenCalledWith(
+        'organization.profile.picture.deleted',
+        {
+          organizationId: 1,
+          previousUrl: existingUrl,
+        },
+        { actorId: undefined }
+      );
+
+      // Verify event was stored in outbox for reliable delivery
+      expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'test-event-id',
+          type: 'organization.profile.picture.deleted',
+        }),
+      });
     });
 
     test('should return null when no profile picture exists', async () => {

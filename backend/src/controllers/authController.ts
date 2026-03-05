@@ -10,6 +10,9 @@ import { sanitizeUser } from '../utils/userSanitizer';
 import { blacklistToken } from '../utils/tokenBlacklist';
 import { awardExperience, XP_REWARDS } from '../services/xpService';
 
+const SOCKET_TOKEN_EXPIRY = '90s';
+const SOCKET_TOKEN_AUDIENCE = 'socket';
+
 const authController = {
   login: async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -125,28 +128,34 @@ const authController = {
   },
 
   /**
-   * Get a token specifically for Socket.io authentication
-   * This extracts the JWT from the httpOnly cookie or Authorization header and returns it
-   * so the frontend can use it for WebSocket connection
+   * Get a short-lived, scope-limited token for Socket.io authentication.
+   * This avoids exposing the long-lived session JWT to JavaScript.
    */
   getSocketToken: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Token is already validated by requireAuth middleware
-      let token = req.cookies.authToken;
-      
-      // If no cookie, try to extract from Authorization header
-      if (!token) {
-        const authHeader = req.headers.authorization;
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-          token = authHeader.replace('Bearer ', '');
-        }
-      }
-      
-      if (!token) {
-        throw AuthError('No authentication token found');
+      const secret = process.env.JWT_SECRET;
+      if (!secret) {
+        throw new Error('JWT_SECRET not configured');
       }
 
-      res.status(200).json({ token });
+      if (!req.userId) {
+        throw AuthError('No authenticated user found');
+      }
+
+      const socketToken = jwt.sign(
+        {
+          userId: req.userId,
+          role: req.user?.role,
+          tokenType: 'socket',
+        },
+        secret,
+        {
+          expiresIn: SOCKET_TOKEN_EXPIRY,
+          audience: SOCKET_TOKEN_AUDIENCE,
+        }
+      );
+
+      res.status(200).json({ token: socketToken });
     } catch (error) {
       if (isAppError(error)) {
         return next(error);

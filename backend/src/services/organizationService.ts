@@ -1,4 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
+import path from 'path';
+import fs from 'fs';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
 import { createDomainEvent } from '../events/createDomainEvent';
@@ -481,6 +483,79 @@ const organizationService = {
 
       return comparison * direction;
     });
+  },
+
+  async uploadProfilePicture(organizationId: number, filePath: string) {
+    typeSafeLogger.logUserAction('Uploading organization profile picture', { organizationId, filePath });
+    try {
+      const updatedOrganization = await prisma.$transaction(async (tx) => {
+        const organization = await tx.organization.update({
+          where: { id: organizationId },
+          data: { profilePictureUrl: filePath },
+          select: { profilePictureUrl: true },
+        });
+        const domainEvent = createDomainEvent(
+          EventTypes.OrganizationProfilePictureUploaded,
+          {
+            organizationId,
+            profilePictureUrl: organization.profilePictureUrl!,
+          },
+          { actorId: undefined }
+        );
+        await addOutboxEvent(tx, domainEvent);
+        return organization;
+      });
+      typeSafeLogger.logUserAction('Organization profile picture uploaded', { organizationId, filePath });
+      return updatedOrganization;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to upload organization profile picture',
+        code: 'UPLOAD_ORGANIZATION_PROFILE_PICTURE_FAILED',
+      });
+      typeSafeLogger.logError('Failed to upload organization profile picture', appError, { organizationId, filePath });
+      throw appError;
+    }
+  },
+
+  async deleteProfilePicture(organizationId: number) {
+    typeSafeLogger.logUserAction('Deleting organization profile picture', { organizationId });
+    try {
+      const existingOrganization = await prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: { profilePictureUrl: true },
+      });
+      if (!existingOrganization?.profilePictureUrl) return null;
+      const filePath = path.join(__dirname, '../../', existingOrganization.profilePictureUrl);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      const previousUrl = existingOrganization.profilePictureUrl;
+      const updatedOrganization = await prisma.$transaction(async (tx) => {
+        const organization = await tx.organization.update({
+          where: { id: organizationId },
+          data: { profilePictureUrl: null },
+        });
+        const domainEvent = createDomainEvent(
+          EventTypes.OrganizationProfilePictureDeleted,
+          {
+            organizationId,
+            previousUrl,
+          },
+          { actorId: undefined }
+        );
+        await addOutboxEvent(tx, domainEvent);
+        return organization;
+      });
+      typeSafeLogger.logUserAction('Organization profile picture deleted', { organizationId });
+      return updatedOrganization;
+    } catch (error) {
+      const appError = toAppError(error, {
+        message: 'Failed to delete organization profile picture',
+        code: 'DELETE_ORGANIZATION_PROFILE_PICTURE_FAILED',
+      });
+      typeSafeLogger.logError('Failed to delete organization profile picture', appError, { organizationId });
+      throw appError;
+    }
   },
 };
 

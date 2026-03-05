@@ -14,6 +14,8 @@ export const EventTypes = {
   OrganizationJoinApproved: 'organization.join.approved',
   OrganizationRoleUpdated: 'organization.role.updated',
   OrganizationMemberRemoved: 'organization.member.removed',
+  OrganizationProfilePictureUploaded: 'organization.profile.picture.uploaded',
+  OrganizationProfilePictureDeleted: 'organization.profile.picture.deleted',
   OrganizationDeleted: 'organization.deleted',
   DogOwnershipAdded: 'dog.ownership.added',
   DogOwnershipRemoved: 'dog.ownership.removed',
@@ -118,6 +120,16 @@ export type OrganizationMemberRemovedPayload = {
   organizationId: number;
   userId: number;
   removedBy?: number;
+};
+
+export type OrganizationProfilePictureUploadedPayload = {
+  organizationId: number;
+  profilePictureUrl: string;
+};
+
+export type OrganizationProfilePictureDeletedPayload = {
+  organizationId: number;
+  previousUrl: string;
 };
 
 export type OrganizationDeletedPayload = {

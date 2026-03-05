@@ -450,6 +450,74 @@ const organizationController = {
             );
         }
     },
+
+    uploadProfilePicture: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            typeSafeLogger.logRequest("Received request to upload organization profile picture", {
+              method: req.method,
+              path: req.path,
+            });
+
+            if (!req.userId) throw ForbiddenError("Authentication required");
+            if (!req.file) throw toAppError(new Error("No file uploaded"), {
+                      message: "No file uploaded",
+                      code: "NO_FILE_UPLOADED",
+                    statusCode: 400,
+                    });
+            
+            const organizationId = parseInt(ensureString(req.params.id), 10);
+            const userRole = (req as any).user?.role;
+            
+            // Check authorization
+            await checkOrganizationAuthorization(organizationId, req.userId, userRole);
+            
+            await organizationService.uploadProfilePicture(organizationId, req.file.path);
+            const profilePictureUrl = `/api/files/organizations/${organizationId}/profile-picture`;
+
+            res.status(200).json({
+              message: "Profile picture uploaded successfully",
+              profilePictureUrl,
+            });
+        } catch (error) {
+            if (isAppError(error)) return next(error);
+
+            return next(toAppError(error, {
+                message: "Failed to upload profile picture",
+                code: "INTERNAL_ERROR",
+                statusCode: 500,
+              }));
+        }
+    },
+
+    deleteProfilePicture: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            typeSafeLogger.logRequest("Received request to delete organization profile picture", {
+                method: req.method,
+                path: req.path,
+            });
+
+            if (!req.userId) throw ForbiddenError("Authentication required");
+            
+            const organizationId = parseInt(ensureString(req.params.id), 10);
+            const userRole = (req as any).user?.role;
+            
+            // Check authorization
+            await checkOrganizationAuthorization(organizationId, req.userId, userRole);
+
+            await organizationService.deleteProfilePicture(organizationId);
+
+            res.status(200).json({ message: "Profile picture deleted successfully", });
+        } catch (error) {
+            if (isAppError(error)) return next(error);
+
+            return next(
+                toAppError(error, {
+                    message: "Failed to delete profile picture",
+                    code: "INTERNAL_ERROR",
+                    statusCode: 500,
+                }));
+        }
+    },
 };
 
 export default organizationController;

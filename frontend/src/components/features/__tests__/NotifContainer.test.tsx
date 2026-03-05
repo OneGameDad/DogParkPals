@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import NotifContainer from '../../components/features/Notif';
+import NotifContainer from '../Notif';
 import { useTranslation } from 'react-i18next';
 
 // Mock i18next
@@ -61,7 +61,7 @@ describe('NotifContainer', () => {
   });
 
   it('should remove notification after 5 seconds', async () => {
-    it.useFakeTimers();
+    vi.useFakeTimers();
 
     render(<NotifContainer ref={containerRef} />);
 
@@ -78,7 +78,7 @@ describe('NotifContainer', () => {
       expect(screen.queryByText('You received a message from John')).not.toBeInTheDocument();
     });
 
-    it.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('should remove notification when close button clicked', async () => {

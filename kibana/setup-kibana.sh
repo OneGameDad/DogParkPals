@@ -50,13 +50,11 @@ echo "📊 Creating index pattern 'dogparkpals-logs-*'..."
 response=$(curl -s -w "\n%{http_code}" -X POST \
   -H "Content-Type: application/json" \
   -H "kbn-xsrf: true" \
-  "$KIBANA_URL/api/data_views" \
+  "$KIBANA_URL/api/index_patterns/index_pattern" \
   -d '{
-    "data_view": {
+    "index_pattern": {
       "title": "dogparkpals-logs-*",
-      "timeFieldName": "@timestamp",
-      "allowNoIndex": false,
-      "id": "dogparkpals-logs"
+      "timeFieldName": "@timestamp"
     }
   }' 2>/dev/null)
 
@@ -64,7 +62,27 @@ http_code=$(echo "$response" | tail -n1)
 if [ "$http_code" = "200" ] || [ "$http_code" = "409" ]; then
   echo "✓ Index pattern ready (409 = already exists, which is fine)"
 else
-  echo "⚠ Warning: Index pattern creation returned HTTP $http_code"
+  echo "⚠ Warning: Index pattern creation returned HTTP $http_code (trying alternative endpoint...)"
+  # Try alternative endpoint if first one fails
+  response=$(curl -s -w "\n%{http_code}" -X POST \
+    -H "Content-Type: application/json" \
+    -H "kbn-xsrf: true" \
+    "$KIBANA_URL/api/data_views" \
+    -d '{
+      "data_view": {
+        "title": "dogparkpals-logs-*",
+        "timeFieldName": "@timestamp",
+        "allowNoIndex": true,
+        "id": "dogparkpals-logs"
+      }
+    }' 2>/dev/null)
+  
+  http_code=$(echo "$response" | tail -n1)
+  if [ "$http_code" = "200" ] || [ "$http_code" = "409" ]; then
+    echo "✓ Index pattern created with alternative endpoint"
+  else
+    echo "⚠ Warning: Index pattern creation returned HTTP $http_code"
+  fi
 fi
 
 # Wait for index pattern to be available
@@ -77,17 +95,22 @@ if [ -f "$SAVED_SEARCHES_FILE" ]; then
   
   while IFS= read -r line; do
     if [ ! -z "$line" ]; then
-      # Extract title for display
+      # Extract title and id for display
       title=$(echo "$line" | grep -oP '"title":\s*"\K[^"]+' || echo "search")
+      id=$(echo "$line" | grep -oP '"id":\s*"\K[^"]+' || echo "unknown")
       
-      # Import the search object
+      # Extract just the attributes and references for the POST body
+      # Remove the type and id fields, keep only attributes and references
+      body=$(echo "$line" | sed 's/^{"type":"[^"]*","id":"[^"]*",//;s/}$/}/')
+      
+      # Import the search object with id in URL
       http_code=$(curl -s -w "%{http_code}" -X POST \
         -H "Content-Type: application/json" \
         -H "kbn-xsrf: true" \
-        "$KIBANA_URL/api/saved_objects/search" \
-        -d "$line" 2>/dev/null -o /dev/null)
+        "$KIBANA_URL/api/saved_objects/search/$id?overwrite=true" \
+        -d "$body" 2>/dev/null -o /dev/null)
       
-      if [ "$http_code" = "200" ]; then
+      if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
         echo "  ✓ $title"
       else
         echo "  ⚠ $title (HTTP $http_code, may have failed)"

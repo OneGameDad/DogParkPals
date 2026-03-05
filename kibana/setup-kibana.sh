@@ -111,44 +111,52 @@ sleep 2
 # Import saved searches
 if [ -f "$SAVED_SEARCHES_FILE" ]; then
   echo ""
-  echo "📌 Importing saved searches..."
+  echo "📌 Importing saved searches from: $SAVED_SEARCHES_FILE"
+  
+  # Check file is not empty
+  line_count=$(wc -l < "$SAVED_SEARCHES_FILE")
+  echo "   Found $line_count lines in file"
   
   count=0
   imported=0
-  while IFS= read -r line; do
-    if [ ! -z "$line" ]; then
-      count=$((count + 1))
+  while IFS= read -r line || [ -n "$line" ]; do
+    # Skip completely empty lines
+    if [ -z "$line" ]; then
+      continue
+    fi
+    
+    count=$((count + 1))
+    
+    # Extract title and id for display
+    title=$(echo "$line" | grep -oP '"title":\s*"\K[^"]+' || echo "search")
+    id=$(echo "$line" | grep -oP '"id":\s*"\K[^"]+' || echo "unknown")
+    
+    # Extract attributes and references by removing type and id fields
+    body=$(echo "$line" | sed 's/"type":"search",//g' | sed 's/"id":"[^"]*",//g')
+    
+    if [ ! -z "$body" ] && [ "$body" != "{}" ]; then
+      # Import the search object with id in URL
+      http_code=$(curl -s -w "%{http_code}" -X POST \
+        -H "Content-Type: application/json" \
+        -H "kbn-xsrf: true" \
+        "$KIBANA_URL/api/saved_objects/search/$id?overwrite=true" \
+        -d "$body" 2>/dev/null -o /dev/null)
       
-      # Extract title and id for display
-      title=$(echo "$line" | grep -oP '"title":\s*"\K[^"]+' || echo "search")
-      id=$(echo "$line" | grep -oP '"id":\s*"\K[^"]+' || echo "unknown")
-      
-      # Extract attributes and references by removing type and id fields
-      body=$(echo "$line" | sed 's/"type":"search",//g' | sed 's/"id":"[^"]*",//g')
-      
-      if [ ! -z "$body" ] && [ "$body" != "{}" ]; then
-        # Import the search object with id in URL
-        http_code=$(curl -s -w "%{http_code}" -X POST \
-          -H "Content-Type: application/json" \
-          -H "kbn-xsrf: true" \
-          "$KIBANA_URL/api/saved_objects/search/$id?overwrite=true" \
-          -d "$body" 2>/dev/null -o /dev/null)
-        
-        if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
-          echo "  ✓ $title"
-          imported=$((imported + 1))
-        else
-          echo "  ⚠ $title (HTTP $http_code)"
-        fi
+      if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
+        echo "  ✓ $title"
+        imported=$((imported + 1))
       else
-        echo "  ⚠ Could not parse $title"
+        echo "  ⚠ $title (HTTP $http_code)"
       fi
+    else
+      echo "  ⚠ Could not parse $title"
     fi
   done < "$SAVED_SEARCHES_FILE"
   
   echo "✓ Saved searches: $imported/$count imported"
 else
   echo "✗ Saved searches file not found: $SAVED_SEARCHES_FILE"
+  echo "   Expected at: $(cd "$SCRIPT_DIR" 2>/dev/null && pwd)/saved_searches.ndjson || echo 'Cannot resolve path'"
 fi
 
 # Import dashboards with visualizations

@@ -76,9 +76,11 @@ docker compose restart backend
 - **Minimal** (core app only): backend, frontend, rabbitmq, db-init
   - Fully functional app with events/messaging
   - Lower resource usage (ideal for 42 evaluation)
+  - Startup time: ~30-60 seconds
 - **Full stack** (with observability): All minimal services + elasticsearch, logstash, kibana, prometheus, grafana, rabbitmq-exporter
   - Adds centralized logging, metrics, and dashboards
   - Higher resource usage
+  - Startup time: 3-5 minutes (Kibana alone takes 2-5 min first run)
 
 ```bash
 # Seed database
@@ -91,6 +93,7 @@ docker compose up -d backend frontend rabbitmq db-init && bash scripts/docker-se
 # Full evaluation setup (all services + seed + ELK/Prometheus setup + test logs)
 chmod +x scripts/deployment-init.sh
 docker compose up -d && bash scripts/deployment-init.sh
+# ⏱️ Note: Kibana can take 2-5 minutes to fully initialize on first run; the script will wait
 
 # Reset everything (WARNING: deletes all data)
 chmod +x scripts/docker-reset.sh

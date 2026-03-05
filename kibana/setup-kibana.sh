@@ -31,16 +31,28 @@ else
 fi
 
 # Step 2: Wait for Kibana to be ready
-echo "⏳ Waiting for Kibana to be ready..."
-for i in {1..120}; do
-  # Check both status endpoint and that we can reach the API
-  status=$(curl -s "$KIBANA_URL/api/status" 2>&1)
-  if echo "$status" | grep -q "state"; then
-    echo "✓ Kibana is ready"
-    break
+echo "⏳ Waiting for Kibana to be ready (this can take 2-5 minutes on first run)..."
+for i in {1..300}; do
+  # Check if Kibana status endpoint returns valid response
+  response=$(curl -s "$KIBANA_URL/api/status" 2>&1)
+  
+  # Check for either "state" (ready) or "status" (any state) in response
+  if echo "$response" | grep -qE '(state|status)'; then
+    # Make sure it's not just an error page
+    if ! echo "$response" | grep -q "error"; then
+      echo "✓ Kibana is ready"
+      break
+    fi
   fi
-  if [ $i -eq 120 ]; then
-    echo "✗ Kibana did not become ready in time"
+  
+  # Show progress every 30 seconds
+  if [ $((i % 30)) -eq 0 ]; then
+    echo "  Still waiting... ($i/300 seconds)"
+  fi
+  
+  if [ $i -eq 300 ]; then
+    echo "✗ Kibana did not become ready after 5 minutes"
+    echo "  Check: docker compose logs kibana"
     exit 1
   fi
   sleep 1
@@ -48,14 +60,14 @@ done
 
 # Step 2b: Wait for Kibana saved objects API to be available
 echo "⏳ Waiting for Kibana API to be ready..."
-for i in {1..60}; do
+for i in {1..120}; do
   http_code=$(curl -s -w "%{http_code}" -o /dev/null "$KIBANA_URL/api/saved_objects/search")
-  if [ "$http_code" != "000" ] && [ "$http_code" != "503" ]; then
+  if [ "$http_code" != "000" ] && [ "$http_code" != "503" ] && [ "$http_code" != "504" ]; then
     echo "✓ Kibana API is ready"
     break
   fi
-  if [ $i -eq 60 ]; then
-    echo "⚠ Kibana API readiness check timed out, continuing anyway..."
+  if [ $i -eq 120 ]; then
+    echo "⚠ Kibana API not fully ready, but continuing (may retry requests)..."
     break
   fi
   sleep 1

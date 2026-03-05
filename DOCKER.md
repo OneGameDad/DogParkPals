@@ -10,7 +10,7 @@ This document describes the Docker containerization implementation for DogParkPa
 
 The application is split into three Docker containers:
 
-1. **dogparkpals-backend** - Node.js/Express API server
+1. **dogparkpals-backend** - Node.js/Express API server (HTTPS)
 2. **dogparkpals-frontend** - React SPA served by Nginx
 3. **dogparkpals-db-init** - One-time database migration container
 
@@ -20,14 +20,16 @@ The application is split into three Docker containers:
 services:
   backend:
     - Built from backend/Dockerfile
-    - Runs on port 3000
-    - Uses tsx to execute TypeScript directly
+    - Runs on port 3000 with HTTPS
+    - Uses Node.js https module with SSL certificates
+    - Mounts SSL certificates from ./certs directory (read-only)
     - Depends on db-init for database setup
     - Mounts uploads volume for persistent file storage
     
   frontend:
     - Built from frontend/Dockerfile (multi-stage build)
     - Runs on port 5173 (internally port 80)
+    - Configured to connect to backend via HTTPS
     - Uses Nginx to serve static files
     - No external dependencies
     
@@ -40,9 +42,24 @@ services:
 volumes:
   backend-db: Persists SQLite database between container restarts
 
-networks:
-  dogparkpals-network: Internal network for container communication
+### SSL/TLS Certificates
+
+The backend requires SSL certificates mounted at `/app/certs`:
+- `server.crt` - SSL certificate file
+- `server.key` - Private key file
+
+For local development, generate self-signed certificates:
+```bash
+mkdir -p certs
+cd certs
+openssl req -x509 -newkey rsa:2048 -keyout server.key -out server.crt -days 365 -nodes -subj "/CN=localhost/O=DogParkPals/C=US"
 ```
+
+For production, obtain properly signed certificates from a Certificate Authority (e.g., Let's Encrypt).
+
+Certificate paths are configured via environment variables in `docker-secrets`:
+- `CERT_PATH=/app/certs/server.crt`
+- `KEY_PATH=/app/certs/server.key`
 
 ## Implementation Details
 
@@ -63,7 +80,7 @@ RUN npm ci
 COPY . .
 RUN npx prisma generate
 RUN npm run build
-RUN mkdir -p uploads
+RUN mkdir -p uploads data certs
 
 EXPOSE 3000
 CMD ["node", "dist/server.js"]
@@ -76,6 +93,8 @@ CMD ["node", "dist/server.js"]
 2. **Single-stage build**: Keeps the Dockerfile straightforward while ensuring Prisma client generation and TypeScript build happen during image creation.
 
 3. **Prisma generate in build**: Ensures generated client matches the schema inside the image.
+
+4. **HTTPS with SSL Certificates**: Backend uses Node.js https module. Certificates are mounted via Docker volumes at runtime from the host system's `./certs` directory.
 
 ### Frontend Container
 
@@ -236,8 +255,11 @@ DATABASE_URL="file:./data/prod.db"
 JWT_SECRET=<generated-secret>
 GOOGLE_CLIENT_ID=<your-client-id>
 GOOGLE_CLIENT_SECRET=<your-secret>
-FRONTEND_URL=http://localhost:5173
-VITE_API_BASE_URL=http://localhost:3000
+GOOGLE_CALLBACK_URL=https://localhost:3000/auth/google/callback
+FRONTEND_URL=https://localhost:5173
+VITE_API_BASE_URL=https://localhost:3000
+CERT_PATH=/app/certs/server.crt
+KEY_PATH=/app/certs/server.key
 ```
 
 **Security Measures**:
@@ -245,6 +267,9 @@ VITE_API_BASE_URL=http://localhost:3000
 2. `docker-secrets-example` provides template (no real secrets)
 3. JWT secret generated with crypto: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 4. Separate from `.env` files to avoid confusion
+5. HTTPS enforced with SSL/TLS certificates
+6. Security headers middleware (HSTS, CSP, X-Frame-Options, etc.)
+7. HTTPS redirect middleware for HTTP requests
 
 ## Testing Results
 
@@ -299,7 +324,7 @@ All migrations have been successfully applied.
 
 **Test 4: Backend Health Check**
 ```bash
-curl http://localhost:3000/health
+curl -k https://localhost:3000/health
 ```
 
 **Results**:
@@ -307,11 +332,11 @@ curl http://localhost:3000/health
 {"status":"ok"}
 ```
 
-✅ Backend API responding correctly
+✅ Backend API responding correctly (note: -k flag required for self-signed certificate)
 
 **Test 5: Backend Authentication Middleware**
 ```bash
-curl http://localhost:3000/api/parks
+curl -k https://localhost:3000/api/parks
 ```
 
 **Results**:
@@ -504,11 +529,12 @@ Error querying the database: Error code 14: Unable to open the database file
 
 **Testing Verification**:
 - ✅ Backend container starts and stays running (up 36+ seconds)
-- ✅ Health check endpoint responds: `curl http://localhost:3000/health` → `{"status":"ok"}`
+- ✅ Health check endpoint responds: `curl -k https://localhost:3000/health` → `{"status":"ok"}`
 - ✅ Database migrations complete successfully (15 migrations applied)
 - ✅ Frontend accessible at http://localhost:5173
 - ✅ RabbitMQ connections established successfully
 - ✅ Database file persists in named volume across container restarts
+- ✅ HTTPS enforced with SSL/TLS certificates
 
 **Files Modified**:
 - `docker-compose.yml` - Updated DATABASE_URL paths (3 services)
@@ -559,11 +585,12 @@ Benefits: 50% smaller image, better security, faster startup
 ```yaml
 backend:
   healthcheck:
-    test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+    test: ["CMD", "curl", "-kf", "https://localhost:3000/health"]
     interval: 30s
     timeout: 3s
     retries: 3
 ```
+Note: `-k` flag required for self-signed certificates in local development.
 
 ### 4. Use PostgreSQL for Production
 Replace SQLite with PostgreSQL for better concurrency:

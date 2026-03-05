@@ -9,6 +9,18 @@ echo "🐕 DogParkPals Docker Setup"
 echo "=========================="
 echo ""
 
+# Generate SSL certificates if they don't exist
+if [ ! -f "certs/server.crt" ] || [ ! -f "certs/server.key" ]; then
+    echo "🔐 Generating SSL certificates..."
+    mkdir -p certs
+    openssl req -x509 -newkey rsa:2048 -keyout certs/server.key -out certs/server.crt -days 365 -nodes -subj "/CN=localhost/O=DogParkPals/C=US" > /dev/null 2>&1
+    echo "✅ SSL certificates generated"
+    echo ""
+else
+    echo "✅ SSL certificates already exist"
+    echo ""
+fi
+
 # Check if docker-secrets exists
 if [ ! -f "docker-secrets" ]; then
     echo "⚠️  docker-secrets file not found!"
@@ -43,8 +55,10 @@ echo ""
 echo "✅ Docker setup complete!"
 echo ""
 echo "Services running:"
-echo "  - Backend:  http://localhost:3000"
-echo "  - Frontend: http://localhost:5173"
+echo "  - Backend:  https://localhost:3000"
+echo "  - Frontend: https://localhost:5173"
+echo ""
+echo "Note: You'll see certificate warnings for self-signed certificates"
 echo ""
 echo "Useful commands:"
 echo "  - View logs:     docker compose logs -f"

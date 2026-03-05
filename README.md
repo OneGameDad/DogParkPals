@@ -14,12 +14,21 @@ As this is an MVP it is limited in scope to only included the public dog parks i
 
 ### Setup
 
-1. **Copy environment configuration**
+1. **Generate SSL certificates** (for local development)
+   ```bash
+   mkdir -p certs
+   cd certs
+   openssl req -x509 -newkey rsa:2048 -keyout server.key -out server.crt -days 365 -nodes -subj "/CN=localhost/O=DogParkPals/C=US"
+   cd ..
+   ```
+   Note: For production, replace with properly signed certificates from a Certificate Authority.
+
+2. **Copy environment configuration**
    ```bash
    cp docker-secrets-example docker-secrets
    ```
 
-2. **Edit docker-secrets with your credentials**
+3. **Edit docker-secrets with your credentials**
    ```bash
    nano docker-secrets
    ```
@@ -28,20 +37,24 @@ As this is an MVP it is limited in scope to only included the public dog parks i
    - `JWT_SECRET`: Generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
    - `GOOGLE_CLIENT_ID`: (Optional) Get from Google Cloud Console
    - `GOOGLE_CLIENT_SECRET`: (Optional) Get from Google Cloud Console
+   - `CERT_PATH`: Path to SSL certificate (default: /app/certs/server.crt)
+   - `KEY_PATH`: Path to SSL private key (default: /app/certs/server.key)
 
-3. **Run the setup script**
+4. **Run the setup script**
    ```bash
    chmod +x scripts/docker-setup.sh
    ./scripts/docker-setup.sh
    ```
 
-4. **Access the application**
-   - Frontend: http://localhost:5173
-   - Backend API: http://localhost:3000
+5. **Access the application**
+   - Frontend: https://localhost:5173
+   - Backend API: https://localhost:3000
    - Prometheus: http://localhost:9090
    - Grafana: http://localhost:3001 (admin/admin)
    - Kibana: http://localhost:5601
    - RabbitMQ Management: http://localhost:15672 (guest/guest)
+   
+   **Note:** You'll see a certificate warning in your browser when accessing HTTPS URLs with the self-signed certificate. This is expected for local development.
 
 ### RabbitMQ (Management UI)
 
@@ -126,9 +139,9 @@ Quick reference for running DogParkPals locally with Docker and validating the e
 - `docker compose logs -f rabbitmq`
 
 ### Health checks
-- Backend: `http://localhost:3000/health`
-- Status: `http://localhost:3000/status`
-- Frontend: `http://localhost:5173`
+- Backend: `https://localhost:3000/health`
+- Status: `https://localhost:3000/status`
+- Frontend: `https://localhost:5173`
 - RabbitMQ UI: `http://localhost:15672` (default `guest`/`guest`)
 
 ### Monitoring (Prometheus + Grafana)
@@ -137,7 +150,7 @@ DogParkPals includes Prometheus metrics and Grafana dashboards for observability
 **Access:**
 - Prometheus: `http://localhost:9090`
 - Grafana: `http://localhost:3001` (username: `admin`, password: `admin`)
-- Backend Metrics: `http://localhost:3000/metrics`
+- Backend Metrics: `https://localhost:3000/metrics`
 - RabbitMQ Exporter: `http://localhost:9419/metrics`
 
 **Available Metrics:**
@@ -385,7 +398,7 @@ Incident Response:
   - `npx prisma db seed` (optional: seeds test data; configured via package.json Prisma hook)
 - Start dev server:
   - `npm run dev` (TypeScript watch mode) or `npm run build && node dist/server.js` (production)
-  - Server listens on `http://localhost:3000`
+  - Server listens on `https://localhost:3000`
    - Health check: `GET /health` or `GET /status`
  
 ### Frontend Setup (Local Development)
@@ -395,15 +408,15 @@ Incident Response:
    ```
 -  (Optional) Create `.env` file if you need custom API URL:
    ```bash
-   echo 'VITE_API_URL=http://localhost:3000' > .env
+   echo 'VITE_API_URL=https://localhost:3000' > .env
    ```
-   Note: Defaults to `http://localhost:3000` if not specified
+   Note: Defaults to `https://localhost:3000` if not specified
 - Start the frontend dev server:
    ```bash
    npm run dev
    ```
-   - Frontend runs on `http://localhost:5173`
-   - Open in browser: `http://localhost:5173`
+   - Frontend runs on `https://localhost:5173`
+   - Open in browser: `https://localhost:5173`
 
 ### Notes
 - Do not commit `backend/prisma/generated/client/` (generated Prisma client; run `npx prisma generate` after pulling).

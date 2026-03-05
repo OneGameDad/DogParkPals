@@ -5,7 +5,7 @@
 
 set -e
 
-BACKEND_URL="${BACKEND_URL:-http://localhost:3000}"
+BACKEND_URL="${BACKEND_URL:-https://localhost:3000}"
 ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-http://localhost:9200}"
 KIBANA_URL="${KIBANA_URL:-http://localhost:5601}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -18,7 +18,13 @@ wait_for_url() {
   local elapsed=0
 
   echo "⏳ Waiting for $name at $url ..."
-  until curl -s -f "$url" > /dev/null 2>&1; do
+  # Use -k flag for self-signed certificates when checking HTTPS URLs
+  local curl_flags="-s -f"
+  if [[ "$url" == https://* ]]; then
+    curl_flags="-s -f -k"
+  fi
+  
+  until curl $curl_flags "$url" > /dev/null 2>&1; do
     sleep 2
     elapsed=$((elapsed + 2))
     if [ "$elapsed" -ge "$timeout" ]; then
@@ -36,6 +42,17 @@ fi
 
 echo "🚀 DogParkPals deployment initializer"
 echo "===================================="
+echo ""
+
+# Generate SSL certificates if they don't exist
+if [ ! -f "$ROOT_DIR/certs/server.crt" ] || [ ! -f "$ROOT_DIR/certs/server.key" ]; then
+  echo "🔐 Generating SSL certificates for HTTPS..."
+  mkdir -p "$ROOT_DIR/certs"
+  openssl req -x509 -newkey rsa:2048 -keyout "$ROOT_DIR/certs/server.key" -out "$ROOT_DIR/certs/server.crt" -days 365 -nodes -subj "/CN=localhost/O=DogParkPals/C=US" > /dev/null 2>&1
+  echo "✅ SSL certificates generated"
+else
+  echo "✅ SSL certificates already exist"
+fi
 echo ""
 
 if ! docker ps | grep -q "dogparkpals-backend"; then
@@ -64,6 +81,8 @@ echo ""
 echo "✅ Deployment initialization complete"
 echo ""
 echo "Quick checks:"
-echo "  - Backend health:    $BACKEND_URL/health"
+echo "  - Backend health:    curl -k $BACKEND_URL/health"
 echo "  - Elasticsearch:     $ELASTICSEARCH_URL/dogparkpals-logs-*/_count"
 echo "  - Kibana dashboards: $KIBANA_URL"
+echo ""
+echo "Note: -k flag required for self-signed certificates"

@@ -172,8 +172,9 @@ describe("organizations profile picture management", () => {
       .set("Authorization", `Bearer ${adminToken()}`)
       .attach("file", Buffer.from("fake-image-data"), "test.jpg");
 
-    // Admin with ADMIN role should be allowed
-    expect([200, 403]).toContain(res.status);
+    // Admin role bypasses member-based authorization and should be allowed
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("profilePictureUrl");
   });
 
   test("member cannot upload profile picture", async () => {

@@ -53,8 +53,14 @@ As this is an MVP it is limited in scope to only included the public dog parks i
 ### Docker Commands
 
 ```bash
-# Start services
+# Start all services (full stack with observability)
 docker compose up -d
+
+# Start minimal services only (core app without observability)
+docker compose up -d backend frontend rabbitmq db-init
+
+# Stop observability services (if already running)
+docker compose stop elasticsearch logstash kibana prometheus grafana rabbitmq-exporter
 
 # View logs
 docker compose logs -f
@@ -64,17 +70,27 @@ docker compose down
 
 # Restart a service
 docker compose restart backend
+```
 
+**Service Options:**
+- **Minimal** (core app only): backend, frontend, rabbitmq, db-init
+  - Fully functional app with events/messaging
+  - Lower resource usage (ideal for 42 evaluation)
+- **Full stack** (with observability): All minimal services + elasticsearch, logstash, kibana, prometheus, grafana, rabbitmq-exporter
+  - Adds centralized logging, metrics, and dashboards
+  - Higher resource usage
+
+```bash
 # Seed database
 chmod +x scripts/docker-seed.sh
 ./scripts/docker-seed.sh
 
-# One-command deployment initialization (seed + ELK setup + test logs)
-chmod +x scripts/deployment-init.sh
-./scripts/deployment-init.sh
+# Minimal evaluation setup (core app only + seed database)
+docker compose up -d backend frontend rabbitmq db-init && bash scripts/docker-seed.sh
 
-# Run full evaluation initializer through Docker Compose service
-docker compose up -d evaluation
+# Full evaluation setup (all services + seed + ELK/Prometheus setup + test logs)
+chmod +x scripts/deployment-init.sh
+docker compose up -d && bash scripts/deployment-init.sh
 
 # Reset everything (WARNING: deletes all data)
 chmod +x scripts/docker-reset.sh
@@ -181,17 +197,17 @@ After starting Docker services, initialize Kibana with dashboards and saved sear
 bash kibana/setup-kibana.sh
 ```
 
-For 42 evaluation-ready setup in one command (seed DB + Kibana/Elasticsearch setup + test logs), run:
+**For 42 evaluation-ready setup** (starts all services + seeds DB + configures Kibana + generates test logs):
 ```bash
-bash scripts/deployment-init.sh
+docker compose up -d && bash scripts/deployment-init.sh
 ```
 
-Or run it as a Docker Compose service (keyword: `evaluation`):
-```bash
-docker compose up -d evaluation
-```
-
-Note: Compose syntax is `docker compose up -d evaluation` (not `docker compose -d up evaluation`).
+This will:
+1. Start all services (backend, frontend, Elasticsearch, Logstash, Kibana, Prometheus, Grafana, RabbitMQ)
+2. Wait for services to be healthy
+3. Seed the database with sample data
+4. Configure Kibana dashboards and index patterns
+5. Generate test logs for verification
 
 This creates:
 - Elasticsearch ILM (Index Lifecycle Management) policy for automatic log retention

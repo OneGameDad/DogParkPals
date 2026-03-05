@@ -173,32 +173,6 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  evaluation:
-    image: docker:cli
-    container_name: dogparkpals-evaluation
-    working_dir: /workspace
-    volumes:
-      - ./:/workspace
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - BACKEND_URL=http://backend:3000
-      - ELASTICSEARCH_URL=http://elasticsearch:9200
-      - KIBANA_URL=http://kibana:5601
-    depends_on:
-      backend:
-        condition: service_started
-      elasticsearch:
-        condition: service_healthy
-      kibana:
-        condition: service_started
-    command: >
-      sh -c "
-      apk add --no-cache bash curl >/dev/null &&
-      chmod +x scripts/deployment-init.sh scripts/docker-seed.sh kibana/setup-kibana.sh elasticsearch/generate-test-logs.sh elasticsearch/apply-template.sh &&
-      bash scripts/deployment-init.sh
-      "
-    restart: "no"
-
 volumes:
   backend-db:
     driver: local

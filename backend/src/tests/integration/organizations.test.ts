@@ -1,6 +1,4 @@
 import request from "supertest";
-import path from "path";
-import fs from "fs";
 import app from "../../app";
 import { ids, makeToken } from "../fixtures/integrationFixtures";
 
@@ -54,14 +52,6 @@ describe("organizations CRUD and management", () => {
 
 describe("organizations profile picture management", () => {
   test("upload organization profile picture succeeds", async () => {
-    const testImagePath = path.join(__dirname, "../../..", "public", "imgs", "logo.png");
-    
-    // Create a minimal test image if it doesn't exist
-    const uploadsDir = path.join(__dirname, "../../..", "uploads");
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-
     const res = await request(app)
       .post(`/api/organizations/${ids.orgs.org1}/profile-picture`)
       .set("Authorization", `Bearer ${ownerToken()}`)

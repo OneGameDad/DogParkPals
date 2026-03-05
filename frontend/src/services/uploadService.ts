@@ -103,6 +103,18 @@ const uploadService = {
   async uploadVaccinationRecord(dogId: number, file: File, onProgress?: (percent: number) => void): Promise<UploadResponse> {
     return this.uploadFile(file, 'document', `/api/dogs/${dogId}/document`, onProgress);
   },
+
+  async uploadOrganizationProfilePicture(
+    orgId: number,
+    file: File,
+    onProgress?: (percent: number) => void
+  ): Promise<UploadResponse> {
+    return this.uploadFile(file, 'organizationProfile', `/api/organizations/${orgId}/profile-picture`, onProgress);
+  },
+
+  async deleteOrganizationProfilePicture(orgId: number): Promise<void> {
+    return this._delete(`/api/organizations/${orgId}/profile-picture`);
+  },
 };
 
 export default uploadService;

@@ -4,7 +4,7 @@ import { Organization } from '../../types';
 import type { OrganizationSearchResult } from '../../services/searchService';
 import { Picture } from '../common';
 import { useTranslation } from 'react-i18next';
-import { DEFAULT_IMAGES } from '../../constants';
+import { getOrgPhotoUrl } from '../../constants';
 
 interface OrganizationCardProps {
     organization: Organization | OrganizationSearchResult;
@@ -37,7 +37,7 @@ const OrganizationCard: React.FC<OrganizationCardProps> = ({ organization }) => 
             <div className="flex p-4 gap-4">
                 <div className="flex-shrink-0">
                     <Picture
-                        location={organization.profilePictureUrl || DEFAULT_IMAGES.parkCard} // TODO: Add specific org default image
+                        location={getOrgPhotoUrl(organization.id, organization.profilePictureUrl)}
                         size={100}
                         shape="square"
                         alt={organization.name}

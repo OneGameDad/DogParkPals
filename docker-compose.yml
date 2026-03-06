@@ -91,10 +91,14 @@ services:
     container_name: dogparkpals-rabbitmq-exporter
     ports:
       - "9419:9419"
+    volumes:
+      - ./certs/rabbitmq.crt:/etc/rabbitmq-exporter/ca.pem:ro
     env_file:
       - ./docker-secrets
     environment:
       - RABBIT_URL=https://rabbitmq:15671
+      - CAFILE=/etc/rabbitmq-exporter/ca.pem
+      - SKIPVERIFY=false
     depends_on:
       - rabbitmq
     restart: unless-stopped

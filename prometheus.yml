@@ -7,11 +7,17 @@ global:
 scrape_configs:
   # Scrape Prometheus itself
   - job_name: 'prometheus'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
     static_configs:
       - targets: ['localhost:9090']
 
   # Scrape the DogParkPals backend API
   - job_name: 'backend'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
     static_configs:
       - targets: ['backend:3000']
     metrics_path: '/metrics'

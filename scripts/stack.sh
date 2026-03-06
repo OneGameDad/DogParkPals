@@ -93,6 +93,9 @@ ensure_certificates() {
     openssl req -x509 -newkey rsa:2048 -keyout kibana.key -out kibana.crt -days 365 -nodes -subj "/CN=kibana/O=DogParkPals/C=US" 2>&1 || { echo "❌ Failed to generate kibana certificate"; exit 1; }
     openssl req -x509 -newkey rsa:2048 -keyout rabbitmq.key -out rabbitmq.crt -days 365 -nodes -subj "/CN=rabbitmq/O=DogParkPals/C=US" 2>&1 || { echo "❌ Failed to generate rabbitmq certificate"; exit 1; }
     
+    # Set permissions so containers can read the keys
+    chmod 644 *.key *.crt
+    
     cd "$ROOT_DIR" || exit 1
     
     echo "✅ SSL certificates generated"

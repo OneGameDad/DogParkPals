@@ -1,6 +1,6 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
 import ConversationList from './ConversationList';
 import MessageThread from './MessageThread';
 import { useAuth } from '../../hooks/useAuth';

@@ -156,8 +156,7 @@ services:
       - xpack.security.http.ssl.verification_mode=none
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
-      - ./certs/elasticsearch.crt:/usr/share/elasticsearch/config/certs/elasticsearch.crt:ro
-      - ./certs/elasticsearch.key:/usr/share/elasticsearch/config/certs/elasticsearch.key:ro
+      - ./certs:/usr/share/elasticsearch/config/certs:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -s -k -u elastic:$$ELASTIC_PASSWORD https://localhost:9200 >/dev/null || exit 1"]
       start_period: 90s

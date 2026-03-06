@@ -8,6 +8,7 @@ set -e
 BACKEND_URL="${BACKEND_URL:-https://localhost:3000}"
 ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-https://localhost:9200}"
 KIBANA_URL="${KIBANA_URL:-https://localhost:5601}"
+WAIT_INTERVAL_SECONDS="${WAIT_INTERVAL_SECONDS:-5}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
@@ -55,6 +56,7 @@ wait_for_url() {
   local name="$1"
   local url="$2"
   local timeout="${3:-120}"
+  local interval="${4:-$WAIT_INTERVAL_SECONDS}"
   local elapsed=0
 
   echo "⏳ Waiting for $name at $url ..."
@@ -65,8 +67,9 @@ wait_for_url() {
   fi
   
   until curl $curl_flags "$url" > /dev/null 2>&1; do
-    sleep 2
-    elapsed=$((elapsed + 2))
+    echo "   ... still waiting for $name (${elapsed}s/${timeout}s)"
+    sleep "$interval"
+    elapsed=$((elapsed + interval))
     if [ "$elapsed" -ge "$timeout" ]; then
       echo "❌ Timeout waiting for $name ($timeout seconds)"
       exit 1
@@ -116,9 +119,9 @@ if ! docker ps | grep -q "dogparkpals-backend"; then
   exit 1
 fi
 
-wait_for_url "Backend" "$BACKEND_URL/health" 120
-wait_for_url "Elasticsearch" "$ELASTICSEARCH_URL/_cluster/health" 300
-wait_for_url "Kibana" "$KIBANA_URL/api/status" 360
+wait_for_url "Backend" "$BACKEND_URL/health" 180
+wait_for_url "Elasticsearch" "$ELASTICSEARCH_URL/_cluster/health" 600
+wait_for_url "Kibana" "$KIBANA_URL/api/status" 900
 
 echo ""
 echo "1) Seeding production database"

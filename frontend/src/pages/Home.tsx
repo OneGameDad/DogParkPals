@@ -1,17 +1,14 @@
-import React from 'react';
+import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Picture, BodyText, InputText } from '../components/common';
+import { BodyText } from '../components/common';
 import { Header } from '../components/layout';
-import { Achievement, NotifContainer, type NotifContainerHandle } from '../components/features';
+import { NotifContainer, type NotifContainerHandle } from '../components/features';
 import { useAuth } from '../hooks/useAuth';
 
 const Home = () => {
   const { t } = useTranslation();
   const { isAuthenticated, user, loading } = useAuth();
-  const notifRef = React.useRef<NotifContainerHandle>(null);
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
-  const [text, setText] = React.useState('');
+  const notifRef = useRef<NotifContainerHandle>(null);
 
   return (
     <div className="text-center">

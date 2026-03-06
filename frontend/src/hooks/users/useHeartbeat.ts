@@ -10,7 +10,7 @@ export const useHeartbeat = ({
 	enabled = true, 
 	interval = 120000 // default 2 minutes (120 seconds)
 }: UseHeartbeatOptions = {}) => {
-	const intervalRef = useRef<NodeJS.Timeout | null>(null);
+	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
 	const sendHeartbeat = useCallback(async () => {
 		try {

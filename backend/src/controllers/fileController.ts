@@ -38,7 +38,7 @@ router.get("/dogs/:dogId/photo", async (req, res, next) => {
 
     res.sendFile(resolvedPath);
   } catch (err) {
-    next(toAppError(err, { message: "Failed to fetch dog photo", code: "FILE_ACCESS_DENIED" }));
+    return next(toAppError(err, { message: "Failed to fetch dog photo", code: "FILE_ACCESS_DENIED" }));
   }
 });
 
@@ -63,7 +63,7 @@ router.get("/dogs/:dogId/document", async (req, res, next) => {
 
     res.sendFile(resolvedPath);
   } catch (err) {
-    next(
+    return next(
       toAppError(err, {
         message: "Failed to fetch document",
         code: "FILE_ACCESS_DENIED",
@@ -98,7 +98,7 @@ router.get("/users/:userId/profile-picture", async (req, res, next) => {
 
     res.sendFile(resolvedPath);
   } catch (err) {
-    next(
+    return next(
       toAppError(err, {
         message: "Failed to fetch profile picture",
         code: "FILE_ACCESS_DENIED",
@@ -124,7 +124,7 @@ router.get("/organizations/:organizationId/profile-picture", async (req, res, ne
 
     res.sendFile(resolvedPath);
   } catch (err) {
-    next(
+    return next(
       toAppError(err, {
         message: "Failed to fetch organization profile picture",
         code: "FILE_ACCESS_DENIED",

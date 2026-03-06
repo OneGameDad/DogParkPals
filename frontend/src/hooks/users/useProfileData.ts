@@ -23,10 +23,10 @@ export const useProfileData = (id?: string) => {
 	);
 
 	return {
-		displayUser,
+		displayUser: displayUser || undefined,
 		isOwnProfile,
 		loading: authLoading || (id && !isOwnProfile ? userLoading : false) || dogsLoading,
-		dogs,
+		dogs: dogs || undefined,
 		viewingUserId
 	};
 };

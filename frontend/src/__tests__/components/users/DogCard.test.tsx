@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import DogCard from '../../../components/users/DogCard';
-import { Dog, DogBreed, DogGender, DogSize, DogPlaystyle } from '../../../types';
+import type { Dog, DogBreed, DogGender, DogSize, DogPlaystyle } from '../../../types';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({

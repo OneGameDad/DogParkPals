@@ -78,15 +78,18 @@ ensure_certificates() {
   
   if [ "$missing" -eq 1 ]; then
     echo "🔐 Generating SSL certificates..."
-    mkdir -p "$certs_dir"
+    mkdir -p "$certs_dir" || { echo "❌ Failed to create certs directory"; exit 1; }
     
-    (cd "$certs_dir" && \
-      openssl req -x509 -newkey rsa:2048 -keyout server.key -out server.crt -days 365 -nodes -subj "/CN=localhost/O=DogParkPals/C=US" > /dev/null 2>&1 && \
-      openssl req -x509 -newkey rsa:2048 -keyout prometheus.key -out prometheus.crt -days 365 -nodes -subj "/CN=prometheus/O=DogParkPals/C=US" > /dev/null 2>&1 && \
-      openssl req -x509 -newkey rsa:2048 -keyout grafana.key -out grafana.crt -days 365 -nodes -subj "/CN=grafana/O=DogParkPals/C=US" > /dev/null 2>&1 && \
-      openssl req -x509 -newkey rsa:2048 -keyout elasticsearch.key -out elasticsearch.crt -days 365 -nodes -subj "/CN=elasticsearch/O=DogParkPals/C=US" > /dev/null 2>&1 && \
-      openssl req -x509 -newkey rsa:2048 -keyout kibana.key -out kibana.crt -days 365 -nodes -subj "/CN=kibana/O=DogParkPals/C=US" > /dev/null 2>&1 && \
-      openssl req -x509 -newkey rsa:2048 -keyout rabbitmq.key -out rabbitmq.crt -days 365 -nodes -subj "/CN=rabbitmq/O=DogParkPals/C=US" > /dev/null 2>&1)
+    cd "$certs_dir" || { echo "❌ Failed to change to certs directory"; exit 1; }
+    
+    openssl req -x509 -newkey rsa:2048 -keyout server.key -out server.crt -days 365 -nodes -subj "/CN=localhost/O=DogParkPals/C=US" > /dev/null 2>&1 || { echo "❌ Failed to generate server certificate"; exit 1; }
+    openssl req -x509 -newkey rsa:2048 -keyout prometheus.key -out prometheus.crt -days 365 -nodes -subj "/CN=prometheus/O=DogParkPals/C=US" > /dev/null 2>&1 || { echo "❌ Failed to generate prometheus certificate"; exit 1; }
+    openssl req -x509 -newkey rsa:2048 -keyout grafana.key -out grafana.crt -days 365 -nodes -subj "/CN=grafana/O=DogParkPals/C=US" > /dev/null 2>&1 || { echo "❌ Failed to generate grafana certificate"; exit 1; }
+    openssl req -x509 -newkey rsa:2048 -keyout elasticsearch.key -out elasticsearch.crt -days 365 -nodes -subj "/CN=elasticsearch/O=DogParkPals/C=US" > /dev/null 2>&1 || { echo "❌ Failed to generate elasticsearch certificate"; exit 1; }
+    openssl req -x509 -newkey rsa:2048 -keyout kibana.key -out kibana.crt -days 365 -nodes -subj "/CN=kibana/O=DogParkPals/C=US" > /dev/null 2>&1 || { echo "❌ Failed to generate kibana certificate"; exit 1; }
+    openssl req -x509 -newkey rsa:2048 -keyout rabbitmq.key -out rabbitmq.crt -days 365 -nodes -subj "/CN=rabbitmq/O=DogParkPals/C=US" > /dev/null 2>&1 || { echo "❌ Failed to generate rabbitmq certificate"; exit 1; }
+    
+    cd "$ROOT_DIR" || exit 1
     
     echo "✅ SSL certificates generated"
     echo ""

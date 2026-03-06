@@ -161,7 +161,7 @@ services:
       - elasticsearch-data:/usr/share/elasticsearch/data
       - ./certs:/usr/share/elasticsearch/config/certs:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -s -k -u elastic:$$ELASTIC_PASSWORD https://localhost:9200 >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "curl -s -f -k -u elastic:$$ELASTIC_PASSWORD https://localhost:9200 >/dev/null || exit 1"]
       start_period: 180s
       interval: 30s
       timeout: 15s
@@ -190,8 +190,7 @@ services:
     ports:
       - "5601:5601"
     volumes:
-      - ./certs/kibana.crt:/usr/share/kibana/config/certs/kibana.crt:ro
-      - ./certs/kibana.key:/usr/share/kibana/config/certs/kibana.key:ro
+      - ./certs:/usr/share/kibana/config/certs:ro
     env_file:
       - ./docker-secrets
     environment:
@@ -202,6 +201,12 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -f -k https://localhost:5601/api/status >/dev/null || exit 1"]
+      start_period: 90s
+      interval: 20s
+      timeout: 10s
+      retries: 20
     restart: unless-stopped
 
 volumes:

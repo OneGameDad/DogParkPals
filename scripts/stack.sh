@@ -102,6 +102,7 @@ ensure_certificates() {
 run_fresh() {
   echo "🚀 Starting full DogParkPals stack..."
   ensure_secrets_file
+  ensure_certificates
 
   echo ""
   echo "📝 Running docker setup (certificates, build, start)..."
@@ -124,6 +125,7 @@ run_fresh() {
 run_obs_down() {
   echo "🛑 Stopping observability services..."
   ensure_secrets_file
+  ensure_certificates
 
   (cd "$ROOT_DIR" && docker compose --env-file docker-secrets stop "${OBS_SERVICES[@]}")
 
@@ -138,13 +140,16 @@ run_clean() {
   (cd "$ROOT_DIR" && docker compose --env-file docker-secrets down -v --remove-orphans --rmi local)
 
   echo ""
-  echo "✅ All app containers, local images, and volumes removed"
+  echo "🗑️  Running system-wide Docker cleanup..."
+  docker system prune --all --volumes --force
+
+  echo ""
+  echo "✅ All containers, images, volumes, and build cache removed"
 }
 
 main() {
   ensure_repo_root
   check_requirements
-  ensure_certificates
 
   if [ "$#" -ne 1 ]; then
     print_usage

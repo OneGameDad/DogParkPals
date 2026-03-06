@@ -46,6 +46,88 @@ As this is an MVP it is limited in scope to only included the public dog parks i
    ./scripts/docker-setup.sh
    ```
 
+### Deployment Pitfalls Prevention (Read Before First Run)
+
+These checks prevent the exact failure modes seen during deployment testing.
+
+1. **Never use `ELASTICSEARCH_USERNAME=elastic` for Kibana**
+   - Kibana 8.x rejects the `elastic` superuser and will crash-loop.
+   - Use one of these instead in `docker-secrets`:
+     - `ELASTICSEARCH_SERVICEACCOUNTTOKEN=<token>` (recommended)
+     - `ELASTICSEARCH_USERNAME=kibana_system` and `ELASTICSEARCH_PASSWORD=<password>`
+
+2. **Always set `ELASTIC_PASSWORD`**
+   - Elasticsearch health and init checks require auth.
+   - Missing/empty `ELASTIC_PASSWORD` causes immediate setup failure by design (fail-fast).
+
+3. **Do not rely on HTTP 401 as "healthy"**
+   - Health checks use `curl -f` so HTTP errors fail correctly.
+   - If you write custom checks, include `-f` and auth flags.
+
+4. **Use `docker compose --env-file docker-secrets ...` for stack commands**
+   - Avoid running compose without `--env-file` when environment expansion is needed.
+   - Recommended:
+   ```bash
+   docker compose --env-file docker-secrets up -d
+   ```
+
+5. **Force-recreate Kibana after auth/env changes**
+   - Kibana may keep stale env values across restarts.
+   - Recreate (not only restart):
+   ```bash
+   docker compose --env-file docker-secrets up -d --force-recreate --no-deps kibana
+   ```
+
+6. **Do not `source docker-secrets` directly in your shell**
+   - `docker-secrets` contains values like `ES_JAVA_OPTS=-Xms384m -Xmx384m`.
+   - Direct `source` can produce shell errors (`-Xmx...: command not found`).
+   - Prefer `--env-file` with Docker Compose.
+
+7. **Expect Kibana warm-up time**
+   - First startup can take 2-5 minutes.
+   - `health: starting` is normal during plugin initialization.
+
+8. **Keep service-account tokens on one line**
+   - Line wrapping or accidental whitespace in `ELASTICSEARCH_SERVICEACCOUNTTOKEN` breaks auth.
+
+9. **Use setup scripts to catch config errors early**
+   - `scripts/docker-setup.sh` and `scripts/stack.sh --fresh` include fail-fast validations.
+
+10. **Configure RabbitMQ exporter TLS trust**
+    - If `rabbitmq-exporter` talks to `https://rabbitmq:15671` without CA trust, it fails with
+       `x509: certificate signed by unknown authority` and stays unhealthy.
+    - Ensure compose includes:
+       - `RABBIT_URL=https://rabbitmq:15671`
+       - `CAFILE=/etc/rabbitmq-exporter/ca.pem`
+       - `SKIPVERIFY=false`
+       - volume mount: `./certs/rabbitmq.crt:/etc/rabbitmq-exporter/ca.pem:ro`
+
+11. **Expect transient `rabbitmq-exporter` 504 after fresh cert regeneration**
+      - After `./scripts/stack.sh --fresh`, certificates are regenerated.
+      - If `rabbitmq` and `rabbitmq-exporter` are not restarted in sync, exporter health can show
+         `Error checking url: Unexpected http code 504` and briefly become `unhealthy`.
+      - Recovery:
+         ```bash
+         docker compose restart rabbitmq rabbitmq-exporter
+         ```
+      - This is usually transient and resolves once both services are on the same cert/runtime state.
+
+### Create Kibana Service Account Token (Recommended)
+
+If you choose token-based Kibana auth:
+
+```bash
+docker exec dogparkpals-elasticsearch \
+  curl -s -k -u elastic:$ELASTIC_PASSWORD \
+  -X POST "https://localhost:9200/_security/service/elastic/kibana/credential/token/kibana_local_$(date +%s)"
+```
+
+Copy `.token.value` into `docker-secrets`:
+
+```bash
+ELASTICSEARCH_SERVICEACCOUNTTOKEN=<paste-token-value-here>
+```
+
 5. **Access the application**
    - Frontend: https://localhost:5173
    - Backend API: https://localhost:3000
@@ -57,13 +139,41 @@ As this is an MVP it is limited in scope to only included the public dog parks i
    
    **Note:** You'll see a certificate warning in your browser when accessing HTTPS URLs with the self-signed certificate. This is expected for local development and can be safely bypassed.
 
-### RabbitMQ (Management UI)
+### RabbitMQ (Event Queue & Management UI)
 
+**Management UI:**
 - HTTPS URL: https://localhost:15671 (recommended)
 - HTTP URL: http://localhost:15672 (backward compatibility)
-- Default credentials: `guest` / `guest` (unless you configure different credentials)
-- To change credentials, update the RabbitMQ service settings in docker-compose.yml
-- Failed event messages retry up to `EVENT_QUEUE_MAX_RETRIES`, then move to `EVENT_QUEUE_DLQ_NAME`
+- Default credentials: `guest` / `guest`
+
+**Queue Transport Security:**
+
+The project supports both plaintext and encrypted RabbitMQ connections:
+
+| Protocol | Port | Default | Use Case |
+|----------|------|---------|----------|
+| `amqp://` | 5672 | ✅ Yes | Development (ease of use, no cert setup required) |
+| `amqps://` | 5671 | ❌ No | Production (encrypted queue traffic, requires certs) |
+
+**⚠️ Development Default:** Plaintext AMQP (`amqp://rabbitmq:5672`) is used by default for frictionless local development.
+
+**🔒 Enabling AMQPS (Recommended for Production):**
+
+To enable encrypted queue transport, update `docker-secrets`:
+
+```bash
+RABBITMQ_URL=amqps://rabbitmq:5671
+RABBITMQ_CA_PATH=/app/certs/rabbitmq.crt
+RABBIT_SKIP_VERIFY=false
+```
+
+**Prerequisites:**
+- SSL certificates must be generated first (see setup step 1 above)
+- Backend will fail to start if `RABBITMQ_CA_PATH` doesn't exist when using `amqps://`
+
+**Event Queue Behavior:**
+- Failed event messages retry up to `EVENT_QUEUE_MAX_RETRIES` (default: 5)
+- After max retries, messages move to Dead Letter Queue: `EVENT_QUEUE_DLQ_NAME`
 
 
 ### Docker Commands
@@ -73,6 +183,7 @@ As this is an MVP it is limited in scope to only included the public dog parks i
 ./scripts/stack.sh --fresh      # full startup + seeding + observability init
 ./scripts/stack.sh --obs-down   # stop observability services only
 ./scripts/stack.sh --clean      # full shutdown + cleanup (volumes/images)
+make verify-deploy              # run pitfall checks (auth, healthchecks, runtime state incl. rabbitmq-exporter)
 
 # Start all services (full stack with observability)
 docker compose --env-file docker-secrets up -d

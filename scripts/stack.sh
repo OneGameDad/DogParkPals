@@ -66,6 +66,7 @@ ensure_secrets_file() {
 
 ensure_certificates() {
   local certs_dir="$ROOT_DIR/certs"
+  local force_regen="${1:-false}"
   local required_certs=(server.crt server.key elasticsearch.crt elasticsearch.key kibana.crt kibana.key prometheus.crt prometheus.key grafana.crt grafana.key rabbitmq.crt rabbitmq.key)
   
   local missing=0
@@ -76,7 +77,7 @@ ensure_certificates() {
     fi
   done
   
-  if [ "$missing" -eq 1 ]; then
+  if [ "$missing" -eq 1 ] || [ "$force_regen" = "true" ]; then
     echo "🔐 Generating SSL certificates..."
     
     # Clean up any corrupt cert files/directories
@@ -102,7 +103,7 @@ ensure_certificates() {
 run_fresh() {
   echo "🚀 Starting full DogParkPals stack..."
   ensure_secrets_file
-  ensure_certificates
+  ensure_certificates true
 
   echo ""
   echo "📝 Running docker setup (certificates, build, start)..."
@@ -125,7 +126,7 @@ run_fresh() {
 run_obs_down() {
   echo "🛑 Stopping observability services..."
   ensure_secrets_file
-  ensure_certificates
+  ensure_certificates false
 
   (cd "$ROOT_DIR" && docker compose --env-file docker-secrets stop "${OBS_SERVICES[@]}")
 

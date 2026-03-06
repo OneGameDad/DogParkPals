@@ -81,7 +81,6 @@ const DogProfileModal = ({ dog, onClose }: DogProfileModalProps) => {
         if (selectedMyDogId && dog) {
             if (window.confirm(t('dogProfile.removeEnemyConfirm') || 'Remove this enemy?')) {
                 await removeEnemy(dog.id);
-                await refetchEnemies();
             }
         }
     };

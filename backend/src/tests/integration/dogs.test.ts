@@ -184,6 +184,61 @@ describe("dogs CRUD and ownership", () => {
     expect(res.status).toBe(403);
     expect(res.body.code).toBe("FORBIDDEN");
   });
+
+  test("get dog owners returns list of owners", async () => {
+    const res = await request(app)
+      .get(`/api/dogs/${ids.dogs.dogA}/owners`)
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThanOrEqual(1);
+    const ownerIds = res.body.map((owner: any) => owner.id);
+    expect(ownerIds).toContain(ids.users.userA);
+  });
+
+  test("get dog owners returns correct owner data", async () => {
+    const res = await request(app)
+      .get(`/api/dogs/${ids.dogs.dogA}/owners`)
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+
+    const owner = res.body[0];
+    expect(owner).toHaveProperty("id");
+    expect(owner).toHaveProperty("username");
+    expect(owner).toHaveProperty("email");
+    expect(typeof owner.id).toBe("number");
+    expect(typeof owner.username).toBe("string");
+    expect(typeof owner.email).toBe("string");
+  });
+
+  test("get dog owners includes multiple owners when dog has multiple owners", async () => {
+    // Add another owner to dogA (userA to userB - they are friends)
+    await request(app)
+      .post(`/api/dogs/${ids.dogs.dogA}/owners`)
+      .set("Authorization", `Bearer ${userAToken()}`)
+      .send({ userId: ids.users.userB });
+
+    const res = await request(app)
+      .get(`/api/dogs/${ids.dogs.dogA}/owners`)
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThanOrEqual(2);
+
+    const ownerIds = res.body.map((owner: any) => owner.id);
+    expect(ownerIds).toContain(ids.users.userA);
+    expect(ownerIds).toContain(ids.users.userB);
+  });
+
+  test("get dog owners requires authentication", async () => {
+    const res = await request(app).get(`/api/dogs/${ids.dogs.dogA}/owners`);
+
+    expect(res.status).toBe(401);
+  });
 });
 
   describe("concurrent dog operations", () => {

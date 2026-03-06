@@ -64,6 +64,35 @@ ensure_secrets_file() {
   echo "   Review docker-secrets and update secrets before production use."
 }
 
+ensure_certificates() {
+  local certs_dir="$ROOT_DIR/certs"
+  local required_certs=(server.crt server.key elasticsearch.crt elasticsearch.key kibana.crt kibana.key prometheus.crt prometheus.key grafana.crt grafana.key rabbitmq.crt rabbitmq.key)
+  
+  local missing=0
+  for cert in "${required_certs[@]}"; do
+    if [ ! -f "$certs_dir/$cert" ]; then
+      missing=1
+      break
+    fi
+  done
+  
+  if [ "$missing" -eq 1 ]; then
+    echo "🔐 Generating SSL certificates..."
+    mkdir -p "$certs_dir"
+    
+    (cd "$certs_dir" && \
+      openssl req -x509 -newkey rsa:2048 -keyout server.key -out server.crt -days 365 -nodes -subj "/CN=localhost/O=DogParkPals/C=US" > /dev/null 2>&1 && \
+      openssl req -x509 -newkey rsa:2048 -keyout prometheus.key -out prometheus.crt -days 365 -nodes -subj "/CN=prometheus/O=DogParkPals/C=US" > /dev/null 2>&1 && \
+      openssl req -x509 -newkey rsa:2048 -keyout grafana.key -out grafana.crt -days 365 -nodes -subj "/CN=grafana/O=DogParkPals/C=US" > /dev/null 2>&1 && \
+      openssl req -x509 -newkey rsa:2048 -keyout elasticsearch.key -out elasticsearch.crt -days 365 -nodes -subj "/CN=elasticsearch/O=DogParkPals/C=US" > /dev/null 2>&1 && \
+      openssl req -x509 -newkey rsa:2048 -keyout kibana.key -out kibana.crt -days 365 -nodes -subj "/CN=kibana/O=DogParkPals/C=US" > /dev/null 2>&1 && \
+      openssl req -x509 -newkey rsa:2048 -keyout rabbitmq.key -out rabbitmq.crt -days 365 -nodes -subj "/CN=rabbitmq/O=DogParkPals/C=US" > /dev/null 2>&1)
+    
+    echo "✅ SSL certificates generated"
+    echo ""
+  fi
+}
+
 run_fresh() {
   echo "🚀 Starting full DogParkPals stack..."
   ensure_secrets_file
@@ -109,6 +138,7 @@ run_clean() {
 main() {
   ensure_repo_root
   check_requirements
+  ensure_certificates
 
   if [ "$#" -ne 1 ]; then
     print_usage

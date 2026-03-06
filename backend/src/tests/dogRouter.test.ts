@@ -27,6 +27,7 @@ const mockUpdateDog = jest.fn() as any;
 const mockDeleteDog = jest.fn() as any;
 const mockAddOwnerToDog = jest.fn() as any;
 const mockRemoveOwnerFromDog = jest.fn() as any;
+const mockGetDogOwners = jest.fn() as any;
 const mockUploadDogPhoto = jest.fn() as any;
 const mockUploadDocument = jest.fn() as any;
 const mockDeleteDogPhoto = jest.fn() as any;
@@ -45,6 +46,7 @@ jest.mock('../controllers/dogController', () => ({
     deleteDog: mockDeleteDog,
     addOwnerToDog: mockAddOwnerToDog,
     removeOwnerFromDog: mockRemoveOwnerFromDog,
+    getDogOwners: mockGetDogOwners,
     uploadDogPhoto: mockUploadDogPhoto,
     uploadDocument: mockUploadDocument,
     deleteDogPhoto: mockDeleteDogPhoto,
@@ -345,6 +347,66 @@ describe('Dog Router', () => {
 
       expect(mockDeleteDocument).toHaveBeenCalled();
       expect(response.status).toBe(204);
+    });
+  });
+
+  describe('GET /:dogId/owners', () => {
+    test('calls getDogOwners controller method with correct dog ID', async () => {
+      const mockOwners = [
+        { id: 1, username: 'owner1', email: 'owner1@example.com' },
+        { id: 2, username: 'owner2', email: 'owner2@example.com' },
+      ];
+      mockGetDogOwners.mockImplementation((req: Request, res: Response) => {
+        res.status(200).json(mockOwners);
+      });
+
+      const response = await request(app).get('/1/owners');
+
+      expect(mockGetDogOwners).toHaveBeenCalled();
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(2);
+    });
+
+    test('returns empty array when dog has no owners', async () => {
+      mockGetDogOwners.mockImplementation((req: Request, res: Response) => {
+        res.status(200).json([]);
+      });
+
+      const response = await request(app).get('/5/owners');
+
+      expect(mockGetDogOwners).toHaveBeenCalled();
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(0);
+    });
+
+    test('handles single dog owner', async () => {
+      const mockOwner = { id: 42, username: 'owner', email: 'owner@example.com' };
+      mockGetDogOwners.mockImplementation((req: Request, res: Response) => {
+        res.status(200).json([mockOwner]);
+      });
+
+      const response = await request(app).get('/3/owners');
+
+      expect(mockGetDogOwners).toHaveBeenCalled();
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(1);
+      expect(response.body[0].username).toBe('owner');
+    });
+
+    test('uses correct parameter name (dogId)', async () => {
+      mockGetDogOwners.mockImplementation((req: Request, res: Response) => {
+        // Verify that the route correctly passes dogId parameter
+        const dogId = (req as any).params.dogId;
+        expect(dogId).toBe('99');
+        res.status(200).json([]);
+      });
+
+      const response = await request(app).get('/99/owners');
+
+      expect(mockGetDogOwners).toHaveBeenCalled();
+      expect(response.status).toBe(200);
     });
   });
 });

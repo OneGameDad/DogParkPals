@@ -49,19 +49,22 @@ As this is an MVP it is limited in scope to only included the public dog parks i
 5. **Access the application**
    - Frontend: https://localhost:5173
    - Backend API: https://localhost:3000
-   - Prometheus: http://localhost:9090
-   - Grafana: http://localhost:3001 (admin/admin)
-   - Kibana: http://localhost:5601
-   - RabbitMQ Management: http://localhost:15672 (guest/guest)
+   - Prometheus: https://localhost:9090
+   - Grafana: https://localhost:3001 (admin/admin)
+   - Kibana: https://localhost:5601
+   - RabbitMQ Management: https://localhost:15671 (guest/guest) - HTTP also available on port 15672
+   - Elasticsearch: https://localhost:9200 (elastic/elastic)
    
-   **Note:** You'll see a certificate warning in your browser when accessing HTTPS URLs with the self-signed certificate. This is expected for local development.
+   **Note:** You'll see a certificate warning in your browser when accessing HTTPS URLs with the self-signed certificate. This is expected for local development and can be safely bypassed.
 
 ### RabbitMQ (Management UI)
 
-- URL: http://localhost:15672
+- HTTPS URL: https://localhost:15671 (recommended)
+- HTTP URL: http://localhost:15672 (backward compatibility)
 - Default credentials: `guest` / `guest` (unless you configure different credentials)
 - To change credentials, update the RabbitMQ service settings in docker-compose.yml
 - Failed event messages retry up to `EVENT_QUEUE_MAX_RETRIES`, then move to `EVENT_QUEUE_DLQ_NAME`
+
 
 ### Docker Commands
 
@@ -142,16 +145,18 @@ Quick reference for running DogParkPals locally with Docker and validating the e
 - Backend: `https://localhost:3000/health`
 - Status: `https://localhost:3000/status`
 - Frontend: `https://localhost:5173`
-- RabbitMQ UI: `http://localhost:15672` (default `guest`/`guest`)
+- RabbitMQ UI: `https://localhost:15671` (default `guest`/`guest`) - HTTP also available on port 15672
 
 ### Monitoring (Prometheus + Grafana)
 DogParkPals includes Prometheus metrics and Grafana dashboards for observability.
 
 **Access:**
-- Prometheus: `http://localhost:9090`
-- Grafana: `http://localhost:3001` (username: `admin`, password: `admin`)
+- Prometheus: `https://localhost:9090`
+- Grafana: `https://localhost:3001` (username: `admin`, password: `admin`)
 - Backend Metrics: `https://localhost:3000/metrics`
 - RabbitMQ Exporter: `http://localhost:9419/metrics`
+- Elasticsearch: `https://localhost:9200` (username: `elastic`, password: `elastic`)
+- Kibana: `https://localhost:5601`
 
 **Available Metrics:**
 - Node.js runtime (memory, event loop lag, GC)

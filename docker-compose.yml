@@ -71,6 +71,11 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+      - "15671:15671"
+    volumes:
+      - ./certs/rabbitmq.crt:/etc/rabbitmq/certs/rabbitmq.crt:ro
+      - ./certs/rabbitmq.key:/etc/rabbitmq/certs/rabbitmq.key:ro
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
     environment:
       - RABBITMQ_NODENAME=rabbit@localhost
     tmpfs:
@@ -87,11 +92,14 @@ services:
     container_name: dogparkpals-rabbitmq-exporter
     ports:
       - "9419:9419"
+    env_file:
+      - ./docker-secrets
     environment:
-      - RABBIT_URL=http://rabbitmq:15672
-      - RABBIT_USER=guest
-      - RABBIT_PASSWORD=guest
+      - RABBIT_URL=https://rabbitmq:15671
+      - RABBIT_USER=${RABBITMQ_ADMIN_USER}
+      - RABBIT_PASSWORD=${RABBITMQ_ADMIN_PASSWORD}
       - PUBLISH_PORT=9419
+      - RABBIT_SKIP_VERIFY=${RABBITMQ_SKIP_VERIFY}
     depends_on:
       - rabbitmq
     restart: unless-stopped
@@ -125,10 +133,12 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning
       - ./certs/grafana.crt:/etc/grafana/grafana.crt:ro
       - ./certs/grafana.key:/etc/grafana/grafana.key:ro
+    env_file:
+      - ./docker-secrets
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=${GF_USERS_ALLOW_SIGN_UP}
       - GF_SERVER_PROTOCOL=https
       - GF_SERVER_CERT_FILE=/etc/grafana/grafana.crt
       - GF_SERVER_CERT_KEY=/etc/grafana/grafana.key
@@ -142,6 +152,8 @@ services:
     ports:
       - "9200:9200"
       - "9300:9300"
+    env_file:
+      - ./docker-secrets
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=true
@@ -149,8 +161,8 @@ services:
       - xpack.security.http.ssl.certificate=/usr/share/elasticsearch/config/certs/elasticsearch.crt
       - xpack.security.http.ssl.key=/usr/share/elasticsearch/config/certs/elasticsearch.key
       - xpack.security.http.ssl.verification_mode=none
-      - ELASTIC_PASSWORD=elastic
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - ES_JAVA_OPTS=${ES_JAVA_OPTS}
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
       - ./certs/elasticsearch.crt:/usr/share/elasticsearch/config/certs/elasticsearch.crt:ro
@@ -171,8 +183,10 @@ services:
       - "9600:9600"
     volumes:
       - ./logstash/pipeline:/usr/share/logstash/pipeline
+    env_file:
+      - ./docker-secrets
     environment:
-      - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
+      - LS_JAVA_OPTS=${LS_JAVA_OPTS}
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -183,8 +197,19 @@ services:
     container_name: dogparkpals-kibana
     ports:
       - "5601:5601"
+    volumes:
+      - ./certs/kibana.crt:/usr/share/kibana/config/certs/kibana.crt:ro
+      - ./certs/kibana.key:/usr/share/kibana/config/certs/kibana.key:ro
+    env_file:
+      - ./docker-secrets
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME}
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+      - ELASTICSEARCH_SSL_VERIFICATIONMODE=${ELASTICSEARCH_SSL_VERIFICATIONMODE}
+      - SERVER_SSL_ENABLED=true
+      - SERVER_SSL_CERTIFICATE=/usr/share/kibana/config/certs/kibana.crt
+      - SERVER_SSL_KEY=/usr/share/kibana/config/certs/kibana.key
     depends_on:
       elasticsearch:
         condition: service_healthy

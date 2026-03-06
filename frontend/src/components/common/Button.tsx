@@ -2,12 +2,14 @@ import React from 'react';
 
 interface ButtonProps {
   text: string;
-  onClick?: () => void;
+  onClick?: () => void | Promise<void>;
   type?: 'button' | 'submit' | 'reset';
   disabled?: boolean;
   variant?: 'primary' | 'secondary' | 'danger' | 'outline';
   fullWidth?: boolean;
   loading?: boolean;
+  className?: string;
+  size?: string;
 }
 
 const Button: React.FC<ButtonProps> = ({

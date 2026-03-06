@@ -14,6 +14,7 @@ const mockDeleteDog = jest.fn<any>();
 const mockAddOwnerToDog = jest.fn<any>();
 const mockRemoveOwnerFromDog = jest.fn<any>();
 const mockGetOwnersOfDog = jest.fn<any>();
+const mockGetDogOwners = jest.fn<any>();
 
 // Mock friend service
 const mockGetFriend = jest.fn<any>();
@@ -498,6 +499,57 @@ describe('Dog Controller', () => {
 
       expect(mockRemoveOwnerFromDog).not.toHaveBeenCalled();
       expect(mockNext).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('getDogOwners', () => {
+    test('retrieves owners for a specific dog', async () => {
+      const mockOwners = [
+        { id: 1, username: 'owner1', email: 'owner1@example.com' },
+        { id: 2, username: 'owner2', email: 'owner2@example.com' },
+      ];
+      mockReq.params = { dogId: '1' };
+      mockGetOwnersOfDog.mockResolvedValue(mockOwners);
+
+      await dogController.getDogOwners(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockGetOwnersOfDog).toHaveBeenCalledWith(1);
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      expect(mockJson).toHaveBeenCalledWith(mockOwners);
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    test('returns empty array when dog has no owners', async () => {
+      mockReq.params = { dogId: '5' };
+      mockGetOwnersOfDog.mockResolvedValue([]);
+
+      await dogController.getDogOwners(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockGetOwnersOfDog).toHaveBeenCalledWith(5);
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      expect(mockJson).toHaveBeenCalledWith([]);
+    });
+
+    test('forwards error when service fails', async () => {
+      mockReq.params = { dogId: '1' };
+      mockGetOwnersOfDog.mockRejectedValue(new Error('Database error'));
+
+      await dogController.getDogOwners(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockNext).toHaveBeenCalledTimes(1);
+      expect(mockStatus).not.toHaveBeenCalled();
+    });
+
+    test('returns single owner when dog has one owner', async () => {
+      const mockOwner = { id: 42, username: 'singleowner', email: 'single@example.com' };
+      mockReq.params = { dogId: '3' };
+      mockGetOwnersOfDog.mockResolvedValue([mockOwner]);
+
+      await dogController.getDogOwners(mockReq as Request, mockRes as Response, mockNext as NextFunction);
+
+      expect(mockGetOwnersOfDog).toHaveBeenCalledWith(3);
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      expect(mockJson).toHaveBeenCalledWith([mockOwner]);
     });
   });
 });

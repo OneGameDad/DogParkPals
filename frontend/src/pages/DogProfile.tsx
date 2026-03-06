@@ -8,8 +8,11 @@ import { Loading, ErrorMessage, Button, Picture, BodyText } from '../components/
 import { Header } from '../components/layout';
 import type { Dog } from '../types';
 import { useDogFriends } from '../hooks/users/useDogFriends';
+import { useDogEnemies } from '../hooks/users/useDogEnemies';
+import { useDogOwners } from '../hooks/users/useDogOwners';
 import { useFriends } from '../hooks/users/useFriends';
 import DogList from '../components/users/DogList';
+import UserList from '../components/users/UserList';
 import { getDogPhotoUrl, getDogDocumentUrl } from '../constants';
 
 const DogProfile = () => {
@@ -80,6 +83,8 @@ const DogProfile = () => {
   };
 
   const { friends, loading: friendsLoading, removeFriend } = useDogFriends(dogId || undefined);
+  const { enemies, loading: enemiesLoading, removeEnemy } = useDogEnemies(dogId || undefined);
+  const { owners, loading: ownersLoading } = useDogOwners(dogId || undefined);
   const { friends: userFriends } = useFriends(showAddOwner && isOwner ? user?.id : undefined);
 
   if (loading) {
@@ -233,8 +238,27 @@ const DogProfile = () => {
           </div>
         </div>
 
-        {/* Right Column: Friends List */}
+        {/* Right Column: Owners, Friends & Enemies Lists */}
         <div className="md:col-span-1 space-y-6">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <Header
+              text={t('dogProfile.owners') || 'Owners'}
+              level="h3"
+              className="mb-4 border-b pb-2"
+            />
+
+            {ownersLoading ? (
+              <Loading message="" />
+            ) : (
+              <UserList
+                users={owners}
+                onUserClick={(owner) => navigate(`/user/${owner.id}`)}
+                emptyMessage={t('dogProfile.noOwners') || 'No owners listed'}
+                showChevron={false}
+              />
+            )}
+          </div>
+
           <div className="bg-white rounded-lg shadow-md p-6">
             <Header
               text={t('dogProfile.friends') || 'Friends'}
@@ -252,6 +276,29 @@ const DogProfile = () => {
                 onRemove={isOwner ? async (friendDog) => {
                   if (window.confirm(t('dogProfile.removeFriendConfirm', 'Remove this friend?'))) {
                     await removeFriend(friendDog.id);
+                  }
+                } : undefined}
+              />
+            )}
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <Header
+              text={t('dogProfile.enemies') || 'Enemies'}
+              level="h3"
+              className="mb-4 border-b pb-2"
+            />
+
+            {enemiesLoading ? (
+              <Loading message="" />
+            ) : (
+              <DogList
+                dogs={enemies}
+                emptyMessage={t('dogProfile.noEnemies') || 'No enemies yet.'}
+                onDogClick={(enemyDog) => navigate(`/dog/${enemyDog.id}`)}
+                onRemove={isOwner ? async (enemyDog) => {
+                  if (window.confirm(t('dogProfile.removeEnemyConfirm', 'Remove this enemy?'))) {
+                    await removeEnemy(enemyDog.id);
                   }
                 } : undefined}
               />

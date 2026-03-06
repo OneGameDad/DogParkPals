@@ -5,6 +5,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { useFetch } from '../../hooks/useFetch';
 import { useFriendActions } from '../../hooks/users/useFriendActions';
 import { useDogFriends } from '../../hooks/users/useDogFriends';
+import { useDogEnemies } from '../../hooks/users/useDogEnemies';
+import { useDogEnemyActions } from '../../hooks/users/useDogEnemyActions';
 import type { Dog } from '../../types';
 import { getDogPhotoUrl } from '../../constants';
 
@@ -17,6 +19,7 @@ const DogProfileModal = ({ dog, onClose }: DogProfileModalProps) => {
     const { t } = useTranslation();
     const { user } = useAuth();
     const { addFriend, actionLoading } = useFriendActions();
+    const { addDogEnemy, addEnemyLoading } = useDogEnemyActions();
     const [selectedMyDogId, setSelectedMyDogId] = useState<number | null>(null);
 
     const { data: myDogs } = useFetch<Dog[]>(
@@ -30,16 +33,19 @@ const DogProfileModal = ({ dog, onClose }: DogProfileModalProps) => {
     }, [myDogs, selectedMyDogId]);
 
     const { friends: selectedDogFriends, loading: friendsLoading, removeFriend, refetch: refetchFriends } = useDogFriends(selectedMyDogId || undefined);
+    const { enemies: selectedDogEnemies, loading: enemiesLoading, removeEnemy, refetch: refetchEnemies } = useDogEnemies(selectedMyDogId || undefined);
 
     const isOwner = myDogs?.some(d => d.id === dog?.id);
     const isAlreadyFriend = selectedDogFriends.some(d => d.id === dog?.id);
+    const isAlreadyEnemy = selectedDogEnemies.some(d => d.id === dog?.id);
 
-    // Refetch friends when modal opens or selected dog changes
+    // Refetch friends and enemies when modal opens or selected dog changes
     useEffect(() => {
         if (dog && selectedMyDogId) {
             refetchFriends();
+            refetchEnemies();
         }
-    }, [dog, selectedMyDogId, refetchFriends]);
+    }, [dog, selectedMyDogId, refetchFriends, refetchEnemies]);
 
     const handleAddFriend = async () => {
         let requesterId = selectedMyDogId;
@@ -51,8 +57,31 @@ const DogProfileModal = ({ dog, onClose }: DogProfileModalProps) => {
             const success = await addFriend(dog.id, true, requesterId);
             if (success) {
                 await refetchFriends();
-                // Short delay to allow state update before closing (optional but safer for UX)
                 onClose();
+            }
+        }
+    };
+
+    const handleAddEnemy = async () => {
+        let myDogId = selectedMyDogId;
+        if (!myDogId && myDogs && myDogs.length === 1) {
+            myDogId = myDogs[0].id;
+        }
+
+        if (myDogId && dog) {
+            const success = await addDogEnemy(myDogId, dog.id);
+            if (success) {
+                await refetchEnemies();
+                onClose();
+            }
+        }
+    };
+
+    const handleRemoveEnemy = async () => {
+        if (selectedMyDogId && dog) {
+            if (window.confirm(t('dogProfile.removeEnemyConfirm') || 'Remove this enemy?')) {
+                await removeEnemy(dog.id);
+                await refetchEnemies();
             }
         }
     };
@@ -149,6 +178,23 @@ const DogProfileModal = ({ dog, onClose }: DogProfileModalProps) => {
                                 : friendsLoading
                                     ? 'bg-gray-400 cursor-not-allowed'
                                     : 'bg-blue-600 hover:bg-blue-700'
+                                }`}
+                        />
+
+                        <Button
+                            text={
+                                addEnemyLoading ? (t('common.processing') || 'Processing...') :
+                                    enemiesLoading ? (t('common.checking') || 'Checking...') :
+                                        isAlreadyEnemy ? (t('dogProfile.removeEnemy') || 'Remove Enemy') :
+                                            (t('dogProfile.addEnemy') || 'Add Enemy')
+                            }
+                            onClick={isAlreadyEnemy ? handleRemoveEnemy : handleAddEnemy}
+                            disabled={addEnemyLoading || enemiesLoading || (myDogs.length > 1 && !selectedMyDogId)}
+                            className={`w-full mt-2 ${isAlreadyEnemy
+                                ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                                : enemiesLoading
+                                    ? 'bg-gray-400 cursor-not-allowed'
+                                    : 'bg-red-600 hover:bg-red-700'
                                 }`}
                         />
                     </div>

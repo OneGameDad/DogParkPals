@@ -231,6 +231,24 @@ const dogController = {
         }
     },
 
+    getDogOwners: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+      try {
+        typeSafeLogger.logRequest("Received request to fetch dog owners", { method: req.method, path: req.path });
+        const dogId = parseInt(ensureString(req.params.dogId), 10);
+
+        const owners = await dogService.getOwnersOfDog(dogId);
+        typeSafeLogger.logUserAction("Dog owners retrieved", { dogId, ownerCount: owners.length });
+        res.status(200).json(owners);
+      } catch (error) {
+        if (isAppError(error)) {
+          return next(error);
+        }
+        return next(
+          toAppError(error, { message: "Failed to retrieve dog owners", code: "INTERNAL_ERROR", statusCode: 500 })
+        );
+      }
+    },
+
     uploadDogPhoto: async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         try {
         const dogId = parseInt(ensureString(req.params.id), 10);

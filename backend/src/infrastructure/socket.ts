@@ -115,6 +115,43 @@ export function initializeSocket(httpServer: HttpServer): Server {
       });
     }
 
+    // Handle typing indicator
+    socket.on("typing:start", (data: { receiverId: number }) => {
+      typeSafeLogger.debug("User started typing", {
+        socketId: socket.id,
+        userId,
+        receiverId: data.receiverId,
+      });
+      io.to(`user:${data.receiverId}`).emit("typing:start", {
+        senderId: userId,
+      });
+    });
+
+    socket.on("typing:stop", (data: { receiverId: number }) => {
+      typeSafeLogger.debug("User stopped typing", {
+        socketId: socket.id,
+        userId,
+        receiverId: data.receiverId,
+      });
+      io.to(`user:${data.receiverId}`).emit("typing:stop", {
+        senderId: userId,
+      });
+    });
+
+    // Handle message read receipt
+    socket.on("message:read", (data: { messageId: number; senderId: number }) => {
+      typeSafeLogger.debug("Message read receipt", {
+        socketId: socket.id,
+        userId,
+        messageId: data.messageId,
+        senderId: data.senderId,
+      });
+      io.to(`user:${data.senderId}`).emit("message:read", {
+        messageId: data.messageId,
+        readerId: userId,
+      });
+    });
+
     // Handle disconnection
     socket.on("disconnect", (reason) => {
       typeSafeLogger.info("User disconnected", {

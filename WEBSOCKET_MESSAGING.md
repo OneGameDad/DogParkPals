@@ -48,7 +48,7 @@ Emitted when message status changes (read, delivered).
 ```typescript
 {
   messageId: number;
-  status: string;
+  status: MessageStatus;
 }
 ```
 
@@ -143,10 +143,10 @@ function ChatComponent({ friendId, currentUserId }: { friendId: number; currentU
     };
 
     // Subscribe to message status updates
-    const handleMessageStatus = ({ messageId, status }: { messageId: number; status: string }) => {
+    const handleMessageStatus = ({ messageId, status }: { messageId: number; status: MessageStatus }) => {
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.id === messageId ? { ...msg, status: status as any } : msg
+          msg.id === messageId ? { ...msg, status } : msg
         )
       );
     };
@@ -200,8 +200,9 @@ function ChatComponent({ friendId, currentUserId }: { friendId: number; currentU
   const markAsRead = async (message: Messages) => {
     if (message.receiverId === currentUserId && message.status !== 'READ') {
       try {
+        // Preferred single path: update via REST and consume the resulting
+        // message:status event on the sender side.
         await messageService.updateStatus(message.id, 'READ');
-        socketService.emitMessageRead(message.id, message.senderId);
       } catch (error) {
         console.error('Failed to mark message as read:', error);
       }
@@ -228,7 +229,7 @@ function ChatComponent({ friendId, currentUserId }: { friendId: number; currentU
           type="text"
           value={inputValue}
           onChange={handleInputChange}
-          onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
           placeholder="Type a message..."
         />
         <button onClick={sendMessage}>Send</button>
@@ -239,6 +240,15 @@ function ChatComponent({ friendId, currentUserId }: { friendId: number; currentU
 
 export default ChatComponent;
 ```
+
+### Read Receipt Strategy
+
+Choose one read-notification path per UX flow to avoid duplicate sender updates:
+
+- **Preferred default**: call `messageService.updateStatus(message.id, 'READ')` and react to `message:status`.
+- **Optional low-latency receipt**: emit `message:read` only if you explicitly need `readerId` in real time.
+
+If both are used together, the sender can receive both `message:status` and `message:read` for the same action.
 
 ## Features
 
@@ -301,6 +311,8 @@ The following REST endpoints remain available for fetching message history and p
 See existing test files:
 - `/backend/src/tests/messageService.test.ts`
 - `/backend/src/tests/messageController.test.ts`
+- `/backend/src/tests/integration/socketMessaging.test.ts`
+- `/backend/src/tests/socketService.test.ts`
 
 ## Troubleshooting
 

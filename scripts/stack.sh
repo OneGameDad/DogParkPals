@@ -10,6 +10,9 @@ SECRETS_EXAMPLE_FILE="$ROOT_DIR/docker-secrets-example"
 
 OBS_SERVICES=(elasticsearch logstash kibana prometheus grafana rabbitmq-exporter)
 
+# Error trap for better error reporting
+trap 'echo "❌ Command failed on line $LINENO"; exit 1' ERR
+
 print_usage() {
   cat <<EOF
 DogParkPals stack control
@@ -20,6 +23,23 @@ Usage:
   ./scripts/stack.sh --clean       Stop all services and remove app volumes/images
   ./scripts/stack.sh --help
 EOF
+}
+
+check_requirements() {
+  local missing=0
+  
+  for cmd in docker docker-compose openssl curl; do
+    if ! command -v "$cmd" &> /dev/null; then
+      echo "❌ Missing required command: $cmd"
+      missing=1
+    fi
+  done
+  
+  if [ "$missing" -eq 1 ]; then
+    echo ""
+    echo "Please install missing dependencies and try again."
+    exit 1
+  fi
 }
 
 ensure_repo_root() {
@@ -48,8 +68,19 @@ run_fresh() {
   echo "🚀 Starting full DogParkPals stack..."
   ensure_secrets_file
 
-  (cd "$ROOT_DIR" && bash "$SCRIPT_DIR/docker-setup.sh")
-  (cd "$ROOT_DIR" && bash "$SCRIPT_DIR/deployment-init.sh")
+  echo ""
+  echo "📝 Running docker setup (certificates, build, start)..."
+  if ! (cd "$ROOT_DIR" && bash "$SCRIPT_DIR/docker-setup.sh"); then
+    echo "❌ Failed during docker setup"
+    exit 1
+  fi
+
+  echo ""
+  echo "🔧 Running deployment initialization (seeding, Kibana setup, test logs)..."
+  if ! (cd "$ROOT_DIR" && bash "$SCRIPT_DIR/deployment-init.sh"); then
+    echo "❌ Failed during deployment initialization"
+    exit 1
+  fi
 
   echo ""
   echo "✅ Fresh startup + seeding complete"
@@ -77,6 +108,7 @@ run_clean() {
 
 main() {
   ensure_repo_root
+  check_requirements
 
   if [ "$#" -ne 1 ]; then
     print_usage

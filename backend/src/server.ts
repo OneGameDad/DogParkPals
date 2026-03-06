@@ -10,6 +10,9 @@ import { initializeMessageSocket } from "./services/messageService";
 import https from 'https';
 import fs from 'fs';
 import path from 'path';
+import { initializeSocket } from "./infrastructure/socket";
+import { initializeNotificationSocket } from "./services/notificationService";
+import type { Server } from 'socket.io';
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 
@@ -33,6 +36,9 @@ httpServer.listen(PORT, () => {
   typeSafeLogger.info("Server listening", { port: PORT });
 });
 
+// Declare io variable at module level for export
+let io: Server;
+
 try {
   // Validate certificate files exist
   if (!fs.existsSync(certPath)) {
@@ -50,8 +56,14 @@ try {
     key,
   };
 
-  const server = https.createServer(httpsOptions, app);
-  server.listen(PORT, () => {
+  // Create HTTPS server and attach Socket.io
+  const httpsServer = https.createServer(httpsOptions, app);
+  io = initializeSocket(httpsServer);
+
+  // Initialize notification service with Socket.io
+  initializeNotificationSocket(io);
+
+  httpsServer.listen(PORT, () => {
     typeSafeLogger.info("HTTPS Server listening", { 
       port: PORT,
       certPath,
@@ -63,6 +75,9 @@ try {
   typeSafeLogger.error('Failed to start HTTPS server', error instanceof Error ? error : new Error(errorMsg));
   process.exit(1);
 }
+
+// Make io available globally for notification service
+export { io };
 
 startEventConsumer();
 startOutboxPublisher();

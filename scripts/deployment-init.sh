@@ -48,8 +48,20 @@ echo ""
 if [ ! -f "$ROOT_DIR/certs/server.crt" ] || [ ! -f "$ROOT_DIR/certs/server.key" ]; then
   echo "🔐 Generating SSL certificates for HTTPS..."
   mkdir -p "$ROOT_DIR/certs"
-  openssl req -x509 -newkey rsa:2048 -keyout "$ROOT_DIR/certs/server.key" -out "$ROOT_DIR/certs/server.crt" -days 365 -nodes -subj "/CN=localhost/O=DogParkPals/C=US" > /dev/null 2>&1
-  echo "✅ SSL certificates generated"
+  cd "$ROOT_DIR/certs"
+  
+  # Backend server certificate
+  openssl req -x509 -newkey rsa:2048 -keyout server.key -out server.crt -days 365 -nodes -subj "/CN=localhost/O=DogParkPals/C=US" > /dev/null 2>&1
+  
+  # Observability services certificates
+  openssl req -x509 -newkey rsa:2048 -keyout prometheus.key -out prometheus.crt -days 365 -nodes -subj "/CN=prometheus/O=DogParkPals/C=US" > /dev/null 2>&1
+  openssl req -x509 -newkey rsa:2048 -keyout grafana.key -out grafana.crt -days 365 -nodes -subj "/CN=grafana/O=DogParkPals/C=US" > /dev/null 2>&1
+  openssl req -x509 -newkey rsa:2048 -keyout elasticsearch.key -out elasticsearch.crt -days 365 -nodes -subj "/CN=elasticsearch/O=DogParkPals/C=US" > /dev/null 2>&1
+  openssl req -x509 -newkey rsa:2048 -keyout kibana.key -out kibana.crt -days 365 -nodes -subj "/CN=kibana/O=DogParkPals/C=US" > /dev/null 2>&1
+  openssl req -x509 -newkey rsa:2048 -keyout rabbitmq.key -out rabbitmq.crt -days 365 -nodes -subj "/CN=rabbitmq/O=DogParkPals/C=US" > /dev/null 2>&1
+  
+  cd "$ROOT_DIR"
+  echo "✅ SSL certificates generated (backend + observability)"
 else
   echo "✅ SSL certificates already exist"
 fi

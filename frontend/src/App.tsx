@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuth, useHeartbeat } from './hooks';
+import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -163,9 +164,11 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter>
-      <NotificationProvider>
-        <AppContent />
-      </NotificationProvider>
+      <AuthProvider>
+        <NotificationProvider>
+          <AppContent />
+        </NotificationProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

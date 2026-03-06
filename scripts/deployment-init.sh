@@ -74,8 +74,8 @@ if ! docker ps | grep -q "dogparkpals-backend"; then
 fi
 
 wait_for_url "Backend" "$BACKEND_URL/health" 120
-wait_for_url "Elasticsearch" "$ELASTICSEARCH_URL/_cluster/health" 180
-wait_for_url "Kibana" "$KIBANA_URL/api/status" 240
+wait_for_url "Elasticsearch" "$ELASTICSEARCH_URL/_cluster/health" 300
+wait_for_url "Kibana" "$KIBANA_URL/api/status" 360
 
 echo ""
 echo "1) Seeding production database"

@@ -6,6 +6,7 @@ import app from "./app";
 import { createServer } from "http";
 import { initializeSocket } from "./infrastructure/socket";
 import { initializeNotificationSocket } from "./services/notificationService";
+import { initializeMessageSocket } from "./services/messageService";
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 
@@ -15,6 +16,9 @@ const io = initializeSocket(httpServer);
 
 // Initialize notification service with Socket.io
 initializeNotificationSocket(io);
+
+// Initialize message service with Socket.io
+initializeMessageSocket(io);
 
 // Make io available globally for notification service
 export { io };

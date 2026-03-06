@@ -300,6 +300,19 @@ const dogService = {
             },
           },
         },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          first_name: true,
+          last_name: true,
+          profilePictureUrl: true,
+          role: true,
+          ExpPoints: true,
+          createdAt: true,
+          updatedAt: true,
+          // Explicitly exclude: password_hash, resetToken, resetTokenExpiry
+        },
       });
       typeSafeLogger.logUserAction('Owners fetched for dog', { dogId, ownerCount: owners.length });
       return owners;

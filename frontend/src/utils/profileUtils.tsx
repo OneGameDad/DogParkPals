@@ -1,4 +1,4 @@
-import type { TFunction } from 'react-i18next';
+type TranslateFunction = (key: string) => string;
 
 // Level and XP utilities
 export const LEVEL_THRESHOLDS = [
@@ -17,7 +17,7 @@ export const formatLevel = (expPoints: number): number => {
 	return 5;
 };
 
-export const getLevelBadge = (level: number, t: TFunction) => {
+export const getLevelBadge = (level: number, t: TranslateFunction) => {
 	const colors = ['bg-gray-400', 'bg-green-400', 'bg-blue-400', 'bg-purple-400', 'bg-yellow-400'];
 	const index = level - 1;
 	const badgeColor = colors[index] ?? colors[0];

@@ -1,3 +1,4 @@
+import fs from 'fs';
 import { InMemoryQueueClient } from './inMemoryQueueClient';
 import { RabbitMqClient } from './rabbitmqClient';
 import type { QueueClient } from './queueClient';
@@ -15,5 +16,31 @@ export function createQueueClient(): QueueClient {
   const queueName = process.env.EVENT_QUEUE_NAME ?? DEFAULT_QUEUE_NAME;
   const maxRetries = Number(process.env.EVENT_QUEUE_MAX_RETRIES ?? 5);
   const dlqName = process.env.EVENT_QUEUE_DLQ_NAME;
-  return new RabbitMqClient(url, queueName, { maxRetries, dlqName });
+
+  let connectionOptions: Record<string, unknown> | undefined;
+
+  if (url.startsWith('amqps://')) {
+    const skipVerify = (process.env.RABBIT_SKIP_VERIFY ?? 'false').toLowerCase() === 'true';
+    const caPath = process.env.RABBITMQ_CA_PATH ?? '/app/certs/rabbitmq.crt';
+
+    connectionOptions = {
+      rejectUnauthorized: !skipVerify,
+    };
+
+    if (!skipVerify) {
+      if (!fs.existsSync(caPath)) {
+        throw new Error(`RABBITMQ_CA_PATH does not exist: ${caPath}`);
+      }
+      connectionOptions = {
+        ...connectionOptions,
+        ca: [fs.readFileSync(caPath)],
+      };
+    }
+  }
+
+  return new RabbitMqClient(url, queueName, {
+    maxRetries,
+    dlqName,
+    connectionOptions,
+  });
 }

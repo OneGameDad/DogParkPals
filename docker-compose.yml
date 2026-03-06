@@ -67,14 +67,13 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     container_name: dogparkpals-rabbitmq
-    user: "999:999"
     ports:
+      - "5671:5671"
       - "5672:5672"
       - "15672:15672"
       - "15671:15671"
     volumes:
-      - ./certs/rabbitmq.crt:/etc/rabbitmq/certs/rabbitmq.crt:ro
-      - ./certs/rabbitmq.key:/etc/rabbitmq/certs/rabbitmq.key:ro
+      - ./certs:/etc/rabbitmq/certs:ro
       - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
     environment:
       - RABBITMQ_NODENAME=rabbit@localhost

@@ -15,9 +15,31 @@ import { initializeNotificationSocket } from "./services/notificationService";
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 
-// Set up HTTPS with certificate and key
-const certPath = process.env.CERT_PATH || path.join(process.cwd(), '../certs/server.crt');
-const keyPath = process.env.KEY_PATH || path.join(process.cwd(), '../certs/server.key');
+const resolveFirstExistingPath = (explicitPath: string | undefined, candidates: string[]): string => {
+  if (explicitPath) {
+    return explicitPath;
+  }
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return candidates[0];
+};
+
+// Resolve cert/key from env first, then common Docker/local fallback locations.
+const certPath = resolveFirstExistingPath(process.env.CERT_PATH, [
+  '/app/certs/server.crt',
+  path.join(process.cwd(), '../certs/server.crt'),
+  path.join(process.cwd(), 'certs/server.crt'),
+]);
+const keyPath = resolveFirstExistingPath(process.env.KEY_PATH, [
+  '/app/certs/server.key',
+  path.join(process.cwd(), '../certs/server.key'),
+  path.join(process.cwd(), 'certs/server.key'),
+]);
 
 // Initialize notification service with Socket.io
 initializeNotificationSocket(io);

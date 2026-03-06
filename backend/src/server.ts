@@ -12,16 +12,12 @@ import fs from 'fs';
 import path from 'path';
 import { initializeSocket } from "./infrastructure/socket";
 import { initializeNotificationSocket } from "./services/notificationService";
-import type { Server } from 'socket.io';
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 // Set up HTTPS with certificate and key
 const certPath = process.env.CERT_PATH || path.join(process.cwd(), '../certs/server.crt');
 const keyPath = process.env.KEY_PATH || path.join(process.cwd(), '../certs/server.key');
-// Create HTTP server and attach Socket.io
-const httpServer = createServer(app);
-const io = initializeSocket(httpServer);
 
 // Initialize notification service with Socket.io
 initializeNotificationSocket(io);
@@ -37,7 +33,7 @@ httpServer.listen(PORT, () => {
 });
 
 // Declare io variable at module level for export
-let io: Server;
+let io: ReturnType<typeof initializeSocket>;
 
 try {
   // Validate certificate files exist

@@ -48,7 +48,7 @@ app.use(securityHeaders);
 
 app.use(cors({
   // Hardcoded for development purposes
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: process.env.FRONTEND_URL || "https://localhost:5173",
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,

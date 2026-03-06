@@ -157,7 +157,7 @@ const FileUpload = ({
               text="Clear"
               type="button"
               onClick={handleClearSelection}
-              className="bg-transparent hover:bg-gray-100 text-red-500 font-normal px-2 py-1 text-sm border border-red-200 ml-auto"
+              className="!bg-transparent hover:bg-gray-100 !text-red-500 font-normal px-2 py-1 text-sm border border-red-200 ml-auto"
             />
           )}
         </div>
@@ -196,7 +196,11 @@ const FileUpload = ({
             <Button onClick={handleUpload} disabled={loading} text={loading ? 'Uploading...' : 'Upload'} />
           )}
           {(preview || selectedFile === null) && !loading && (
-            <Button onClick={handleDelete} text="Delete" className="bg-red-500 hover:bg-red-600" />
+            <Button
+              onClick={handleDelete}
+              text="Delete"
+              className="bg-pink-500 hover:bg-pink-600 text-white font-normal px-2 py-1 text-sm ml-auto"
+            />
           )}
         </div>
       )}

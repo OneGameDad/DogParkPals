@@ -1,5 +1,3 @@
-import EditProfile from "../../pages/EditProfile";
-
 export const es = {
   translation: {
     welcome: "Bienvenido a DogParkPals",

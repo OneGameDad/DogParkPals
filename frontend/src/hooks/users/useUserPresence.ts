@@ -23,7 +23,7 @@ export const useUserPresence = ({
 	const [presence, setPresence] = useState<UserPresence | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const intervalRef = useRef<NodeJS.Timeout | null>(null);
+	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 	const mountedRef = useRef(true);
 
 	const fetchPresence = useCallback(async () => {

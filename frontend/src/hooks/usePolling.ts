@@ -14,7 +14,7 @@ export function usePolling(
     { enabled = true, interval = 3000 }: UsePollingOptions = {}
 ) {
     const savedCallback = useRef(callback);
-    const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+    const timeoutIdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isMountedRef = useRef(true);
 
     // Keep callback ref up to date

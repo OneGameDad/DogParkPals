@@ -159,10 +159,11 @@ services:
       - ./certs/elasticsearch.crt:/usr/share/elasticsearch/config/certs/elasticsearch.crt:ro
       - ./certs/elasticsearch.key:/usr/share/elasticsearch/config/certs/elasticsearch.key:ro
     healthcheck:
-      test: curl -s -k -u elastic:elastic https://localhost:9200 >/dev/null || exit 1
+      test: ["CMD-SHELL", "curl -s -k -u elastic:$$ELASTIC_PASSWORD https://localhost:9200 >/dev/null || exit 1"]
+      start_period: 90s
       interval: 30s
       timeout: 10s
-      retries: 5
+      retries: 10
     restart: unless-stopped
 
   logstash:

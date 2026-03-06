@@ -290,4 +290,213 @@ describe('SocketService', () => {
       }
     });
   });
+
+  describe('Message Events', () => {
+    describe('onNewMessage', () => {
+      it('should subscribe to message:new events', async () => {
+        const api = await import('../../services/api');
+        vi.spyOn(api.default, 'get').mockResolvedValue({ token: 'test-token' });
+
+        const callback = vi.fn();
+        await socketService.connect();
+        socketService.onNewMessage(callback);
+
+        expect(mockSocket.on).toHaveBeenCalledWith('message:new', callback);
+      });
+
+      it('should warn if socket not connected', () => {
+        const callback = vi.fn();
+        const spy = vi.spyOn(console, 'warn');
+
+        socketService.onNewMessage(callback);
+
+        expect(spy).toHaveBeenCalledWith(
+          'Socket not connected, cannot subscribe to new messages'
+        );
+        spy.mockRestore();
+      });
+    });
+
+    describe('offNewMessage', () => {
+      it('should unsubscribe from message:new events', async () => {
+        const api = await import('../../services/api');
+        vi.spyOn(api.default, 'get').mockResolvedValue({ token: 'test-token' });
+
+        const callback = vi.fn();
+        await socketService.connect();
+        socketService.offNewMessage(callback);
+
+        expect(mockSocket.off).toHaveBeenCalledWith('message:new', callback);
+      });
+    });
+
+    describe('onMessageStatus', () => {
+      it('should subscribe to message:status events', async () => {
+        const api = await import('../../services/api');
+        vi.spyOn(api.default, 'get').mockResolvedValue({ token: 'test-token' });
+
+        const callback = vi.fn();
+        await socketService.connect();
+        socketService.onMessageStatus(callback);
+
+        expect(mockSocket.on).toHaveBeenCalledWith('message:status', callback);
+      });
+    });
+
+    describe('offMessageStatus', () => {
+      it('should unsubscribe from message:status events', async () => {
+        const api = await import('../../services/api');
+        vi.spyOn(api.default, 'get').mockResolvedValue({ token: 'test-token' });
+
+        const callback = vi.fn();
+        await socketService.connect();
+        socketService.offMessageStatus(callback);
+
+        expect(mockSocket.off).toHaveBeenCalledWith('message:status', callback);
+      });
+    });
+  });
+
+  describe('Typing Indicators', () => {
+    describe('onTypingStart', () => {
+      it('should subscribe to typing:start events', async () => {
+        const api = await import('../../services/api');
+        vi.spyOn(api.default, 'get').mockResolvedValue({ token: 'test-token' });
+
+        const callback = vi.fn();
+        await socketService.connect();
+        socketService.onTypingStart(callback);
+
+        expect(mockSocket.on).toHaveBeenCalledWith('typing:start', callback);
+      });
+    });
+
+    describe('offTypingStart', () => {
+      it('should unsubscribe from typing:start events', async () => {
+        const api = await import('../../services/api');
+        vi.spyOn(api.default, 'get').mockResolvedValue({ token: 'test-token' });
+
+        const callback = vi.fn();
+        await socketService.connect();
+        socketService.offTypingStart(callback);
+
+        expect(mockSocket.off).toHaveBeenCalledWith('typing:start', callback);
+      });
+    });
+
+    describe('onTypingStop', () => {
+      it('should subscribe to typing:stop events', async () => {
+        const api = await import('../../services/api');
+        vi.spyOn(api.default, 'get').mockResolvedValue({ token: 'test-token' });
+
+        const callback = vi.fn();
+        await socketService.connect();
+        socketService.onTypingStop(callback);
+
+        expect(mockSocket.on).toHaveBeenCalledWith('typing:stop', callback);
+      });
+    });
+
+    describe('offTypingStop', () => {
+      it('should unsubscribe from typing:stop events', async () => {
+        const api = await import('../../services/api');
+        vi.spyOn(api.default, 'get').mockResolvedValue({ token: 'test-token' });
+
+        const callback = vi.fn();
+        await socketService.connect();
+        socketService.offTypingStop(callback);
+
+        expect(mockSocket.off).toHaveBeenCalledWith('typing:stop', callback);
+      });
+    });
+
+    describe('emitTypingStart', () => {
+      it('should emit typing:start event', async () => {
+        const api = await import('../../services/api');
+        vi.spyOn(api.default, 'get').mockResolvedValue({ token: 'test-token' });
+
+        await socketService.connect();
+        socketService.emitTypingStart(123);
+
+        expect(mockSocket.emit).toHaveBeenCalledWith('typing:start', { receiverId: 123 });
+      });
+
+      it('should warn if socket not connected', () => {
+        const spy = vi.spyOn(console, 'warn');
+
+        socketService.emitTypingStart(123);
+
+        expect(spy).toHaveBeenCalledWith(
+          'Socket not connected, cannot emit typing event'
+        );
+        spy.mockRestore();
+      });
+    });
+
+    describe('emitTypingStop', () => {
+      it('should emit typing:stop event', async () => {
+        const api = await import('../../services/api');
+        vi.spyOn(api.default, 'get').mockResolvedValue({ token: 'test-token' });
+
+        await socketService.connect();
+        socketService.emitTypingStop(123);
+
+        expect(mockSocket.emit).toHaveBeenCalledWith('typing:stop', { receiverId: 123 });
+      });
+    });
+  });
+
+  describe('Read Receipts', () => {
+    describe('onMessageRead', () => {
+      it('should subscribe to message:read events', async () => {
+        const api = await import('../../services/api');
+        vi.spyOn(api.default, 'get').mockResolvedValue({ token: 'test-token' });
+
+        const callback = vi.fn();
+        await socketService.connect();
+        socketService.onMessageRead(callback);
+
+        expect(mockSocket.on).toHaveBeenCalledWith('message:read', callback);
+      });
+    });
+
+    describe('offMessageRead', () => {
+      it('should unsubscribe from message:read events', async () => {
+        const api = await import('../../services/api');
+        vi.spyOn(api.default, 'get').mockResolvedValue({ token: 'test-token' });
+
+        const callback = vi.fn();
+        await socketService.connect();
+        socketService.offMessageRead(callback);
+
+        expect(mockSocket.off).toHaveBeenCalledWith('message:read', callback);
+      });
+    });
+
+    describe('emitMessageRead', () => {
+      it('should emit message:read event', async () => {
+        const api = await import('../../services/api');
+        vi.spyOn(api.default, 'get').mockResolvedValue({ token: 'test-token' });
+
+        await socketService.connect();
+        socketService.emitMessageRead(456, 123);
+
+        expect(mockSocket.emit).toHaveBeenCalledWith('message:read', {
+          messageId: 456,
+          senderId: 123,
+        });
+      });
+
+      it('should warn if socket not connected', () => {
+        const spy = vi.spyOn(console, 'warn');
+
+        socketService.emitMessageRead(456, 123);
+
+        expect(spy).toHaveBeenCalledWith(
+          'Socket not connected, cannot emit message read event'
+        );
+        spy.mockRestore();
+      });
+    });
+  });
 });

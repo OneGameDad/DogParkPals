@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { API_BASE_URL } from '../constants';
 import api from './api';
-import type { Messages } from '../types';
+import type { MessageStatus, Messages } from '../types';
 
 export interface Notification {
   id: number;
@@ -13,7 +13,7 @@ export interface Notification {
 
 export interface MessageStatusUpdate {
   messageId: number;
-  status: string;
+  status: MessageStatus;
 }
 
 export interface TypingIndicator {

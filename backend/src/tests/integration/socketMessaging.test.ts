@@ -1,4 +1,5 @@
 import request from "supertest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "@jest/globals";
 import { io as ioClient, Socket } from "socket.io-client";
 import { createServer } from "http";
 import app from "../../app";
@@ -8,6 +9,23 @@ import { makeToken, ids } from "../fixtures/integrationFixtures";
 
 const userAToken = () => makeToken({ id: ids.users.userA, role: "CLIENT" });
 const userBToken = () => makeToken({ id: ids.users.userB, role: "CLIENT" });
+
+async function expectNoSocketEvent(socket: Socket, event: string, waitMs = 150): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      socket.off(event, onEvent);
+      resolve();
+    }, waitMs);
+
+    const onEvent = () => {
+      clearTimeout(timer);
+      socket.off(event, onEvent);
+      reject(new Error(`Unexpected event received: ${event}`));
+    };
+
+    socket.on(event, onEvent);
+  });
+}
 
 describe("WebSocket Messaging Integration", () => {
   let httpServer: any;
@@ -19,17 +37,6 @@ describe("WebSocket Messaging Integration", () => {
   const PORT = 4001; // Use different port for tests
 
   beforeAll(async () => {
-    // Get socket tokens for both users
-    const resA = await request(app)
-      .get("/auth/socket-token")
-      .set("Authorization", `Bearer ${userAToken()}`);
-    socketTokenA = resA.body.token;
-
-    const resB = await request(app)
-      .get("/auth/socket-token")
-      .set("Authorization", `Bearer ${userBToken()}`);
-    socketTokenB = resB.body.token;
-
     // Create HTTP server with Socket.io
     httpServer = createServer(app);
     io = initializeSocket(httpServer);
@@ -53,6 +60,22 @@ describe("WebSocket Messaging Integration", () => {
   });
 
   beforeEach(async () => {
+    // Refresh short-lived socket tokens for each test to avoid expiry flakiness.
+    const [resA, resB] = await Promise.all([
+      request(app)
+        .get("/auth/socket-token")
+        .set("Authorization", `Bearer ${userAToken()}`),
+      request(app)
+        .get("/auth/socket-token")
+        .set("Authorization", `Bearer ${userBToken()}`),
+    ]);
+
+    expect(resA.status).toBe(200);
+    expect(resB.status).toBe(200);
+
+    socketTokenA = resA.body.token;
+    socketTokenB = resB.body.token;
+
     // Connect clients
     clientSocketA = ioClient(`http://localhost:${PORT}`, {
       auth: { token: socketTokenA },
@@ -164,6 +187,16 @@ describe("WebSocket Messaging Integration", () => {
 
       expect(typingReceived).toBe(false);
     });
+
+    test("should ignore typing:start with malformed receiverId", async () => {
+      clientSocketA.emit("typing:start", { receiverId: null });
+      await expectNoSocketEvent(clientSocketB, "typing:start");
+    });
+
+    test("should ignore typing:stop with malformed receiverId", async () => {
+      clientSocketA.emit("typing:stop", { receiverId: "not-a-number" });
+      await expectNoSocketEvent(clientSocketB, "typing:stop");
+    });
   });
 
   describe("Message Status Updates", () => {
@@ -217,6 +250,24 @@ describe("WebSocket Messaging Integration", () => {
         messageId,
         readerId: ids.users.userB,
       });
+    });
+
+    test("should ignore message:read with malformed senderId", async () => {
+      clientSocketB.emit("message:read", {
+        messageId: 123,
+        senderId: undefined,
+      });
+
+      await expectNoSocketEvent(clientSocketA, "message:read");
+    });
+
+    test("should ignore message:read with malformed messageId", async () => {
+      clientSocketB.emit("message:read", {
+        messageId: "123",
+        senderId: ids.users.userA,
+      });
+
+      await expectNoSocketEvent(clientSocketA, "message:read");
     });
   });
 

@@ -78,6 +78,9 @@ ensure_certificates() {
   
   if [ "$missing" -eq 1 ]; then
     echo "🔐 Generating SSL certificates..."
+    
+    # Clean up any corrupt cert files/directories
+    rm -rf "$certs_dir"
     mkdir -p "$certs_dir" || { echo "❌ Failed to create certs directory"; exit 1; }
     
     cd "$certs_dir" || { echo "❌ Failed to change to certs directory"; exit 1; }

@@ -6,12 +6,17 @@
 
 set -e
 
-KIBANA_URL="${KIBANA_URL:-http://localhost:5601}"
-ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-http://localhost:9200}"
+KIBANA_URL="${KIBANA_URL:-https://localhost:5601}"
+ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-https://localhost:9200}"
 SCRIPT_DIR="$(dirname "$0")"
 SAVED_SEARCHES_FILE="$SCRIPT_DIR/saved_searches.ndjson"
 DASHBOARDS_FILE="$SCRIPT_DIR/dashboards.ndjson"
 ES_TEMPLATE_SCRIPT="$(dirname "$SCRIPT_DIR")/elasticsearch/apply-template.sh"
+
+CURL_FLAGS="-s"
+if [[ "$KIBANA_URL" == https://* ]]; then
+  CURL_FLAGS="-s -k"
+fi
 
 echo "========================================="
 echo "Setting up DogParkPals Observability"
@@ -34,7 +39,7 @@ fi
 echo "⏳ Waiting for Kibana to be ready (this can take 2-5 minutes on first run)..."
 for i in {1..300}; do
   # Check if Kibana status endpoint returns valid response
-  response=$(curl -s "$KIBANA_URL/api/status" 2>&1)
+  response=$(curl $CURL_FLAGS "$KIBANA_URL/api/status" 2>&1)
   
   # Check for either "state" (ready) or "status" (any state) in response
   if echo "$response" | grep -qE '(state|status)'; then
@@ -61,7 +66,7 @@ done
 # Step 2b: Wait for Kibana saved objects API to be available
 echo "⏳ Waiting for Kibana API to be ready..."
 for i in {1..120}; do
-  http_code=$(curl -s -w "%{http_code}" -o /dev/null "$KIBANA_URL/api/saved_objects/search")
+  http_code=$(curl $CURL_FLAGS -w "%{http_code}" -o /dev/null "$KIBANA_URL/api/saved_objects/search")
   if [ "$http_code" != "000" ] && [ "$http_code" != "503" ] && [ "$http_code" != "504" ]; then
     echo "✓ Kibana API is ready"
     break
@@ -78,7 +83,7 @@ echo ""
 echo "📊 Creating index pattern 'dogparkpals-logs-*'..."
 
 # Try primary endpoint
-http_code=$(curl -s -w "%{http_code}" -X POST \
+http_code=$(curl $CURL_FLAGS -w "%{http_code}" -X POST \
   -H "Content-Type: application/json" \
   -H "kbn-xsrf: true" \
   "$KIBANA_URL/api/index_patterns/index_pattern" \
@@ -91,7 +96,7 @@ elif [ "$http_code" = "409" ]; then
   echo "✓ Index pattern already exists"
 else
   # Try fallback endpoint for data views
-  http_code=$(curl -s -w "%{http_code}" -X POST \
+  http_code=$(curl $CURL_FLAGS -w "%{http_code}" -X POST \
     -H "Content-Type: application/json" \
     -H "kbn-xsrf: true" \
     "$KIBANA_URL/api/data_views" \
@@ -129,14 +134,14 @@ if [ -f "$SAVED_SEARCHES_FILE" ]; then
     
     # Extract title and id for display
     title=$(echo "$line" | grep -oP '"title":\s*"\K[^"]+' || echo "search")
-    id=$(echo "$line" | grep -oP '"id":\s*"\K[^"]+' || echo "unknown")
+    id=$(echo "$line" | grep -oP '"id":\s*"\K[^"]+' | head -n1 || echo "unknown")
     
     # Extract attributes and references by removing type and id fields
     body=$(echo "$line" | sed 's/"type":"search",//g' | sed 's/"id":"[^"]*",//g')
     
     if [ ! -z "$body" ] && [ "$body" != "{}" ]; then
       # Import the search object with id in URL
-      http_code=$(curl -s -w "%{http_code}" -X POST \
+      http_code=$(curl $CURL_FLAGS -w "%{http_code}" -X POST \
         -H "Content-Type: application/json" \
         -H "kbn-xsrf: true" \
         "$KIBANA_URL/api/saved_objects/search/$id?overwrite=true" \
@@ -168,10 +173,10 @@ if [ -f "$DASHBOARDS_FILE" ]; then
     if [ ! -z "$line" ]; then
       # Extract title for display
       title=$(echo "$line" | grep -oP '"title":\s*"\K[^"]+' || echo "object")
-      obj_type=$(echo "$line" | grep -oP '"type":\s*"\K[^"]+' || echo "unknown")
+      obj_type=$(echo "$line" | grep -oP '"type":\s*"\K[^"]+' | head -n1 || echo "unknown")
       
       # Import the object
-      http_code=$(curl -s -w "%{http_code}" -X POST \
+      http_code=$(curl $CURL_FLAGS -w "%{http_code}" -X POST \
         -H "Content-Type: application/json" \
         -H "kbn-xsrf: true" \
         "$KIBANA_URL/api/saved_objects/$obj_type?overwrite=true" \

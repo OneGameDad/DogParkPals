@@ -5,10 +5,57 @@
 
 set -e
 
-ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-http://localhost:9200}"
+ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-https://localhost:9200}"
+ELASTICSEARCH_USERNAME="${ELASTICSEARCH_USERNAME:-elastic}"
+ELASTICSEARCH_PASSWORD="${ELASTICSEARCH_PASSWORD:-${ELASTIC_PASSWORD:-}}"
 TEMPLATE_FILE="$(dirname "$0")/index-template.json"
 ILM_POLICY_FILE="$(dirname "$0")/ilm-policy.json"
 SCRIPT_DIR="$(dirname "$0")"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+SECRETS_FILE="$ROOT_DIR/docker-secrets"
+
+load_env_file() {
+  local file="$1"
+
+  [ -f "$file" ] || return 0
+
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      ''|\#*) continue ;;
+    esac
+
+    case "$line" in
+      *=*) ;;
+      *) continue ;;
+    esac
+
+    local key value
+    key="${line%%=*}"
+    value="${line#*=}"
+    key="$(printf '%s' "$key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+
+    if [[ "$value" =~ ^\".*\"$ ]]; then
+      value="${value:1:${#value}-2}"
+    elif [[ "$value" =~ ^\'.*\'$ ]]; then
+      value="${value:1:${#value}-2}"
+    fi
+
+    export "$key=$value"
+  done < "$file"
+}
+
+load_env_file "$SECRETS_FILE"
+
+ELASTICSEARCH_USERNAME="${ELASTICSEARCH_USERNAME:-elastic}"
+ELASTICSEARCH_PASSWORD="${ELASTICSEARCH_PASSWORD:-${ELASTIC_PASSWORD:-}}"
+
+CURL_FLAGS="-s -f"
+if [[ "$ELASTICSEARCH_URL" == https://* ]]; then
+  CURL_FLAGS="-s -f -k"
+fi
+if [ -n "$ELASTICSEARCH_USERNAME" ] && [ -n "$ELASTICSEARCH_PASSWORD" ]; then
+  CURL_FLAGS="$CURL_FLAGS -u ${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD}"
+fi
 
 echo "========================================="
 echo "Elasticsearch Setup: Template & ILM"
@@ -30,7 +77,7 @@ fi
 # Wait for Elasticsearch to be ready
 echo "⏳ Waiting for Elasticsearch to be ready..."
 for i in {1..30}; do
-  if curl -s "$ELASTICSEARCH_URL/_cluster/health" > /dev/null 2>&1; then
+  if curl $CURL_FLAGS "$ELASTICSEARCH_URL/_cluster/health" > /dev/null 2>&1; then
     echo "✓ Elasticsearch is ready"
     break
   fi
@@ -43,7 +90,7 @@ done
 
 echo ""
 echo "📋 Applying ILM policy..."
-http_code=$(curl -s -w "%{http_code}" -X PUT \
+http_code=$(curl $CURL_FLAGS -w "%{http_code}" -X PUT \
   -H "Content-Type: application/json" \
   "$ELASTICSEARCH_URL/_ilm/policy/dogparkpals-logs-ilm" \
   -d @"$ILM_POLICY_FILE" 2>/dev/null -o /dev/null)
@@ -56,7 +103,7 @@ fi
 
 echo ""
 echo "📋 Applying index template..."
-http_code=$(curl -s -w "%{http_code}" -X PUT \
+http_code=$(curl $CURL_FLAGS -w "%{http_code}" -X PUT \
   -H "Content-Type: application/json" \
   "$ELASTICSEARCH_URL/_index_template/dogparkpals-logs" \
   -d @"$TEMPLATE_FILE" 2>/dev/null -o /dev/null)
@@ -71,7 +118,7 @@ fi
 # Verify template was applied
 echo ""
 echo "✓ Verifying template..."
-curl -s "$ELASTICSEARCH_URL/_index_template/dogparkpals-logs" | grep -q "dogparkpals-logs"
+curl $CURL_FLAGS "$ELASTICSEARCH_URL/_index_template/dogparkpals-logs" | grep -q "dogparkpals-logs"
 if [ $? -eq 0 ]; then
   echo "✓ Template verified"
 else

@@ -298,4 +298,157 @@ describe('Message Service', () => {
       jest.dontMock('@prisma/client');
     });
   });
+
+  describe('Socket.io Integration', () => {
+    test('emits message via Socket.io when sending message', async () => {
+      const mockMessage: Messages = {
+        id: mockMessageId,
+        senderId: mockSenderId,
+        receiverId: mockReceiverId,
+        content: mockContent,
+        status: 'SENT',
+        sentAt: new Date(),
+      };
+
+      const mockCreate = jest.fn().mockResolvedValue(mockMessage);
+      const mockOutboxCreate = jest.fn().mockResolvedValue(undefined);
+      const mockEmit = jest.fn();
+      const mockTo = jest.fn().mockReturnValue({ emit: mockEmit });
+
+      jest.doMock('@prisma/client', () => ({
+        PrismaClient: jest.fn(() => ({
+          messages: { create: mockCreate },
+          outboxEvent: { create: mockOutboxCreate },
+          $transaction: jest.fn(async (callback: any) =>
+            callback({
+              messages: { create: mockCreate },
+              outboxEvent: { create: mockOutboxCreate },
+            })
+          ),
+        })),
+      }));
+
+      const messageService = await import('../services/messageService');
+      
+      // Initialize Socket.io
+      const mockIO = { to: mockTo };
+      messageService.initializeMessageSocket(mockIO as any);
+
+      const result = await messageService.default.sendMessage(
+        mockSenderId,
+        mockReceiverId,
+        mockContent
+      );
+
+      expect(result).toEqual(mockMessage);
+      expect(mockTo).toHaveBeenCalledWith(`user:${mockReceiverId}`);
+      expect(mockEmit).toHaveBeenCalledWith('message:new', mockMessage);
+
+      jest.dontMock('@prisma/client');
+    });
+
+    test('emits status update via Socket.io when updating message status', async () => {
+      const mockUpdated: Messages = {
+        id: mockMessageId,
+        senderId: mockSenderId,
+        receiverId: mockReceiverId,
+        content: mockContent,
+        status: 'READ',
+        sentAt: new Date(),
+      };
+
+      const mockUpdate = jest.fn().mockResolvedValue(mockUpdated);
+      const mockEmit = jest.fn();
+      const mockTo = jest.fn().mockReturnValue({ emit: mockEmit });
+
+      jest.doMock('@prisma/client', () => ({
+        PrismaClient: jest.fn(() => ({ messages: { update: mockUpdate } })),
+      }));
+
+      const messageService = await import('../services/messageService');
+      
+      // Initialize Socket.io
+      const mockIO = { to: mockTo };
+      messageService.initializeMessageSocket(mockIO as any);
+
+      const result = await messageService.default.updateStatus(mockMessageId, 'READ');
+
+      expect(result).toEqual(mockUpdated);
+      expect(mockTo).toHaveBeenCalledWith(`user:${mockSenderId}`);
+      expect(mockEmit).toHaveBeenCalledWith('message:status', {
+        messageId: mockUpdated.id,
+        status: mockUpdated.status,
+      });
+
+      jest.dontMock('@prisma/client');
+    });
+
+    test('handles Socket.io not initialized gracefully when sending message', async () => {
+      const mockMessage: Messages = {
+        id: mockMessageId,
+        senderId: mockSenderId,
+        receiverId: mockReceiverId,
+        content: mockContent,
+        status: 'SENT',
+        sentAt: new Date(),
+      };
+
+      const mockCreate = jest.fn().mockResolvedValue(mockMessage);
+      const mockOutboxCreate = jest.fn().mockResolvedValue(undefined);
+
+      jest.doMock('@prisma/client', () => ({
+        PrismaClient: jest.fn(() => ({
+          messages: { create: mockCreate },
+          outboxEvent: { create: mockOutboxCreate },
+          $transaction: jest.fn(async (callback: any) =>
+            callback({
+              messages: { create: mockCreate },
+              outboxEvent: { create: mockOutboxCreate },
+            })
+          ),
+        })),
+      }));
+
+      const messageService = await import('../services/messageService');
+      
+      // Don't initialize Socket.io
+      const result = await messageService.default.sendMessage(
+        mockSenderId,
+        mockReceiverId,
+        mockContent
+      );
+
+      expect(result).toEqual(mockMessage);
+      // Should not throw even if Socket.io is null
+
+      jest.dontMock('@prisma/client');
+    });
+
+    test('handles Socket.io not initialized gracefully when updating status', async () => {
+      const mockUpdated: Messages = {
+        id: mockMessageId,
+        senderId: mockSenderId,
+        receiverId: mockReceiverId,
+        content: mockContent,
+        status: 'READ',
+        sentAt: new Date(),
+      };
+
+      const mockUpdate = jest.fn().mockResolvedValue(mockUpdated);
+
+      jest.doMock('@prisma/client', () => ({
+        PrismaClient: jest.fn(() => ({ messages: { update: mockUpdate } })),
+      }));
+
+      const messageService = await import('../services/messageService');
+      
+      // Don't initialize Socket.io
+      const result = await messageService.default.updateStatus(mockMessageId, 'READ');
+
+      expect(result).toEqual(mockUpdated);
+      // Should not throw even if Socket.io is null
+
+      jest.dontMock('@prisma/client');
+    });
+  });
 });

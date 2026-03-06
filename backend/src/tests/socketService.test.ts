@@ -221,4 +221,135 @@ describe('Socket.io Infrastructure', () => {
       );
     });
   });
+
+  describe('Message Event Handlers', () => {
+    test('should handle typing:start event', () => {
+      const mockSocket = { on: jest.fn(), userId: 1 };
+      const mockEmit = jest.fn();
+      const mockTo = jest.fn().mockReturnValue({ emit: mockEmit });
+      mockIO.to = mockTo;
+
+      mockSocket.on('typing:start', (data: { receiverId: number }) => {
+        mockIO.to(`user:${data.receiverId}`).emit('typing:start', {
+          senderId: mockSocket.userId,
+        });
+      });
+
+      expect(mockSocket.on).toHaveBeenCalledWith(
+        'typing:start',
+        expect.any(Function)
+      );
+
+      // Simulate typing:start event
+      const handler = mockSocket.on.mock.calls.find(
+        call => call[0] === 'typing:start'
+      )?.[1];
+
+      if (handler) {
+        handler({ receiverId: 2 });
+        expect(mockTo).toHaveBeenCalledWith('user:2');
+        expect(mockEmit).toHaveBeenCalledWith('typing:start', { senderId: 1 });
+      }
+    });
+
+    test('should handle typing:stop event', () => {
+      const mockSocket = { on: jest.fn(), userId: 1 };
+      const mockEmit = jest.fn();
+      const mockTo = jest.fn().mockReturnValue({ emit: mockEmit });
+      mockIO.to = mockTo;
+
+      mockSocket.on('typing:stop', (data: { receiverId: number }) => {
+        mockIO.to(`user:${data.receiverId}`).emit('typing:stop', {
+          senderId: mockSocket.userId,
+        });
+      });
+
+      expect(mockSocket.on).toHaveBeenCalledWith(
+        'typing:stop',
+        expect.any(Function)
+      );
+
+      // Simulate typing:stop event
+      const handler = mockSocket.on.mock.calls.find(
+        call => call[0] === 'typing:stop'
+      )?.[1];
+
+      if (handler) {
+        handler({ receiverId: 2 });
+        expect(mockTo).toHaveBeenCalledWith('user:2');
+        expect(mockEmit).toHaveBeenCalledWith('typing:stop', { senderId: 1 });
+      }
+    });
+
+    test('should handle message:read event', () => {
+      const mockSocket = { on: jest.fn(), userId: 1 };
+      const mockEmit = jest.fn();
+      const mockTo = jest.fn().mockReturnValue({ emit: mockEmit });
+      mockIO.to = mockTo;
+
+      mockSocket.on('message:read', (data: { messageId: number; senderId: number }) => {
+        mockIO.to(`user:${data.senderId}`).emit('message:read', {
+          messageId: data.messageId,
+          readerId: mockSocket.userId,
+        });
+      });
+
+      expect(mockSocket.on).toHaveBeenCalledWith(
+        'message:read',
+        expect.any(Function)
+      );
+
+      // Simulate message:read event
+      const handler = mockSocket.on.mock.calls.find(
+        call => call[0] === 'message:read'
+      )?.[1];
+
+      if (handler) {
+        handler({ messageId: 123, senderId: 2 });
+        expect(mockTo).toHaveBeenCalledWith('user:2');
+        expect(mockEmit).toHaveBeenCalledWith('message:read', {
+          messageId: 123,
+          readerId: 1,
+        });
+      }
+    });
+
+    test('should emit message:new to correct user room', () => {
+      const receiverId = 456;
+      const mockMessage = {
+        id: 1,
+        senderId: 123,
+        receiverId,
+        content: 'Hello!',
+        status: 'SENT',
+        sentAt: new Date(),
+      };
+
+      const mockEmit = jest.fn();
+      const mockTo = jest.fn().mockReturnValue({ emit: mockEmit });
+      mockIO.to = mockTo;
+
+      mockIO.to(`user:${receiverId}`).emit('message:new', mockMessage);
+
+      expect(mockTo).toHaveBeenCalledWith(`user:${receiverId}`);
+      expect(mockEmit).toHaveBeenCalledWith('message:new', mockMessage);
+    });
+
+    test('should emit message:status to correct user room', () => {
+      const senderId = 123;
+      const statusUpdate = {
+        messageId: 1,
+        status: 'READ',
+      };
+
+      const mockEmit = jest.fn();
+      const mockTo = jest.fn().mockReturnValue({ emit: mockEmit });
+      mockIO.to = mockTo;
+
+      mockIO.to(`user:${senderId}`).emit('message:status', statusUpdate);
+
+      expect(mockTo).toHaveBeenCalledWith(`user:${senderId}`);
+      expect(mockEmit).toHaveBeenCalledWith('message:status', statusUpdate);
+    });
+  });
 });

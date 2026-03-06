@@ -69,6 +69,11 @@ As this is an MVP it is limited in scope to only included the public dog parks i
 ### Docker Commands
 
 ```bash
+# One-command stack control
+./scripts/stack.sh --fresh      # full startup + seeding + observability init
+./scripts/stack.sh --obs-down   # stop observability services only
+./scripts/stack.sh --clean      # full shutdown + cleanup (volumes/images)
+
 # Start all services (full stack with observability)
 docker compose --env-file docker-secrets up -d
 

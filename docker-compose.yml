@@ -144,12 +144,19 @@ services:
       - "9300:9300"
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=false
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.certificate=/usr/share/elasticsearch/config/certs/elasticsearch.crt
+      - xpack.security.http.ssl.key=/usr/share/elasticsearch/config/certs/elasticsearch.key
+      - xpack.security.http.ssl.verification_mode=none
+      - ELASTIC_PASSWORD=elastic
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
+      - ./certs/elasticsearch.crt:/usr/share/elasticsearch/config/certs/elasticsearch.crt:ro
+      - ./certs/elasticsearch.key:/usr/share/elasticsearch/config/certs/elasticsearch.key:ro
     healthcheck:
-      test: curl -s http://localhost:9200 >/dev/null || exit 1
+      test: curl -s -k -u elastic:elastic https://localhost:9200 >/dev/null || exit 1
       interval: 30s
       timeout: 10s
       retries: 5

@@ -15,6 +15,10 @@ interface AuthenticatedSocket extends Socket {
   userId?: number;
 }
 
+function isPositiveInteger(value: unknown): value is number {
+  return Number.isInteger(value) && (value as number) > 0;
+}
+
 export function initializeSocket(httpServer: HttpServer): Server {
   const io = new Server(httpServer, {
     cors: {
@@ -116,7 +120,16 @@ export function initializeSocket(httpServer: HttpServer): Server {
     }
 
     // Handle typing indicator
-    socket.on("typing:start", (data: { receiverId: number }) => {
+    socket.on("typing:start", (data: { receiverId?: unknown } | undefined) => {
+      if (!isPositiveInteger(data?.receiverId)) {
+        typeSafeLogger.warn("Invalid typing:start payload", {
+          socketId: socket.id,
+          userId,
+          payload: data,
+        });
+        return;
+      }
+
       typeSafeLogger.debug("User started typing", {
         socketId: socket.id,
         userId,
@@ -127,7 +140,16 @@ export function initializeSocket(httpServer: HttpServer): Server {
       });
     });
 
-    socket.on("typing:stop", (data: { receiverId: number }) => {
+    socket.on("typing:stop", (data: { receiverId?: unknown } | undefined) => {
+      if (!isPositiveInteger(data?.receiverId)) {
+        typeSafeLogger.warn("Invalid typing:stop payload", {
+          socketId: socket.id,
+          userId,
+          payload: data,
+        });
+        return;
+      }
+
       typeSafeLogger.debug("User stopped typing", {
         socketId: socket.id,
         userId,
@@ -139,18 +161,30 @@ export function initializeSocket(httpServer: HttpServer): Server {
     });
 
     // Handle message read receipt
-    socket.on("message:read", (data: { messageId: number; senderId: number }) => {
-      typeSafeLogger.debug("Message read receipt", {
-        socketId: socket.id,
-        userId,
-        messageId: data.messageId,
-        senderId: data.senderId,
-      });
-      io.to(`user:${data.senderId}`).emit("message:read", {
-        messageId: data.messageId,
-        readerId: userId,
-      });
-    });
+    socket.on(
+      "message:read",
+      (data: { messageId?: unknown; senderId?: unknown } | undefined) => {
+        if (!isPositiveInteger(data?.messageId) || !isPositiveInteger(data?.senderId)) {
+          typeSafeLogger.warn("Invalid message:read payload", {
+            socketId: socket.id,
+            userId,
+            payload: data,
+          });
+          return;
+        }
+
+        typeSafeLogger.debug("Message read receipt", {
+          socketId: socket.id,
+          userId,
+          messageId: data.messageId,
+          senderId: data.senderId,
+        });
+        io.to(`user:${data.senderId}`).emit("message:read", {
+          messageId: data.messageId,
+          readerId: userId,
+        });
+      },
+    );
 
     // Handle disconnection
     socket.on("disconnect", (reason) => {

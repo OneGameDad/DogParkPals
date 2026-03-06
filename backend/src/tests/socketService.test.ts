@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 import { Server as SocketIOServer } from 'socket.io';
 import jwt from 'jsonwebtoken';
+import { initializeSocket } from '../infrastructure/socket';
 
 // Mock dependencies
 jest.mock('../utils/typeSafeLogger', () => ({
@@ -196,7 +197,7 @@ describe('Socket.io Infrastructure', () => {
 
       const disconnectHandler = mockSocket.on.mock.calls.find(
         call => call[0] === 'disconnect'
-      )?.[1];
+      )?.[1] as ((reason: string) => void) | undefined;
 
       if (disconnectHandler) {
         disconnectHandler('client namespace disconnect');
@@ -223,95 +224,80 @@ describe('Socket.io Infrastructure', () => {
   });
 
   describe('Message Event Handlers', () => {
-    test('should handle typing:start event', () => {
-      const mockSocket = { on: jest.fn(), userId: 1 };
-      const mockEmit = jest.fn();
-      const mockTo = jest.fn().mockReturnValue({ emit: mockEmit });
-      mockIO.to = mockTo;
+    const setupInitializedSocket = () => {
+      const io = initializeSocket({} as any) as any;
 
-      mockSocket.on('typing:start', (data: { receiverId: number }) => {
-        mockIO.to(`user:${data.receiverId}`).emit('typing:start', {
-          senderId: mockSocket.userId,
-        });
-      });
-
-      expect(mockSocket.on).toHaveBeenCalledWith(
-        'typing:start',
-        expect.any(Function)
-      );
-
-      // Simulate typing:start event
-      const handler = mockSocket.on.mock.calls.find(
-        call => call[0] === 'typing:start'
+      const connectionHandler = io.on.mock.calls.find(
+        (call: [string, (socket: any) => void]) => call[0] === 'connection'
       )?.[1];
 
-      if (handler) {
-        handler({ receiverId: 2 });
-        expect(mockTo).toHaveBeenCalledWith('user:2');
-        expect(mockEmit).toHaveBeenCalledWith('typing:start', { senderId: 1 });
-      }
+      expect(connectionHandler).toBeDefined();
+
+      const registeredHandlers: Record<string, (data: any) => void> = {};
+      const socket = {
+        id: 'socket-1',
+        userId: 1,
+        join: jest.fn(),
+        on: jest.fn((event: string, handler: (data: any) => void) => {
+          registeredHandlers[event] = handler;
+        }),
+        emit: jest.fn(),
+      };
+
+      connectionHandler?.(socket as any);
+
+      return { io, socket, registeredHandlers };
+    };
+
+    test('should handle typing:start event via initializeSocket handlers', () => {
+      const { io, registeredHandlers } = setupInitializedSocket();
+      const mockEmit = jest.fn();
+      io.to = jest.fn().mockReturnValue({ emit: mockEmit });
+
+      expect(registeredHandlers['typing:start']).toBeDefined();
+      registeredHandlers['typing:start']({ receiverId: 2 });
+
+      expect(io.to).toHaveBeenCalledWith('user:2');
+      expect(mockEmit).toHaveBeenCalledWith('typing:start', { senderId: 1 });
     });
 
-    test('should handle typing:stop event', () => {
-      const mockSocket = { on: jest.fn(), userId: 1 };
+    test('should handle typing:stop event via initializeSocket handlers', () => {
+      const { io, registeredHandlers } = setupInitializedSocket();
       const mockEmit = jest.fn();
-      const mockTo = jest.fn().mockReturnValue({ emit: mockEmit });
-      mockIO.to = mockTo;
+      io.to = jest.fn().mockReturnValue({ emit: mockEmit });
 
-      mockSocket.on('typing:stop', (data: { receiverId: number }) => {
-        mockIO.to(`user:${data.receiverId}`).emit('typing:stop', {
-          senderId: mockSocket.userId,
-        });
-      });
+      expect(registeredHandlers['typing:stop']).toBeDefined();
+      registeredHandlers['typing:stop']({ receiverId: 2 });
 
-      expect(mockSocket.on).toHaveBeenCalledWith(
-        'typing:stop',
-        expect.any(Function)
-      );
-
-      // Simulate typing:stop event
-      const handler = mockSocket.on.mock.calls.find(
-        call => call[0] === 'typing:stop'
-      )?.[1];
-
-      if (handler) {
-        handler({ receiverId: 2 });
-        expect(mockTo).toHaveBeenCalledWith('user:2');
-        expect(mockEmit).toHaveBeenCalledWith('typing:stop', { senderId: 1 });
-      }
+      expect(io.to).toHaveBeenCalledWith('user:2');
+      expect(mockEmit).toHaveBeenCalledWith('typing:stop', { senderId: 1 });
     });
 
-    test('should handle message:read event', () => {
-      const mockSocket = { on: jest.fn(), userId: 1 };
+    test('should handle message:read event via initializeSocket handlers', () => {
+      const { io, registeredHandlers } = setupInitializedSocket();
       const mockEmit = jest.fn();
-      const mockTo = jest.fn().mockReturnValue({ emit: mockEmit });
-      mockIO.to = mockTo;
+      io.to = jest.fn().mockReturnValue({ emit: mockEmit });
 
-      mockSocket.on('message:read', (data: { messageId: number; senderId: number }) => {
-        mockIO.to(`user:${data.senderId}`).emit('message:read', {
-          messageId: data.messageId,
-          readerId: mockSocket.userId,
-        });
+      expect(registeredHandlers['message:read']).toBeDefined();
+      registeredHandlers['message:read']({ messageId: 123, senderId: 2 });
+
+      expect(io.to).toHaveBeenCalledWith('user:2');
+      expect(mockEmit).toHaveBeenCalledWith('message:read', {
+        messageId: 123,
+        readerId: 1,
       });
+    });
 
-      expect(mockSocket.on).toHaveBeenCalledWith(
-        'message:read',
-        expect.any(Function)
-      );
+    test('should ignore malformed message:read payload via initializeSocket handlers', () => {
+      const { io, registeredHandlers } = setupInitializedSocket();
+      const mockEmit = jest.fn();
+      io.to = jest.fn().mockReturnValue({ emit: mockEmit });
 
-      // Simulate message:read event
-      const handler = mockSocket.on.mock.calls.find(
-        call => call[0] === 'message:read'
-      )?.[1];
+      expect(registeredHandlers['message:read']).toBeDefined();
+      registeredHandlers['message:read']({ messageId: '123', senderId: 2 });
 
-      if (handler) {
-        handler({ messageId: 123, senderId: 2 });
-        expect(mockTo).toHaveBeenCalledWith('user:2');
-        expect(mockEmit).toHaveBeenCalledWith('message:read', {
-          messageId: 123,
-          readerId: 1,
-        });
-      }
+      expect(io.to).not.toHaveBeenCalled();
+      expect(mockEmit).not.toHaveBeenCalled();
     });
 
     test('should emit message:new to correct user room', () => {

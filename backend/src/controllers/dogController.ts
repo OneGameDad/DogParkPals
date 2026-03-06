@@ -7,6 +7,7 @@ import dogService from "../services/dogService";
 import friendService from "../services/friendService";
 import { addDogSchema, addOwnerToDogSchema, removeOwnerFromDogSchema } from "../utils/validationSchemas";
 import { awardExperience, XP_REWARDS } from "../services/xpService";
+import { sanitizeUser } from "../utils/userSanitizer";
 
 /**
  * Check if user is authorized to modify a dog (owner, admin, or developer)
@@ -237,8 +238,9 @@ const dogController = {
         const dogId = parseInt(ensureString(req.params.dogId), 10);
 
         const owners = await dogService.getOwnersOfDog(dogId);
-        typeSafeLogger.logUserAction("Dog owners retrieved", { dogId, ownerCount: owners.length });
-        res.status(200).json(owners);
+        const sanitizedOwners = owners.map(sanitizeUser);
+        typeSafeLogger.logUserAction("Dog owners retrieved", { dogId, ownerCount: sanitizedOwners.length });
+        res.status(200).json(sanitizedOwners);
       } catch (error) {
         if (isAppError(error)) {
           return next(error);

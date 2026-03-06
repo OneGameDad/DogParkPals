@@ -513,6 +513,18 @@ describe('Dog Service', () => {
             },
           },
         },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          first_name: true,
+          last_name: true,
+          profilePictureUrl: true,
+          role: true,
+          ExpPoints: true,
+          createdAt: true,
+          updatedAt: true,
+        },
       });
       expect(result).toEqual(mockUsers);
       expect(result.length).toBe(2);

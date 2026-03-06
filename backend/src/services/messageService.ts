@@ -4,8 +4,17 @@ import { toAppError } from '../utils/errors';
 import { createDomainEvent } from '../events/createDomainEvent';
 import { EventTypes } from '../events/eventTypes';
 import { addOutboxEvent } from '../infrastructure/outbox/outboxRepository';
+import { Server as SocketServer } from 'socket.io';
 
 const prisma = new PrismaClient();
+
+// Socket.io instance for real-time messaging
+let io: SocketServer | null = null;
+
+export function initializeMessageSocket(socketIo: SocketServer) {
+  io = socketIo;
+  typeSafeLogger.info('MessageService initialized with Socket.io');
+}
 
 const messageService = {
   async sendMessage(senderId: number, receiverId: number, content: string) {
@@ -29,6 +38,17 @@ const messageService = {
 
         return createdMessage;
       });
+
+      // Emit message via Socket.io for real-time delivery
+      if (io) {
+        io.to(`user:${receiverId}`).emit('message:new', message);
+        typeSafeLogger.debug('Message emitted via Socket.io', {
+          messageId: message.id,
+          senderId,
+          receiverId,
+        });
+      }
+
       return message;
     } catch (error) {
       throw toAppError(error, { message: 'Failed to send message', code: 'SEND_MESSAGE_FAILED' });
@@ -100,6 +120,19 @@ const messageService = {
         where: { id: messageId },
         data: { status },
       });
+
+      // Emit status update via Socket.io
+      if (io && updated) {
+        io.to(`user:${updated.senderId}`).emit('message:status', {
+          messageId: updated.id,
+          status: updated.status,
+        });
+        typeSafeLogger.debug('Message status emitted via Socket.io', {
+          messageId: updated.id,
+          status: updated.status,
+        });
+      }
+
       return updated;
     } catch (error) {
       throw toAppError(error, { message: 'Failed to update message status', code: 'UPDATE_MESSAGE_FAILED' });

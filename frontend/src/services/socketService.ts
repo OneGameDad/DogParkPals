@@ -1,6 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { API_BASE_URL } from '../constants';
 import api from './api';
+import type { Messages } from '../types';
 
 export interface Notification {
   id: number;
@@ -8,6 +9,15 @@ export interface Notification {
   payload: Record<string, any>;
   read: boolean;
   createdAt: Date;
+}
+
+export interface MessageStatusUpdate {
+  messageId: number;
+  status: string;
+}
+
+export interface TypingIndicator {
+  senderId: number;
 }
 
 class SocketService {
@@ -132,6 +142,142 @@ class SocketService {
   offNotification(callback: (notification: Notification) => void): void {
     if (!this.socket) return;
     this.socket.off('notification', callback);
+  }
+
+  /**
+   * Subscribe to new message events
+   */
+  onNewMessage(callback: (message: Messages) => void): void {
+    if (!this.socket) {
+      console.warn('Socket not connected, cannot subscribe to new messages');
+      return;
+    }
+
+    this.socket.on('message:new', callback);
+  }
+
+  /**
+   * Unsubscribe from new message events
+   */
+  offNewMessage(callback: (message: Messages) => void): void {
+    if (!this.socket) return;
+    this.socket.off('message:new', callback);
+  }
+
+  /**
+   * Subscribe to message status updates
+   */
+  onMessageStatus(callback: (update: MessageStatusUpdate) => void): void {
+    if (!this.socket) {
+      console.warn('Socket not connected, cannot subscribe to message status');
+      return;
+    }
+
+    this.socket.on('message:status', callback);
+  }
+
+  /**
+   * Unsubscribe from message status updates
+   */
+  offMessageStatus(callback: (update: MessageStatusUpdate) => void): void {
+    if (!this.socket) return;
+    this.socket.off('message:status', callback);
+  }
+
+  /**
+   * Subscribe to typing start events
+   */
+  onTypingStart(callback: (data: TypingIndicator) => void): void {
+    if (!this.socket) {
+      console.warn('Socket not connected, cannot subscribe to typing events');
+      return;
+    }
+
+    this.socket.on('typing:start', callback);
+  }
+
+  /**
+   * Unsubscribe from typing start events
+   */
+  offTypingStart(callback: (data: TypingIndicator) => void): void {
+    if (!this.socket) return;
+    this.socket.off('typing:start', callback);
+  }
+
+  /**
+   * Subscribe to typing stop events
+   */
+  onTypingStop(callback: (data: TypingIndicator) => void): void {
+    if (!this.socket) {
+      console.warn('Socket not connected, cannot subscribe to typing events');
+      return;
+    }
+
+    this.socket.on('typing:stop', callback);
+  }
+
+  /**
+   * Unsubscribe from typing stop events
+   */
+  offTypingStop(callback: (data: TypingIndicator) => void): void {
+    if (!this.socket) return;
+    this.socket.off('typing:stop', callback);
+  }
+
+  /**
+   * Subscribe to message read events
+   */
+  onMessageRead(callback: (data: { messageId: number; readerId: number }) => void): void {
+    if (!this.socket) {
+      console.warn('Socket not connected, cannot subscribe to message read events');
+      return;
+    }
+
+    this.socket.on('message:read', callback);
+  }
+
+  /**
+   * Unsubscribe from message read events
+   */
+  offMessageRead(callback: (data: { messageId: number; readerId: number }) => void): void {
+    if (!this.socket) return;
+    this.socket.off('message:read', callback);
+  }
+
+  /**
+   * Emit typing start event
+   */
+  emitTypingStart(receiverId: number): void {
+    if (!this.socket) {
+      console.warn('Socket not connected, cannot emit typing event');
+      return;
+    }
+
+    this.socket.emit('typing:start', { receiverId });
+  }
+
+  /**
+   * Emit typing stop event
+   */
+  emitTypingStop(receiverId: number): void {
+    if (!this.socket) {
+      console.warn('Socket not connected, cannot emit typing event');
+      return;
+    }
+
+    this.socket.emit('typing:stop', { receiverId });
+  }
+
+  /**
+   * Emit message read event
+   */
+  emitMessageRead(messageId: number, senderId: number): void {
+    if (!this.socket) {
+      console.warn('Socket not connected, cannot emit message read event');
+      return;
+    }
+
+    this.socket.emit('message:read', { messageId, senderId });
   }
 
   /**

@@ -9,6 +9,7 @@ const router = express.Router();
 router.use(requireAuth);
 router.get("/owner/:ownerId", (req, res, next) => dogController.getDogByOwner(req, res, next));
 router.get("/park/:parkId", (req, res, next) => dogController.getAllDogsByPark(req, res, next));
+router.get("/:dogId/owners", (req, res, next) => dogController.getDogOwners(req, res, next));
 router.post("/:id/owners", (req, res, next) => dogController.addOwnerToDog(req, res, next));
 router.delete("/:id/owners", (req, res, next) => dogController.removeOwnerFromDog(req, res, next));
 router.post("/:id/photo", uploadSingleFile, (req, res, next) => dogController.uploadDogPhoto(req, res, next));

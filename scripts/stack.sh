@@ -28,12 +28,20 @@ EOF
 check_requirements() {
   local missing=0
   
-  for cmd in docker docker-compose openssl curl; do
+  for cmd in docker openssl curl; do
     if ! command -v "$cmd" &> /dev/null; then
       echo "❌ Missing required command: $cmd"
       missing=1
     fi
   done
+
+  # Support both legacy docker-compose binary and Docker Compose v2 plugin.
+  if ! command -v docker-compose &> /dev/null; then
+    if ! docker compose version > /dev/null 2>&1; then
+      echo "❌ Missing required Docker Compose command (docker-compose or docker compose)"
+      missing=1
+    fi
+  fi
   
   if [ "$missing" -eq 1 ]; then
     echo ""
@@ -62,6 +70,27 @@ ensure_secrets_file() {
   cp "$SECRETS_EXAMPLE_FILE" "$SECRETS_FILE"
   echo "⚠️  Created docker-secrets from docker-secrets-example"
   echo "   Review docker-secrets and update secrets before production use."
+}
+
+require_nonempty_secret() {
+  local key="$1"
+  local file="$2"
+
+  if ! grep -q "^${key}=" "$file"; then
+    echo "❌ Missing required setting in $(basename "$file"): $key"
+    exit 1
+  fi
+
+  local value
+  value=$(grep "^${key}=" "$file" | tail -n1 | cut -d'=' -f2- | tr -d '"' | xargs)
+  if [ -z "$value" ]; then
+    echo "❌ Empty required setting in $(basename "$file"): $key"
+    exit 1
+  fi
+}
+
+validate_observability_secrets() {
+  require_nonempty_secret "ELASTIC_PASSWORD" "$SECRETS_FILE"
 }
 
 generate_cert_with_san() {
@@ -147,6 +176,7 @@ ensure_certificates() {
 run_fresh() {
   echo "🚀 Starting full DogParkPals stack..."
   ensure_secrets_file
+  validate_observability_secrets
   ensure_certificates true
 
   echo ""

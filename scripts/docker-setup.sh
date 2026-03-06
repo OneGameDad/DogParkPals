@@ -49,6 +49,30 @@ server_cert_has_san() {
     openssl x509 -in certs/server.crt -noout -text 2>/dev/null | grep -q "DNS:localhost"
 }
 
+require_nonempty_secret() {
+    local key="$1"
+    local file="$2"
+
+    if ! grep -q "^${key}=" "$file"; then
+        echo "❌ Missing required setting in $file: $key"
+        exit 1
+    fi
+
+    local value
+    value=$(grep "^${key}=" "$file" | tail -n1 | cut -d'=' -f2- | tr -d '"' | xargs)
+    if [ -z "$value" ]; then
+        echo "❌ Empty required setting in $file: $key"
+        exit 1
+    fi
+}
+
+secret_value() {
+    local key="$1"
+    local file="$2"
+
+    grep "^${key}=" "$file" 2>/dev/null | tail -n1 | cut -d'=' -f2- | tr -d '"' | xargs
+}
+
 # Generate SSL certificates if they don't exist
 if [ ! -f "certs/server.crt" ] || [ ! -f "certs/server.key" ] || ! server_cert_has_san; then
     echo "🔐 Generating SSL certificates..."
@@ -92,6 +116,31 @@ if [ ! -f "docker-secrets" ]; then
     echo "   - GOOGLE_CLIENT_SECRET (if using OAuth)"
     echo ""
     read -p "Press Enter when you've updated docker-secrets..."
+fi
+
+# Fail fast so observability services don't hang waiting for credentials.
+require_nonempty_secret "ELASTIC_PASSWORD" "docker-secrets"
+
+# Guard against known Kibana startup failures in Elastic 8.x.
+if grep -q '^ELASTICSEARCH_USERNAME=elastic$' "docker-secrets"; then
+    echo "❌ Invalid setting detected: ELASTICSEARCH_USERNAME=elastic"
+    echo "   Kibana 8.x rejects the elastic superuser for system index access."
+    echo "   Use ELASTICSEARCH_SERVICEACCOUNTTOKEN, or set kibana_system credentials."
+    exit 1
+fi
+
+kibana_token=$(secret_value "ELASTICSEARCH_SERVICEACCOUNTTOKEN" "docker-secrets")
+kibana_user=$(secret_value "ELASTICSEARCH_USERNAME" "docker-secrets")
+kibana_pass=$(secret_value "ELASTICSEARCH_PASSWORD" "docker-secrets")
+
+if [ -z "$kibana_token" ]; then
+    if [ -z "$kibana_user" ] || [ -z "$kibana_pass" ]; then
+        echo "❌ Kibana Elasticsearch auth is not configured in docker-secrets."
+        echo "   Set ONE of the following before startup:"
+        echo "   1) ELASTICSEARCH_SERVICEACCOUNTTOKEN=<token>"
+        echo "   2) ELASTICSEARCH_USERNAME=kibana_system and ELASTICSEARCH_PASSWORD=<password>"
+        exit 1
+    fi
 fi
 
 # Build and start containers

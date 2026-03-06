@@ -70,10 +70,10 @@ As this is an MVP it is limited in scope to only included the public dog parks i
 
 ```bash
 # Start all services (full stack with observability)
-docker compose up -d
+docker compose --env-file docker-secrets up -d
 
 # Start minimal services only (core app without observability)
-docker compose up -d backend frontend rabbitmq db-init
+docker compose --env-file docker-secrets up -d backend frontend rabbitmq db-init
 
 # Stop observability services (if already running)
 docker compose stop elasticsearch logstash kibana prometheus grafana rabbitmq-exporter
@@ -104,11 +104,11 @@ chmod +x scripts/docker-seed.sh
 ./scripts/docker-seed.sh
 
 # Minimal evaluation setup (core app only + seed database)
-docker compose up -d backend frontend rabbitmq db-init && bash scripts/docker-seed.sh
+docker compose --env-file docker-secrets up -d backend frontend rabbitmq db-init && bash scripts/docker-seed.sh
 
 # Full evaluation setup (all services + seed + ELK/Prometheus setup + test logs)
 chmod +x scripts/deployment-init.sh
-docker compose up -d && bash scripts/deployment-init.sh
+docker compose --env-file docker-secrets up -d && bash scripts/deployment-init.sh
 # ⏱️ Note: Kibana can take 2-5 minutes to fully initialize on first run; the script will wait
 
 # Reset everything (WARNING: deletes all data)
@@ -137,7 +137,7 @@ Quick reference for running DogParkPals locally with Docker and validating the e
 - `docker-secrets` created from `docker-secrets-example`
 
 ### Start stack
-- `docker compose up -d` (starts backend, frontend, db-init, rabbitmq, prometheus, grafana, rabbitmq-exporter)
+- `docker compose --env-file docker-secrets up -d` (starts backend, frontend, db-init, rabbitmq, prometheus, grafana, rabbitmq-exporter)
 - `docker compose logs -f backend`
 - `docker compose logs -f rabbitmq`
 
@@ -220,7 +220,7 @@ bash kibana/setup-kibana.sh
 
 **For 42 evaluation-ready setup** (starts all services + seeds DB + configures Kibana + generates test logs):
 ```bash
-docker compose up -d && bash scripts/deployment-init.sh
+docker compose --env-file docker-secrets up -d && bash scripts/deployment-init.sh
 ```
 
 This will:

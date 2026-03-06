@@ -53,11 +53,11 @@ fi
 # Build and start containers
 echo ""
 echo "🔨 Building Docker images..."
-docker compose build
+docker compose --env-file docker-secrets build
 
 echo ""
 echo "🚀 Starting containers..."
-docker compose up -d
+docker compose --env-file docker-secrets up -d
 
 echo ""
 echo "⏳ Waiting for services to be ready..."
@@ -73,8 +73,8 @@ echo ""
 echo "Note: You'll see certificate warnings for self-signed certificates"
 echo ""
 echo "Useful commands:"
-echo "  - View logs:     docker compose logs -f"
+echo "  - View logs:     docker compose --env-file docker-secrets logs -f"
 echo "  - Stop:          docker compose down"
-echo "  - Restart:       docker compose restart"
+echo "  - Restart:       docker compose --env-file docker-secrets restart"
 echo "  - Shell access:  docker exec -it dogparkpals-backend sh"
 echo ""

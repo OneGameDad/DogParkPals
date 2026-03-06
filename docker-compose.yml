@@ -96,10 +96,6 @@ services:
       - ./docker-secrets
     environment:
       - RABBIT_URL=https://rabbitmq:15671
-      - RABBIT_USER=${RABBITMQ_ADMIN_USER}
-      - RABBIT_PASSWORD=${RABBITMQ_ADMIN_PASSWORD}
-      - PUBLISH_PORT=9419
-      - RABBIT_SKIP_VERIFY=${RABBITMQ_SKIP_VERIFY}
     depends_on:
       - rabbitmq
     restart: unless-stopped
@@ -136,9 +132,6 @@ services:
     env_file:
       - ./docker-secrets
     environment:
-      - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER}
-      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
-      - GF_USERS_ALLOW_SIGN_UP=${GF_USERS_ALLOW_SIGN_UP}
       - GF_SERVER_PROTOCOL=https
       - GF_SERVER_CERT_FILE=/etc/grafana/grafana.crt
       - GF_SERVER_CERT_KEY=/etc/grafana/grafana.key
@@ -161,8 +154,6 @@ services:
       - xpack.security.http.ssl.certificate=/usr/share/elasticsearch/config/certs/elasticsearch.crt
       - xpack.security.http.ssl.key=/usr/share/elasticsearch/config/certs/elasticsearch.key
       - xpack.security.http.ssl.verification_mode=none
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-      - ES_JAVA_OPTS=${ES_JAVA_OPTS}
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
       - ./certs/elasticsearch.crt:/usr/share/elasticsearch/config/certs/elasticsearch.crt:ro
@@ -185,8 +176,6 @@ services:
       - ./logstash/pipeline:/usr/share/logstash/pipeline
     env_file:
       - ./docker-secrets
-    environment:
-      - LS_JAVA_OPTS=${LS_JAVA_OPTS}
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -204,9 +193,6 @@ services:
       - ./docker-secrets
     environment:
       - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
-      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME}
-      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
-      - ELASTICSEARCH_SSL_VERIFICATIONMODE=${ELASTICSEARCH_SSL_VERIFICATIONMODE}
       - SERVER_SSL_ENABLED=true
       - SERVER_SSL_CERTIFICATE=/usr/share/kibana/config/certs/kibana.crt
       - SERVER_SSL_KEY=/usr/share/kibana/config/certs/kibana.key

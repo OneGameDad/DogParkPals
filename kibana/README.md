@@ -4,7 +4,7 @@ This directory contains configuration and scripts for setting up Kibana to displ
 
 ## Quick Start
 
-After running `docker compose up -d`, setup Kibana with:
+After running `docker compose --env-file docker-secrets up -d`, setup Kibana with:
 
 ```bash
 chmod +x kibana/setup-kibana.sh

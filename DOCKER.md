@@ -293,7 +293,7 @@ docker compose build
 
 **Test 2: Container Startup**
 ```bash
-docker compose up -d
+docker compose --env-file docker-secrets up -d
 docker compose ps
 ```
 
@@ -391,7 +391,7 @@ docker logs dogparkpals-frontend
 **Test 9: Volume Persistence**
 ```bash
 docker compose down
-docker compose up -d
+docker compose --env-file docker-secrets up -d
 # Check if database still exists
 ```
 
@@ -634,7 +634,7 @@ location /api/ {
 
 ```bash
 # Build and start
-docker compose up -d --build
+docker compose --env-file docker-secrets up -d --build
 
 # View logs
 docker compose logs -f backend
@@ -674,7 +674,7 @@ docker restart dogparkpals-backend
 ```bash
 docker logs dogparkpals-db-init
 docker compose down -v  # Reset database
-docker compose up -d
+docker compose --env-file docker-secrets up -d
 ```
 
 **Frontend 404 errors**:

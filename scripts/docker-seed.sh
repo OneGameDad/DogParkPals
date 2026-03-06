@@ -11,7 +11,7 @@ echo ""
 # Check if backend container is running
 if ! docker ps | grep -q dogparkpals-backend; then
     echo "❌ Backend container is not running!"
-    echo "   Start it with: docker compose up -d"
+    echo "   Start it with: docker compose --env-file docker-secrets up -d"
     exit 1
 fi
 

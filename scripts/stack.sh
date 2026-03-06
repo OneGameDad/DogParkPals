@@ -157,7 +157,7 @@ run_fresh() {
   fi
 
   echo ""
-  echo "🔧 Running deployment initialization (seeding, Kibana setup, test logs)..."
+  echo "🔧 Running deployment initialization (seeding, Kibana setup)..."
   if ! (cd "$ROOT_DIR" && bash "$SCRIPT_DIR/deployment-init.sh"); then
     echo "❌ Failed during deployment initialization"
     exit 1

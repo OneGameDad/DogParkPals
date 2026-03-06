@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # One-shot deployment initializer for DogParkPals
-# Runs seed + observability setup + test log generation in sequence.
+# Runs seed + observability setup in sequence.
 
 set -e
 
@@ -129,15 +129,11 @@ echo "2) Initializing Kibana + Elasticsearch template/ILM"
 bash "$ROOT_DIR/kibana/setup-kibana.sh"
 
 echo ""
-echo "3) Generating test logs for evaluation"
-bash "$ROOT_DIR/elasticsearch/generate-test-logs.sh"
-
-echo ""
 echo "✅ Deployment initialization complete"
 echo ""
 echo "Quick checks:"
 echo "  - Backend health:    curl -k $BACKEND_URL/health"
-echo "  - Elasticsearch:     $ELASTICSEARCH_URL/dogparkpals-logs-*/_count"
+echo "  - Elasticsearch:     curl -k $ELASTICSEARCH_URL/_cluster/health"
 echo "  - Kibana dashboards: $KIBANA_URL"
 echo ""
 echo "Note: -k flag required for self-signed certificates"

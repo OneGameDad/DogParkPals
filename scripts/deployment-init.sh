@@ -6,8 +6,8 @@
 set -e
 
 BACKEND_URL="${BACKEND_URL:-https://localhost:3000}"
-ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-http://localhost:9200}"
-KIBANA_URL="${KIBANA_URL:-http://localhost:5601}"
+ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-https://localhost:9200}"
+KIBANA_URL="${KIBANA_URL:-https://localhost:5601}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 

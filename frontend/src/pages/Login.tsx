@@ -72,7 +72,7 @@ const Login = () => {
           <Button
             text={t('auth.login.signInWithGoogle')}
             onClick={handleGoogleLogin}
-            className="w-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+            className="w-full"
           />
 
           <div className="text-center mt-4">

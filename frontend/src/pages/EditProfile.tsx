@@ -124,7 +124,7 @@ const EditProfile = () => {
           <Button
             text={t('profile.cancel')}
             onClick={() => navigate('/profile')}
-            className="bg-transparent hover:bg-gray-100 text-gray-600 hover:text-gray-800"
+            className="!bg-transparent hover:bg-gray-100 !text-gray-600 hover:text-gray-800"
           />
         </div>
 

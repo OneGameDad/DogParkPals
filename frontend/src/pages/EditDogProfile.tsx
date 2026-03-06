@@ -114,6 +114,16 @@ const EditDogProfile = () => {
     });
   };
 
+  const handleClearSelection = () => {
+    setPhotoDeleted(false);
+    // Clear pending selection so delete wins
+    setSelectedFile(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+  };
+
   if (isEditMode && dogLoading) return <Loading message={t('dogProfile.loading')} />;
   if (isEditMode && (dogError || !dog)) return <ErrorMessage message={t('dogProfile.failedToLoad')} showBackButton backTo="/profile" />;
 
@@ -126,9 +136,9 @@ const EditDogProfile = () => {
         <div className="flex items-center justify-between mb-6">
           <Header text={title} level="h1" />
           <Button
-            text={t('dogProfile.cancel')}
+            text={t('dogProfile.cancel', 'Cancel')}
             onClick={() => navigate(isEditMode ? `/dog/${id}` : '/profile')}
-            className="bg-transparent hover:bg-gray-100 text-gray-600 hover:text-gray-800"
+            className="!bg-transparent hover:bg-gray-100 !text-gray-600 hover:text-gray-800"
           />
         </div>
 
@@ -146,15 +156,7 @@ const EditDogProfile = () => {
             {!photoDeleted && dog?.profilePictureUrl && !previewUrl && (
               <button
                 type="button"
-                onClick={() => {
-                  setPhotoDeleted(true);
-                  // Clear pending selection so delete wins
-                  setSelectedFile(null);
-                  if (previewUrl) {
-                    URL.revokeObjectURL(previewUrl);
-                    setPreviewUrl(null);
-                  }
-                }}
+                onClick={handleClearSelection}
                 className="text-sm text-red-500 hover:text-red-700 underline"
               >
                 {t('dogProfile.removePhoto', 'Remove photo')}
@@ -357,7 +359,7 @@ const EditDogProfile = () => {
             />
             <Button
               type="button"
-              text={t('dogProfile.cancel')}
+              text={t('dogProfile.cancel', 'Cancel')}
               onClick={() => navigate(isEditMode ? `/dog/${id}` : '/profile')}
               className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700"
             />

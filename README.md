@@ -493,9 +493,12 @@ The database is built with SQLite and managed by Prisma ORM. Below is an overvie
 **Enemies** - Blocked/avoid list for users and their dogs
 - Owner-managed list of users/dogs to avoid
 
-**Messages** - Direct messaging between users with delivery status
+**Messages** - Direct messaging between users with delivery status and real-time WebSocket support
 - Status: SENT, DELIVERED, READ, ARCHIVED, DELETED
+- Real-time message delivery via WebSocket (Socket.io)
+- Typing indicators and read receipts
 - Indexed for efficient queries
+- See [WEBSOCKET_MESSAGING.md](./WEBSOCKET_MESSAGING.md) for details
 
 **CheckIn** - Track when users and dogs visit parks
 - Records: userId, dogId (optional), parkId, checkedInAt, checkedOutAt
@@ -511,8 +514,10 @@ The database is built with SQLite and managed by Prisma ORM. Below is an overvie
 - Attributes: name, minPoints, maxPoints, badgeUrl
 - Users earn experience points (ExpPoints) and progress through levels
 
-**Notifications** - User alerts for various activities
+**Notifications** - User alerts for various activities with real-time WebSocket delivery
 - Types: FRIENDSHIP_REQUEST, FRIENDSHIP_ACCEPTED, MESSAGE_RECEIVED, EVENT_INVITATION, EVENT_REMINDER, ACHIEVEMENT_EARNED, LEVEL_UP, COMMENT_REPLY, PARK_REVIEW, ORGANIZATION_INVITE
+- Real-time push notifications via WebSocket (Socket.io)
+- See [WEBSOCKET_NOTIFICATIONS.md](./WEBSOCKET_NOTIFICATIONS.md) for details
 
 ### Supporting Models
 

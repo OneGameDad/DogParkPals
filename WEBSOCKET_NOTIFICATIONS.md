@@ -4,6 +4,8 @@
 
 This document describes the complete WebSocket-based real-time notification system implemented for DogParkPals using Socket.io.
 
+**Note:** The same Socket.io infrastructure is also used for real-time messaging. See [WEBSOCKET_MESSAGING.md](./WEBSOCKET_MESSAGING.md) for messaging-specific implementation details.
+
 ## Architecture
 
 ### Backend Components

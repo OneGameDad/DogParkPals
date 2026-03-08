@@ -25,4 +25,4 @@ docker compose rm -f
 echo ""
 echo "✅ Docker environment reset complete!"
 echo ""
-echo "To start fresh, run: ./scripts/docker-setup.sh"
+echo "To start fresh, run: ./scripts/stack.sh --fresh"

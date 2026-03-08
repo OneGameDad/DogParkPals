@@ -157,15 +157,16 @@ services:
       - xpack.security.http.ssl.certificate=/usr/share/elasticsearch/config/certs/elasticsearch.crt
       - xpack.security.http.ssl.key=/usr/share/elasticsearch/config/certs/elasticsearch.key
       - xpack.security.http.ssl.verification_mode=none
+      - bootstrap.memory_lock=false
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
       - ./certs:/usr/share/elasticsearch/config/certs:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -s -f -k -u elastic:$$ELASTIC_PASSWORD https://localhost:9200 >/dev/null || exit 1"]
-      start_period: 180s
-      interval: 30s
-      timeout: 15s
-      retries: 20
+      start_period: 120s
+      interval: 15s
+      timeout: 10s
+      retries: 10
     restart: unless-stopped
 
   logstash:
@@ -203,10 +204,10 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -s -f -k https://localhost:5601/api/status >/dev/null || exit 1"]
-      start_period: 90s
-      interval: 20s
+      start_period: 180s
+      interval: 15s
       timeout: 10s
-      retries: 20
+      retries: 15
     restart: unless-stopped
 
 volumes:

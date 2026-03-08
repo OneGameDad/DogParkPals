@@ -19,6 +19,7 @@ DogParkPals stack control
 
 Usage:
   ./scripts/stack.sh --fresh       Start full stack and run deployment initialization + seeding
+  ./scripts/stack.sh --core-only   Start core app only (backend, frontend, no observability)
   ./scripts/stack.sh --obs-down    Stop observability services only
   ./scripts/stack.sh --clean       Stop all services and remove app volumes/images
   ./scripts/stack.sh --help
@@ -89,8 +90,89 @@ require_nonempty_secret() {
   fi
 }
 
+secret_value() {
+  local key="$1"
+  local file="$2"
+  grep "^${key}=" "$file" 2>/dev/null | tail -n1 | cut -d'=' -f2- | tr -d '"' | xargs
+}
+
+generate_secure_password() {
+  openssl rand -base64 16
+}
+
+update_or_add_secret() {
+  local key="$1"
+  local value="$2"
+  local file="$3"
+  
+  if grep -q "^${key}=" "$file"; then
+    sed -i "s|^${key}=.*|${key}=${value}|" "$file"
+  else
+    echo "${key}=${value}" >> "$file"
+  fi
+}
+
+fix_elasticsearch_auth() {
+  local current_elastic_pass
+  current_elastic_pass=$(secret_value "ELASTIC_PASSWORD" "$SECRETS_FILE")
+  
+  # Generate secure password if missing or using placeholder values
+  if [ -z "$current_elastic_pass" ] || 
+     [ "$current_elastic_pass" = "elastic" ] || 
+     [ "$current_elastic_pass" = "your-elastic-password" ] || 
+     [ "$current_elastic_pass" = "changeme" ]; then
+    local new_pass
+    new_pass=$(generate_secure_password)
+    update_or_add_secret "ELASTIC_PASSWORD" "$new_pass" "$SECRETS_FILE"
+    echo "✓ Generated secure ELASTIC_PASSWORD"
+    current_elastic_pass="$new_pass"
+  fi
+  
+  # Remove problematic ELASTICSEARCH_SERVICEACCOUNTTOKEN if present
+  if grep -q "^ELASTICSEARCH_SERVICEACCOUNTTOKEN=" "$SECRETS_FILE"; then
+    sed -i '/^ELASTICSEARCH_SERVICEACCOUNTTOKEN=/d' "$SECRETS_FILE"
+    echo "✓ Removed ELASTICSEARCH_SERVICEACCOUNTTOKEN (causes Kibana issues)"
+  fi
+  
+  # Ensure ELASTICSEARCH_USERNAME is set to elastic
+  if ! grep -q "^ELASTICSEARCH_USERNAME=" "$SECRETS_FILE"; then
+    update_or_add_secret "ELASTICSEARCH_USERNAME" "elastic" "$SECRETS_FILE"
+    echo "✓ Added ELASTICSEARCH_USERNAME=elastic"
+  fi
+  
+  # Ensure ELASTICSEARCH_PASSWORD matches ELASTIC_PASSWORD
+  local current_es_pass
+  current_es_pass=$(secret_value "ELASTICSEARCH_PASSWORD" "$SECRETS_FILE")
+  if [ "$current_es_pass" != "$current_elastic_pass" ]; then
+    update_or_add_secret "ELASTICSEARCH_PASSWORD" "$current_elastic_pass" "$SECRETS_FILE"
+    echo "✓ Synced ELASTICSEARCH_PASSWORD with ELASTIC_PASSWORD"
+  fi
+}
+
+fix_jwt_secret() {
+  local current_jwt
+  current_jwt=$(secret_value "JWT_SECRET" "$SECRETS_FILE")
+  
+  # Generate secure JWT secret if missing or using placeholder
+  if [ -z "$current_jwt" ] || 
+     [ "$current_jwt" = "your-strong-jwt-secret-here-at-least-32-characters" ] || 
+     [ "$current_jwt" = "changeme" ] ||
+     [ ${#current_jwt} -lt 32 ]; then
+    local new_jwt
+    # Generate 64 hex characters (32 bytes)
+    new_jwt=$(openssl rand -hex 32)
+    update_or_add_secret "JWT_SECRET" "$new_jwt" "$SECRETS_FILE"
+    echo "✓ Generated secure JWT_SECRET"
+  fi
+}
+
 validate_observability_secrets() {
+  echo "🔐 Validating and configuring authentication..."
+  fix_jwt_secret
+  fix_elasticsearch_auth
   require_nonempty_secret "ELASTIC_PASSWORD" "$SECRETS_FILE"
+  echo "✅ Authentication configured"
+  echo ""
 }
 
 generate_cert_with_san() {
@@ -173,28 +255,92 @@ ensure_certificates() {
   fi
 }
 
+cleanup_volumes() {
+  echo "🧹 Cleaning stale Elasticsearch volumes..."
+  # Remove volumes to prevent authentication/state issues
+  docker volume rm dogparkpals_elasticsearch-data 2>/dev/null || true
+  echo "✓ Volume cleanup complete"
+  echo ""
+}
+
 run_fresh() {
   echo "🚀 Starting full DogParkPals stack..."
+  echo ""
+  ensure_secrets_file
+  validate_observability_secrets
+  ensure_certificates true
+  
+  # Clean volumes to avoid stale Elasticsearch state
+  cleanup_volumes
+
+  echo "🔨 Building Docker images..."
+  (cd "$ROOT_DIR" && docker compose --env-file docker-secrets build)
+  
+  echo ""
+  echo "🚀 Starting containers..."
+  (cd "$ROOT_DIR" && docker compose --env-file docker-secrets up -d)
+  
+  echo ""
+  echo "⏳ Waiting for core services..."
+  sleep 5
+  
+  echo ""
+  echo "🔧 Running deployment initialization (seeding, observability setup)..."
+  if ! (cd "$ROOT_DIR" && bash "$SCRIPT_DIR/deployment-init.sh"); then
+    echo "⚠️  Deployment initialization had issues (check logs above)"
+    echo "   Core services (backend/frontend) should still be running"
+  fi
+
+  echo ""
+  echo "✅ Stack startup complete!"
+  echo ""
+  echo "Access points:"
+  echo "  Frontend:  https://localhost:5173"
+  echo "  Backend:   https://localhost:3000"
+  echo "  Kibana:    https://localhost:5601 (if running, may take 2-5 minutes)"
+  echo "  Grafana:   https://localhost:3001"
+  echo "  Prometheus: https://localhost:9090"
+  echo ""
+  echo "Useful commands:"
+  echo "  View logs:          docker compose logs -f"
+  echo "  Check status:       docker compose ps"
+  echo "  Stop observability: ./scripts/stack.sh --obs-down"
+  echo "  Full cleanup:       ./scripts/stack.sh --clean"
+}
+
+run_core_only() {
+  echo "🚀 Starting core DogParkPals services (no observability)..."
+  echo ""
   ensure_secrets_file
   validate_observability_secrets
   ensure_certificates true
 
+  echo "🔨 Building Docker images..."
+  (cd "$ROOT_DIR" && docker compose --env-file docker-secrets build backend frontend db-init)
+  
   echo ""
-  echo "📝 Running docker setup (certificates, build, start)..."
-  if ! (cd "$ROOT_DIR" && bash "$SCRIPT_DIR/docker-setup.sh"); then
-    echo "❌ Failed during docker setup"
-    exit 1
+  echo "🚀 Starting core containers..."
+  (cd "$ROOT_DIR" && docker compose --env-file docker-secrets up -d backend frontend rabbitmq db-init)
+  
+  echo ""
+  echo "⏳ Waiting for services..."
+  sleep 10
+  
+  echo ""
+  echo "🌱 Seeding database..."
+  if ! (cd "$ROOT_DIR" && bash "$SCRIPT_DIR/docker-seed.sh"); then
+    echo "⚠️  Database seeding had issues"
   fi
 
   echo ""
-  echo "🔧 Running deployment initialization (seeding, Kibana setup)..."
-  if ! (cd "$ROOT_DIR" && bash "$SCRIPT_DIR/deployment-init.sh"); then
-    echo "❌ Failed during deployment initialization"
-    exit 1
-  fi
-
+  echo "✅ Core services started!"
   echo ""
-  echo "✅ Fresh startup + seeding complete"
+  echo "Access points:"
+  echo "  Frontend:  https://localhost:5173"
+  echo "  Backend:   https://localhost:3000"
+  echo ""
+  echo "Note: Observability services not started (fast, low-resource mode)"
+  echo "To start full stack with monitoring, use: ./scripts/stack.sh --fresh"
 }
 
 run_obs_down() {
@@ -234,6 +380,9 @@ main() {
   case "$1" in
     --fresh|-f)
       run_fresh
+      ;;
+    --core-only|-co)
+      run_core_only
       ;;
     --obs-down|-o)
       run_obs_down

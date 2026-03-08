@@ -98,6 +98,56 @@ server_cert_has_san() {
   openssl x509 -in "$ROOT_DIR/certs/server.crt" -noout -text 2>/dev/null | grep -q "DNS:localhost"
 }
 
+check_container_health() {
+  local container_name="$1"
+  local max_attempts="${2:-20}"
+  local attempt=0
+  
+  while [ "$attempt" -lt "$max_attempts" ]; do
+    local health_status
+    health_status=$(docker inspect --format='{{.State.Health.Status}}' "$container_name" 2>/dev/null || echo "none")
+    local running_status
+    running_status=$(docker inspect --format='{{.State.Status}}' "$container_name" 2>/dev/null || echo "not_found")
+    
+    # Container crashed or died - fail immediately
+    if [ "$running_status" = "exited" ] || [ "$running_status" = "dead" ]; then
+      echo "❌ Container $container_name has stopped running (status: $running_status)"
+      echo "   Check logs: docker logs $container_name"
+      return 1
+    fi
+    
+    # Container is healthy - success
+    if [ "$health_status" = "healthy" ]; then
+      return 0
+    fi
+    
+    # Container has no health check but is running - success
+    if [ "$health_status" = "none" ] && [ "$running_status" = "running" ]; then
+      return 0
+    fi
+    
+    # Still starting, wait and retry
+    if [ "$attempt" -eq 0 ]; then
+      echo "⏳ Waiting for $container_name to be ready..."
+    fi
+    sleep 2
+    attempt=$((attempt + 1))
+  done
+  
+  # Final check after timeout
+  local final_status
+  final_status=$(docker inspect --format='{{.State.Status}}' "$container_name" 2>/dev/null || echo "not_found")
+  
+  if [ "$final_status" = "running" ]; then
+    echo "⚠️  Timeout waiting for $container_name health check, but container is running"
+    return 0
+  else
+    echo "❌ Container $container_name not ready after timeout (status: $final_status)"
+    echo "   Check logs: docker logs $container_name"
+    return 1
+  fi
+}
+
 wait_for_url() {
   local name="$1"
   local url="$2"
@@ -105,6 +155,7 @@ wait_for_url() {
   local interval="${4:-$WAIT_INTERVAL_SECONDS}"
   local auth_user="${5:-}"
   local auth_password="${6:-}"
+  local is_optional="${7:-false}"
   local elapsed=0
 
   echo "⏳ Waiting for $name at $url ..."
@@ -129,15 +180,27 @@ wait_for_url() {
       fi
     fi
 
-    echo "   ... still waiting for $name (${elapsed}s/${timeout}s)"
+    if [ "$elapsed" -ge "$timeout" ]; then
+      if [ "$is_optional" = "true" ]; then
+        echo "⚠️  Timeout waiting for $name ($timeout seconds) - continuing anyway"
+        return 1
+      else
+        echo "❌ Timeout waiting for $name ($timeout seconds)"
+        echo "   Check logs: docker logs dogparkpals-$(echo "$name" | tr '[:upper:]' '[:lower:]')"
+        exit 1
+      fi
+    fi
+    
+    # Only show progress every 10 seconds to reduce noise
+    if [ $((elapsed % 10)) -eq 0 ]; then
+      echo "   ... still waiting for $name (${elapsed}s/${timeout}s)"
+    fi
+    
     sleep "$interval"
     elapsed=$((elapsed + interval))
-    if [ "$elapsed" -ge "$timeout" ]; then
-      echo "❌ Timeout waiting for $name ($timeout seconds)"
-      exit 1
-    fi
   done
   echo "✅ $name is ready"
+  return 0
 }
 
 warn_if_cert_expiring() {
@@ -204,17 +267,70 @@ if ! docker ps | grep -q "dogparkpals-backend"; then
   exit 1
 fi
 
-wait_for_url "Backend" "$BACKEND_URL/health" 180
-wait_for_url "Elasticsearch" "$ELASTICSEARCH_URL/_cluster/health" 600 "$WAIT_INTERVAL_SECONDS" "$ELASTICSEARCH_USERNAME" "$ELASTICSEARCH_PASSWORD"
-wait_for_url "Kibana" "$KIBANA_URL/api/status" 900
+echo "Checking container health..."
+if check_container_health "dogparkpals-backend" 30; then
+  echo "✅ Backend container is healthy"
+else
+  echo "❌ Backend container failed health check"
+  echo "   Check logs: docker logs dogparkpals-backend"
+  exit 1
+fi
+
+wait_for_url "Backend" "$BACKEND_URL/health" 120
+
+# Check if Elasticsearch is running before waiting
+if docker ps | grep -q "dogparkpals-elasticsearch"; then
+  echo ""
+  echo "Checking Elasticsearch health..."
+  if check_container_health "dogparkpals-elasticsearch" 60; then
+    echo "✅ Elasticsearch container is healthy"
+  else
+    echo "⚠️  Elasticsearch container not healthy yet, trying direct connection..."
+  fi
+  
+  wait_for_url "Elasticsearch" "$ELASTICSEARCH_URL/_cluster/health" 180 "$WAIT_INTERVAL_SECONDS" "$ELASTICSEARCH_USERNAME" "$ELASTICSEARCH_PASSWORD"
+else
+  echo "⚠️  Elasticsearch not running - skipping observability setup"
+fi
+
+# Kibana is optional - if it times out, continue anyway
+if docker ps | grep -q "dogparkpals-kibana"; then
+  echo ""
+  if wait_for_url "Kibana" "$KIBANA_URL/api/status" 180 5 "" "" "true"; then
+    KIBANA_AVAILABLE=true
+  else
+    echo "⚠️  Kibana not available yet (still initializing)"
+    echo "   This is normal - Kibana can take 5-10 minutes on first start"
+    echo "   You can check later: docker logs dogparkpals-kibana"
+    KIBANA_AVAILABLE=false
+  fi
+else
+  echo "⚠️  Kibana not running - skipping Kibana setup"
+  KIBANA_AVAILABLE=false
+fi
 
 echo ""
 echo "1) Seeding production database"
-bash "$SCRIPT_DIR/docker-seed.sh"
+if ! bash "$SCRIPT_DIR/docker-seed.sh"; then
+  echo "❌ Database seeding failed"
+  exit 1
+fi
 
-echo ""
-echo "2) Initializing Kibana + Elasticsearch template/ILM"
-bash "$ROOT_DIR/kibana/setup-kibana.sh"
+# Only setup Kibana if it's available
+if [ "$KIBANA_AVAILABLE" = "true" ]; then
+  echo ""
+  echo "2) Initializing Kibana + Elasticsearch template/ILM"
+  if bash "$ROOT_DIR/kibana/setup-kibana.sh"; then
+    echo "✅ Kibana setup complete"
+  else
+    echo "⚠️  Kibana setup had issues - you may need to run it manually later"
+    echo "   Command: bash kibana/setup-kibana.sh"
+  fi
+else
+  echo ""
+  echo "2) Skipping Kibana setup (not available yet)"
+  echo "   Once Kibana is ready, you can run: bash kibana/setup-kibana.sh"
+fi
 
 echo ""
 echo "✅ Deployment initialization complete"

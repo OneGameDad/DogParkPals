@@ -9,95 +9,116 @@ As this is an MVP it is limited in scope to only included the public dog parks i
 ## Quick Start with Docker (Recommended)
 
 ### Prerequisites
-- Docker
-- Docker Compose
+- Docker & Docker Compose
+- OpenSSL (for certificate generation)
+- Node.js (for JWT secret generation, optional - auto-generated if not provided)
 
-### Setup
+### Simple Deployment (One Command)
 
-1. **Generate SSL certificates** (for local development)
-   ```bash
-   mkdir -p certs
-   cd certs
-   openssl req -x509 -newkey rsa:2048 -keyout server.key -out server.crt -days 365 -nodes -subj "/CN=localhost/O=DogParkPals/C=US"
-   cd ..
-   ```
-   Note: For production, replace with properly signed certificates from a Certificate Authority.
+The easiest way to deploy DogParkPals is using the stack control script:
 
-2. **Copy environment configuration**
+```bash
+# Deploy everything with automatic configuration
+./scripts/stack.sh --fresh
+```
+
+This single command will:
+- ✓ Copy `docker-secrets-example` to `docker-secrets` if it doesn't exist
+- ✓ Auto-generate secure `JWT_SECRET` and `ELASTIC_PASSWORD` if needed
+- ✓ Fix Elasticsearch authentication configuration automatically
+- ✓ Generate SSL certificates with proper Subject Alternative Names
+- ✓ Build all Docker images
+- ✓ Start all services (backend, frontend, observability stack)
+- ✓ Seed the database with test data
+- ✓ Initialize Kibana and Elasticsearch
+
+**What you get:**
+- Frontend: https://localhost:5173
+- Backend API: https://localhost:3000
+- Kibana: https://localhost:5601
+- Grafana: https://localhost:3001
+- Prometheus: https://localhost:9090
+
+*Note: You'll see browser warnings for self-signed certificates (safe to ignore locally)*
+
+### Manual Setup (Advanced)
+
+If you prefer to configure everything manually:
+
+1. **Copy environment configuration**
    ```bash
    cp docker-secrets-example docker-secrets
    ```
 
-3. **Edit docker-secrets with your credentials**
+2. **Edit docker-secrets** (Optional - auto-generation handles most settings)
    ```bash
    nano docker-secrets
    ```
    
-   Required:
-   - `JWT_SECRET`: Generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
-   - `GOOGLE_CLIENT_ID`: (Optional) Get from Google Cloud Console
-   - `GOOGLE_CLIENT_SECRET`: (Optional) Get from Google Cloud Console
-   - `CERT_PATH`: Path to SSL certificate (default: /app/certs/server.crt)
-   - `KEY_PATH`: Path to SSL private key (default: /app/certs/server.key)
+   Optional manual configuration:
+   - `JWT_SECRET`: Auto-generated if empty (or use: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`)
+   - `ELASTIC_PASSWORD`: Auto-generated if empty/placeholder
+   - `GOOGLE_CLIENT_ID`: (Optional) For Google OAuth
+   - `GOOGLE_CLIENT_SECRET`: (Optional) For Google OAuth
 
-4. **Run the setup script**
+3. **Deploy using stack script**
    ```bash
-   chmod +x scripts/docker-setup.sh
-   ./scripts/docker-setup.sh
+   ./scripts/stack.sh --fresh
    ```
 
-### Deployment Pitfalls Prevention (Read Before First Run)
+### Common Operations
 
-These checks prevent the exact failure modes seen during deployment testing.
+```bash
+# Deploy full stack with all observability
+./scripts/stack.sh --fresh
 
-1. **Never use `ELASTICSEARCH_USERNAME=elastic` for Kibana**
-   - Kibana 8.x rejects the `elastic` superuser and will crash-loop.
-   - Use one of these instead in `docker-secrets`:
-     - `ELASTICSEARCH_SERVICEACCOUNTTOKEN=<token>` (recommended)
-     - `ELASTICSEARCH_USERNAME=kibana_system` and `ELASTICSEARCH_PASSWORD=<password>`
+# Deploy core app only (fast, low-resource - no monitoring/logging)
+./scripts/stack.sh --core-only
 
-2. **Always set `ELASTIC_PASSWORD`**
-   - Elasticsearch health and init checks require auth.
-   - Missing/empty `ELASTIC_PASSWORD` causes immediate setup failure by design (fail-fast).
+# Stop observability services only (keeps backend/frontend running)
+./scripts/stack.sh --obs-down
 
-3. **Do not rely on HTTP 401 as "healthy"**
-   - Health checks use `curl -f` so HTTP errors fail correctly.
-   - If you write custom checks, include `-f` and auth flags.
+# Full cleanup (remove all containers, volumes, and images)
+./scripts/stack.sh --clean
 
-4. **Use `docker compose --env-file docker-secrets ...` for stack commands**
-   - Avoid running compose without `--env-file` when environment expansion is needed.
-   - Recommended:
-   ```bash
-   docker compose --env-file docker-secrets up -d
-   ```
+# Check service status
+docker compose ps
 
-5. **Force-recreate Kibana after auth/env changes**
-   - Kibana may keep stale env values across restarts.
-   - Recreate (not only restart):
-   ```bash
-   docker compose --env-file docker-secrets up -d --force-recreate --no-deps kibana
-   ```
+# View logs
+docker compose logs -f
 
-6. **Do not `source docker-secrets` directly in your shell**
-   - `docker-secrets` contains values like `ES_JAVA_OPTS=-Xms384m -Xmx384m`.
-   - Direct `source` can produce shell errors (`-Xmx...: command not found`).
-   - Prefer `--env-file` with Docker Compose.
+# View specific service logs
+docker compose logs -f backend
+docker compose logs -f frontend
+```
 
-7. **Expect Kibana warm-up time**
-   - First startup can take 2-5 minutes.
-   - `health: starting` is normal during plugin initialization.
+### Important Notes
 
-8. **Keep service-account tokens on one line**
-   - Line wrapping or accidental whitespace in `ELASTICSEARCH_SERVICEACCOUNTTOKEN` breaks auth.
+**Elasticsearch Authentication:**
+- The stack script automatically configures secure Elasticsearch credentials
+- Uses `elastic` superuser for backend/deployment-init.sh access
+- Removes problematic `ELASTICSEARCH_SERVICEACCOUNTTOKEN` if present
+- Auto-generates strong passwords if placeholders are detected
 
-9. **Use setup scripts to catch config errors early**
-   - `scripts/docker-setup.sh` and `scripts/stack.sh --fresh` include fail-fast validations.
+**Kibana Startup:**
+- First startup can take 2-5 minutes
+- Status `health: starting` is normal during initialization
+- If Kibana times out, core services continue - setup can be run manually later
+- Access at https://localhost:5601 once healthy
 
-10. **Configure RabbitMQ exporter TLS trust**
-    - If `rabbitmq-exporter` talks to `https://rabbitmq:15671` without CA trust, it fails with
-       `x509: certificate signed by unknown authority` and stays unhealthy.
-    - Ensure compose includes:
-       - `RABBIT_URL=https://rabbitmq:15671`
+**Deployment Reliability:**
+- ✅ Automatic volume cleanup prevents stale Elasticsearch state
+- ✅ Container health checks verify services before proceeding
+- ✅ Kibana initialization is non-fatal (warns but continues)
+- ✅ Faster timeouts with better error detection
+- ✅ Progress shown every 10 seconds (less noise)
+- ✅ Core-only mode available for quick testing without observability
+
+**Service Account Token Issues (Resolved):**
+- Previous versions used `ELASTICSEARCH_SERVICEACCOUNTTOKEN`
+- This caused Kibana startup failures in Elasticsearch 8.x
+- Current version uses simpler `elastic` user authentication
+- No manual token generation needed
        - `CAFILE=/etc/rabbitmq-exporter/ca.pem`
        - `SKIPVERIFY=false`
        - volume mount: `./certs/rabbitmq.crt:/etc/rabbitmq-exporter/ca.pem:ro`
@@ -112,22 +133,6 @@ These checks prevent the exact failure modes seen during deployment testing.
          ```
       - This is usually transient and resolves once both services are on the same cert/runtime state.
 
-### Create Kibana Service Account Token (Recommended)
-
-If you choose token-based Kibana auth:
-
-```bash
-docker exec dogparkpals-elasticsearch \
-  curl -s -k -u elastic:$ELASTIC_PASSWORD \
-  -X POST "https://localhost:9200/_security/service/elastic/kibana/credential/token/kibana_local_$(date +%s)"
-```
-
-Copy `.token.value` into `docker-secrets`:
-
-```bash
-ELASTICSEARCH_SERVICEACCOUNTTOKEN=<paste-token-value-here>
-```
-
 5. **Access the application**
    - Frontend: https://localhost:5173
    - Backend API: https://localhost:3000
@@ -135,7 +140,7 @@ ELASTICSEARCH_SERVICEACCOUNTTOKEN=<paste-token-value-here>
    - Grafana: https://localhost:3001 (admin/admin)
    - Kibana: https://localhost:5601
    - RabbitMQ Management: https://localhost:15671 (guest/guest) - HTTP also available on port 15672
-   - Elasticsearch: https://localhost:9200 (elastic/elastic)
+   - Elasticsearch: https://localhost:9200 (use `ELASTICSEARCH_USERNAME`/`ELASTICSEARCH_PASSWORD` from `docker-secrets`)
    
    **Note:** You'll see a certificate warning in your browser when accessing HTTPS URLs with the self-signed certificate. This is expected for local development and can be safely bypassed.
 
@@ -178,40 +183,60 @@ RABBIT_SKIP_VERIFY=false
 
 ### Docker Commands
 
-```bash
-# One-command stack control
-./scripts/stack.sh --fresh      # full startup + seeding + observability init
-./scripts/stack.sh --obs-down   # stop observability services only
-./scripts/stack.sh --clean      # full shutdown + cleanup (volumes/images)
-make verify-deploy              # run pitfall checks (auth, healthchecks, runtime state incl. rabbitmq-exporter)
+**Primary Stack Control (Recommended):**
 
-# Start all services (full stack with observability)
+```bash
+# Full deployment with auto-configuration
+./scripts/stack.sh --fresh      # Complete setup + seeding + observability init
+
+# Stop observability services only (keeps app running)
+./scripts/stack.sh --obs-down   # Stop Elasticsearch, Kibana, Grafana, Prometheus, Logstash
+
+# Full cleanup
+./scripts/stack.sh --clean      # Stop all + remove volumes/images (fresh slate)
+
+# Deployment verification
+bash scripts/verify-deploy.sh   # Run pitfall checks (auth, healthchecks, etc.)
+```
+
+**Manual Docker Compose Commands:**
+
+```bash
+# Start all services (after stack.sh has configured everything)
 docker compose --env-file docker-secrets up -d
 
 # Start minimal services only (core app without observability)
 docker compose --env-file docker-secrets up -d backend frontend rabbitmq db-init
 
-# Stop observability services (if already running)
+# Stop observability services
 docker compose stop elasticsearch logstash kibana prometheus grafana rabbitmq-exporter
 
-# View logs
+# View all logs
 docker compose logs -f
 
-# Stop services
+# View specific service logs
+docker compose logs -f backend
+
+# Stop all services
 docker compose down
 
-# Restart a service
+# Restart a specific service
 docker compose restart backend
 ```
 
-**Service Options:**
-- **Minimal** (core app only): backend, frontend, rabbitmq, db-init
-  - Fully functional app with events/messaging
-  - Lower resource usage (ideal for 42 evaluation)
-  - Startup time: ~30-60 seconds
-- **Full stack** (with observability): All minimal services + elasticsearch, logstash, kibana, prometheus, grafana, rabbitmq-exporter
-  - Adds centralized logging, metrics, and dashboards
-  - Higher resource usage
+**Service Profiles:**
+
+- **Minimal Stack** (core app only): backend, frontend, rabbitmq, db-init
+  - ✓ Fully functional app with events/messaging
+  - ✓ Lower resource usage (~1-2GB RAM)
+  - ✓ Fast startup (~30-60 seconds)
+  - ✓ Ideal for development and testing
+
+- **Full Stack** (with observability): All minimal + elasticsearch, logstash, kibana, prometheus, grafana, rabbitmq-exporter
+  - ✓ Centralized logging and search (ELK stack)
+  - ✓ Metrics and monitoring dashboards
+  - ✓ Higher resource usage (~4-6GB RAM)
+  - ✓ Longer startup (~2-5 minutes for Kibana)
   - Startup time: 3-5 minutes (Kibana alone takes 2-5 min first run)
 
 ```bash
@@ -271,7 +296,7 @@ DogParkPals includes Prometheus metrics and Grafana dashboards for observability
 - Grafana: `https://localhost:3001` (username: `admin`, password: `admin`)
 - Backend Metrics: `https://localhost:3000/metrics`
 - RabbitMQ Exporter: `http://localhost:9419/metrics`
-- Elasticsearch: `https://localhost:9200` (username: `elastic`, password: `elastic`)
+- Elasticsearch: `https://localhost:9200` (credentials from `docker-secrets`)
 - Kibana: `https://localhost:5601`
 
 **Available Metrics:**
@@ -296,8 +321,8 @@ DogParkPals includes Prometheus metrics and Grafana dashboards for observability
 DogParkPals includes an ELK stack (Elasticsearch, Logstash, Kibana) for centralized log aggregation, search, and audit trail capabilities.
 
 **Access:**
-- Kibana: `http://localhost:5601`
-- Elasticsearch: `http://localhost:9200` (HTTP API)
+- Kibana: `https://localhost:5601`
+- Elasticsearch: `https://localhost:9200` (HTTPS API, basic auth)
 - Logstash: Receives logs on TCP/UDP port 5000 (not user-facing)
 
 **Verifying Logs (Fresh Deployments):**
@@ -317,14 +342,18 @@ In a fresh deployment, logs are generated automatically but may be minimal initi
 
 3. **Verify logs exist in Elasticsearch**:
    ```bash
+   ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"
+   ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"
    # Check total log count
-   curl 'http://localhost:9200/dogparkpals-logs-*/_count'
+   curl -k -u "$ES_USER:$ES_PASS" \
+       'https://localhost:9200/dogparkpals-logs-*/_count'
    
    # View 5 most recent logs
-   curl -s 'http://localhost:9200/dogparkpals-logs-*/_search?size=5&sort=@timestamp:desc' | jq '.hits.hits[]._source | {timestamp: .["@timestamp"], severity, log_message}'
+   curl -s -k -u "$ES_USER:$ES_PASS" \
+       'https://localhost:9200/dogparkpals-logs-*/_search?size=5&sort=@timestamp:desc' | jq '.hits.hits[]._source | {timestamp: .["@timestamp"], severity, log_message}'
    ```
 
-4. **Open Kibana** to browse logs visually at `http://localhost:5601`
+4. **Open Kibana** to browse logs visually at `https://localhost:5601`
 
 **Note:** Logs take 5-10 seconds to flow from backend → Logstash → Elasticsearch → Kibana indexing.
 
@@ -448,7 +477,7 @@ Incident Response:
 
 **No logs appearing in Kibana?**
 - Verify Logstash is running: `docker compose logs logstash`
-- Check Elasticsearch has data: `curl http://localhost:9200/dogparkpals-logs-*/_count`
+- Check Elasticsearch has data: `ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"; ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"; curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/dogparkpals-logs-*/_count`
 - Generate test logs: `bash elasticsearch/generate-test-logs.sh`
 - Run setup script: `bash kibana/setup-kibana.sh`
 - Ensure backend is logging (check `docker compose logs backend`)
@@ -463,8 +492,8 @@ Incident Response:
 - Archive indices older than 30 days (advanced: see Elasticsearch docs)
 
 **Disk space filling up?**
-- Check retention policy is active: `curl http://localhost:9200/_ilm/policy/dogparkpals-logs-ilm`
-- Manually delete old indices: `curl -X DELETE http://localhost:9200/dogparkpals-logs-2026.01.*`
+- Check retention policy is active: `ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"; ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"; curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/_ilm/policy/dogparkpals-logs-ilm`
+- Manually delete old indices: `ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"; ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"; curl -k -u "$ES_USER:$ES_PASS" -X DELETE https://localhost:9200/dogparkpals-logs-2026.01.*`
 - Reduce retention period: Edit [elasticsearch/ilm-policy.json](./elasticsearch/ilm-policy.json)
 
 **Complete Documentation:**
@@ -488,7 +517,7 @@ Incident Response:
    - `./scripts/docker-reset.sh`
 - Verify ELK stack (logs are flowing to Elasticsearch):
    - `bash elasticsearch/generate-test-logs.sh`
-   - `curl 'http://localhost:9200/dogparkpals-logs-*/_count'`
+   - `ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"; ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"; curl -k -u "$ES_USER:$ES_PASS" 'https://localhost:9200/dogparkpals-logs-*/_count'`
 
 ### Backup event emission (docker task)
 - Emit backup started:

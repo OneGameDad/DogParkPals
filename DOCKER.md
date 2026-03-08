@@ -146,13 +146,16 @@ Pitfall:
 - Missing `ELASTIC_PASSWORD`, or missing Kibana auth settings, causes long waits and confusing startup behavior.
 
 Prevention:
-- Ensure `docker-secrets` includes required auth values before `up`.
-- Run fail-fast setup scripts first:
+- Use the stack.sh script which auto-configures all authentication:
 
 ```bash
-bash scripts/docker-setup.sh
-bash scripts/stack.sh --fresh
+./scripts/stack.sh --fresh
 ```
+
+Or manually ensure `docker-secrets` includes required auth values:
+- `ELASTIC_PASSWORD` (auto-generated if placeholder detected)
+- `ELASTICSEARCH_USERNAME=elastic` (auto-configured)
+- `ELASTICSEARCH_PASSWORD` (synced with ELASTIC_PASSWORD)
 
 ### 4) Compose Env Drift / Stale Container Environment
 
@@ -175,14 +178,14 @@ Prevention:
 - Prefer Docker Compose `--env-file docker-secrets`.
 - Let project scripts load secrets in controlled ways.
 
-### 6) Token Formatting Errors
+### 6) Legacy Service Account Token Leftovers
 
 Pitfall:
-- Multi-line or whitespace-corrupted `ELASTICSEARCH_SERVICEACCOUNTTOKEN` breaks Kibana auth.
+- `ELASTICSEARCH_SERVICEACCOUNTTOKEN` left in `docker-secrets` can conflict with current local auth flow.
 
 Prevention:
-- Keep token value on one line in `docker-secrets`.
-- Recreate Kibana after token updates.
+- Prefer the default `stack.sh` behavior (`ELASTICSEARCH_USERNAME=elastic` + synced password).
+- Remove legacy token entries if present; `./scripts/stack.sh --fresh` does this automatically.
 
 ### 7) Slow Kibana Initialization Misread As Failure
 
@@ -243,8 +246,8 @@ docker inspect --format='{{json .State.Health}}' dogparkpals-rabbitmq-exporter
 ### Quick Verification Checklist
 
 ```bash
-make verify-deploy
-docker compose --env-file docker-secrets up -d
+./scripts/stack.sh --fresh
+bash scripts/verify-deploy.sh
 docker compose ps
 docker logs --tail 80 dogparkpals-kibana
 docker logs --tail 80 dogparkpals-rabbitmq-exporter

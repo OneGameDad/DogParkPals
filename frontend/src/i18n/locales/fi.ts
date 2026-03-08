@@ -12,6 +12,7 @@ export const fi = {
     memberSince: "Jäsenenä alkaen",
     exampleDate: "Tammikuu 2026",
     owner: "Omistaja",
+    navlang: "Kieli",
     common: {
       back: "Takaisin",
       goBack: "Palaa takaisin",
@@ -311,7 +312,33 @@ export const fi = {
         descriptionPlaceholder: "Lyhyt kuvaus organisaatiostasi",
         submit: "Luo organisaatio",
         submitting: "Luodaan..."
-      }
+      },
+      join: "Liity organisaatioon",
+      joinRequested: "Liittymispyyntö lähetetty",
+      joinFailed: "Liittymispyyntö epäonnistui",
+      approve: "Hyväksy",
+      reject: "Hylkää",
+      memberAdded: "Jäsen lisätty onnistuneesti",
+      addMemberFailed: "Jäsenen lisääminen epäonnistui",
+      confirmAddMember: "Lisää {{username}} organisaatioon?",
+      searchUsers: "Etsi käyttäjiä lisättäväksi",
+      searchPlaceholderUser: "Syötä tarkka käyttäjänimi...",
+      noUserFound: "Käyttäjää ei löytynyt kyseisellä nimellä.",
+      confirmRemoveMember: "Haluatko varmasti poistaa tämän jäsenen?",
+      memberRemoved: "Jäsen poistettu onnistuneesti",
+      removeMemberFailed: "Jäsenen poisto epäonnistui",
+      roleUpdated: "Rooli päivitetty onnistuneesti",
+      updateRoleFailed: "Roolin päivitys epäonnistui",
+      members: "Jäsenet",
+      addMember: "Lisää Jäsen",
+      notFound: "Organisaatiota ei löytynyt",
+      breadcrumb: "Organisaatiot",
+      tabs: {
+        about: "Tietoja",
+        members: "Jäsenet",
+        events: "Tapahtumat"
+      },
+      edit: "Muokkaa organisaatiota"
     },
     chat: {
       conversations: "Keskustelut",
@@ -323,6 +350,14 @@ export const fi = {
       noMessagesStartConversation: "Ei vielä viestejä. Sano hei!",
       selectConversation: "Valitse keskustelu",
       startTalking: "Valitse ystävä listasta aloittaaksesi keskustelun."
+    },
+    events: {
+      timeError: "Lopetusajan tulee olla aloitusajan jälkeen.",
+      deleteConfirm: "Haluatko varmasti poistaa tämän tapahtuman?",
+      deleteSuccess: "Tapahtuma poistettu!",
+      deleteError: "Tapahtuman poisto epäonnistui.",
+      deletingEvent: "Poistetaan...",
+      deleteEvent: "Poista tapahtuma"
     }
   }
 };

@@ -12,6 +12,7 @@ export const es = {
     memberSince: "Miembro desde",
     exampleDate: "Enero 2026",
     owner: "Propietario",
+    navlang: "Idioma",
     common: {
       back: "Volver",
       goBack: "Regresar",
@@ -28,12 +29,14 @@ export const es = {
       terms: "Términos de servicio",
       rightsReserved: "Todos los derechos reservados."
     },
+    // ... existing buttons ...
     buttons: {
       submit: "Enviar",
       cancel: "Cancelar",
       delete: "Eliminar",
       disabled: "Deshabilitado"
     },
+    // ... existing notifications ...
     notifications: { // don't change the {name} bits, it's part of the code
       friendRequest: '{name} quiere ser tu amigo',
       messageReceived: 'Has recibido un mensaje de {name}',
@@ -79,6 +82,7 @@ export const es = {
       DOG_PHOTO_UPLOADED: 'Foto actualizada para el perro #{dogId}',
       DOG_PHOTO_REMOVED: 'Foto eliminada para el perro #{dogId}'
     },
+    // ... existing auth ...
     auth: {
       login: {
         title: "Iniciar sesión en DogParkPals",
@@ -122,6 +126,7 @@ export const es = {
         error: "Error al cerrar sesión"
       }
     },
+    // ... existing profile ...
     profile: {
       title: "Perfil",
       editProfile: "Editar perfil",
@@ -221,6 +226,7 @@ export const es = {
       searchLabel: "Buscar Perros",
       noDogsFound: "No se encontraron perros."
     },
+    // ... existing parks ...
     parks: {
       explore: "Explorar Parques",
       searchPlaceholder: "Buscar parques...",
@@ -228,6 +234,7 @@ export const es = {
       noDescription: "No hay descripción disponible",
       error: "Error al cargar los parques"
     },
+    // ... existing parkDetails ...
     parkDetails: {
       checkedInUsers: "¿Quién está aquí?",
       noOneCheckedIn: "Nadie registrado en este momento. ¡Sé el primero!",
@@ -305,7 +312,33 @@ export const es = {
         descriptionPlaceholder: "Breve descripción de tu organización",
         submit: "Crear Organización",
         submitting: "Creando..."
-      }
+      },
+      join: "Unirse a Organización",
+      joinRequested: "Solicitud de Unión Enviada",
+      joinFailed: "Error al enviar solicitud de unión",
+      approve: "Aprobar",
+      reject: "Rechazar",
+      memberAdded: "Miembro agregado exitosamente",
+      addMemberFailed: "Error al agregar miembro.",
+      confirmAddMember: "¿Agregar {{username}} a la organización?",
+      searchUsers: "Buscar Usuarios para Agregar",
+      searchPlaceholderUser: "Ingresar nombre de usuario exacto...",
+      noUserFound: "No se encontró ningún usuario con ese nombre.",
+      confirmRemoveMember: "¿Estás seguro de que quieres eliminar a este miembro?",
+      memberRemoved: "Miembro eliminado exitosamente",
+      removeMemberFailed: "Error al eliminar miembro",
+      roleUpdated: "Rol actualizado exitosamente",
+      updateRoleFailed: "Error al actualizar rol",
+      members: "Miembros",
+      addMember: "Agregar Miembro",
+      notFound: "Organización no encontrada",
+      breadcrumb: "Organizaciones",
+      tabs: {
+        about: "Acerca de",
+        members: "Miembros",
+        events: "Eventos"
+      },
+      edit: "Editar Organización",
     },
     chat: {
       conversations: "Conversaciones",
@@ -317,6 +350,14 @@ export const es = {
       noMessagesStartConversation: "No messages yet. Say hello!",
       selectConversation: "Selecciona una conversación",
       startTalking: "Elige un amigo de la lista para comenzar a chatear."
+    },
+    events: {
+      timeError: "El tiempo de finalización debe ser después del tiempo de inicio.",
+      deleteConfirm: "¿Estás seguro de que quieres eliminar este evento?",
+      deleteSuccess: "Evento eliminado!",
+      deleteError: "Error al eliminar el evento.",
+      deletingEvent: "Eliminando...",
+      deleteEvent: "Eliminar Evento"
     }
   }
 };

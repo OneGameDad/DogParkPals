@@ -69,6 +69,7 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     container_name: dogparkpals-rabbitmq
+    user: "999:999"
     ports:
       - "5671:5671"
       - "5672:5672"

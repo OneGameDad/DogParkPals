@@ -13,14 +13,14 @@ const Home = () => {
   return (
     <div className="text-center">
       <NotifContainer ref={notifRef} />
-      <Header text="Welcome to ParkPals" level="h1" colour="text-pink-500" />
+      <Header text={t('homePage.welcome', 'Welcome to ParkPals')} level="h1" colour="text-pink-500" />
 
       {loading ? (
-        <BodyText text="Checking authentication..." />
+        <BodyText text={t('common.checking', 'Checking authentication...')} />
       ) : isAuthenticated ? (
-        <BodyText text={`Logged in as: ${user?.username || user?.email}`} colour="text-green-600" />
+        <BodyText text={t('homePage.loggedInAs', { defaultValue: 'Logged in as: {{name}}', name: user?.username || user?.email })} colour="text-green-600" />
       ) : (
-        <BodyText text="Not logged in" colour="text-gray-600" />
+        <BodyText text={t('homePage.notLoggedIn', 'Not logged in')} colour="text-gray-600" />
       )}
     </div>
   );

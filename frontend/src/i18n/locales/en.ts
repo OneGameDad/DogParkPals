@@ -38,6 +38,9 @@ export const en = {
     },
     // ... existing notifications ...
     notifications: {
+      title: "Notifications",
+      markAllRead: "Mark all read",
+      empty: "No notifications yet",
       friendRequest: '{name} wants to be friends',
       messageReceived: 'You received a message from {name}',
       eventCreated: '{name} created a new event',
@@ -286,10 +289,16 @@ export const en = {
     dogList: {
       noDogs: "No dogs added yet"
     },
+    homePage: {
+      welcome: "Welcome to ParkPals",
+      loggedInAs: "Logged in as: {{name}}",
+      notLoggedIn: "Not logged in"
+    },
     social: {
       title: "Social",
       people: "People",
       dogs: "Dogs",
+      events: "Events",
       viewFullProfile: "View Full Profile"
     },
     organizations: {

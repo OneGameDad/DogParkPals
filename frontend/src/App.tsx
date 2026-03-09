@@ -9,7 +9,7 @@ import Logout from './pages/Logout';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Social from './pages/Social';
-import Settings from './pages/Settings';
+
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Profile from './pages/Profile';
@@ -25,7 +25,7 @@ import OrganizationList from './components/organizations/OrganizationList';
 import OrganizationProfile from './pages/OrganizationProfile';
 import OrganizationUpdate from './pages/OrganizationUpdate';
 import Messages from './pages/Messages';
-import Events from './pages/Events';
+
 
 function AppContent() {
   const { user } = useAuth();
@@ -58,7 +58,11 @@ function AppContent() {
         <div className={isMessagesPage ? "flex-1 overflow-hidden relative flex flex-col min-h-0" : "flex-1 overflow-y-auto p-8"}>
           <Routes>
             {/* Public routes - accessible to everyone */}
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            } />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
 
@@ -82,11 +86,7 @@ function AppContent() {
                 <Social />
               </ProtectedRoute>
             } />
-            <Route path="/settings" element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            } />
+
             <Route path="/profile" element={
               <ProtectedRoute>
                 <Profile />
@@ -147,11 +147,7 @@ function AppContent() {
                 <OrganizationUpdate />
               </ProtectedRoute>
             } />
-            <Route path="/events" element={
-              <ProtectedRoute>
-                <Events />
-              </ProtectedRoute>
-            } />
+
           </Routes>
         </div>
 

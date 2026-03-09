@@ -38,6 +38,9 @@ export const fi = {
     },
     // ... existing notifications ...
     notifications: {
+      title: "Ilmoitukset",
+      markAllRead: "Merkitse kaikki luetuiksi",
+      empty: "Ei ilmoituksia",
       friendRequest: '{name} haluaa olla ystäväsi',
       messageReceived: 'Sait viestin käyttäjältä {name}',
       eventCreated: '{name} loi uuden tapahtuman',
@@ -286,10 +289,16 @@ export const fi = {
     dogList: {
       noDogs: "Ei lisättyjä koiria"
     },
+    homePage: {
+      welcome: "Tervetuloa ParkPalsiin",
+      loggedInAs: "Kirjautunut: {{name}}",
+      notLoggedIn: "Ei kirjautunut"
+    },
     social: {
       title: "Yhteydet",
       people: "Ihmiset",
       dogs: "Koirat",
+      events: "Tapahtumat",
       viewFullProfile: "Näytä koko profiili"
     },
     organizations: {

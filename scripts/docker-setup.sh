@@ -5,6 +5,10 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+CERTS_DIR="$ROOT_DIR/certs"
+
 compose() {
     if command -v docker-compose >/dev/null 2>&1; then
         docker-compose "$@"
@@ -58,19 +62,38 @@ EOF
 }
 
 server_cert_has_san() {
-    if [ ! -f "certs/server.crt" ]; then
+    if [ ! -f "$CERTS_DIR/server.crt" ]; then
         return 1
     fi
 
-    openssl x509 -in certs/server.crt -noout -text 2>/dev/null | grep -q "DNS:localhost"
+    openssl x509 -in "$CERTS_DIR/server.crt" -noout -text 2>/dev/null | grep -q "DNS:localhost"
+}
+
+all_required_certs_exist() {
+    local required=(
+        server.crt server.key
+        rabbitmq.crt rabbitmq.key
+        prometheus.crt prometheus.key
+        grafana.crt grafana.key
+        elasticsearch.crt elasticsearch.key
+        kibana.crt kibana.key
+    )
+
+    for cert in "${required[@]}"; do
+        if [ ! -f "$CERTS_DIR/$cert" ]; then
+            return 1
+        fi
+    done
+
+    return 0
 }
 
 # Generate SSL certificates if they don't exist
-if [ ! -f "certs/server.crt" ] || [ ! -f "certs/server.key" ] || ! server_cert_has_san; then
+if ! all_required_certs_exist || ! server_cert_has_san; then
     echo "🔐 Generating SSL certificates..."
-    rm -rf certs
-    mkdir -p certs
-    cd certs
+    rm -rf "$CERTS_DIR"
+    mkdir -p "$CERTS_DIR"
+    cd "$CERTS_DIR"
     
     # Backend server certificate
     generate_cert_with_san "server" "localhost" "DNS:localhost,IP:127.0.0.1"
@@ -85,7 +108,7 @@ if [ ! -f "certs/server.crt" ] || [ ! -f "certs/server.key" ] || ! server_cert_h
     # Set permissions so containers can read the keys
     chmod 644 *.key *.crt
     
-    cd ..
+    cd "$ROOT_DIR"
     echo "✅ SSL certificates generated (backend + observability)"
     echo ""
 else
@@ -94,11 +117,11 @@ else
 fi
 
 # Check if docker-secrets exists
-if [ ! -f "docker-secrets" ]; then
+if [ ! -f "$ROOT_DIR/docker-secrets" ]; then
     echo "⚠️  docker-secrets file not found!"
     echo ""
     echo "Creating docker-secrets from example..."
-    cp docker-secrets-example docker-secrets
+    cp "$ROOT_DIR/docker-secrets-example" "$ROOT_DIR/docker-secrets"
     echo ""
     echo "✅ docker-secrets created"
     echo ""
@@ -110,10 +133,12 @@ if [ ! -f "docker-secrets" ]; then
 fi
 
 # Basic validation - detailed auth setup is handled by stack.sh
-if [ -f "docker-secrets" ]; then
+if [ -f "$ROOT_DIR/docker-secrets" ]; then
     echo "✅ docker-secrets file found"
     echo ""
 fi
+
+cd "$ROOT_DIR"
 
 # Build and start containers
 echo ""

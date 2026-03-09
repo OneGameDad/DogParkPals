@@ -230,10 +230,7 @@ all_required_certs_exist() {
   local required=(
     server.crt server.key
     rabbitmq.crt rabbitmq.key
-    prometheus.crt prometheus.key
-    grafana.crt grafana.key
     elasticsearch.crt elasticsearch.key
-    kibana.crt kibana.key
   )
 
   for cert in "${required[@]}"; do
@@ -250,17 +247,14 @@ normalize_cert_permissions() {
   local required=(
     server.crt server.key
     rabbitmq.crt rabbitmq.key
-    prometheus.crt prometheus.key
-    grafana.crt grafana.key
     elasticsearch.crt elasticsearch.key
-    kibana.crt kibana.key
   )
 
   for cert in "${required[@]}"; do
     if [ -f "$certs_dir/$cert" ]; then
       if ! chmod a+r "$certs_dir/$cert" 2>/dev/null; then
         echo "❌ Cannot set read permission on $certs_dir/$cert"
-        echo "   RabbitMQ/Grafana/Prometheus may fail to start without readable cert files."
+        echo "   RabbitMQ may fail to start without readable cert files."
         exit 1
       fi
     fi
@@ -559,10 +553,7 @@ ensure_certificates() {
     cd "$certs_dir" || { echo "❌ Failed to change to certs directory"; exit 1; }
     
     generate_cert_with_san "server" "localhost" "DNS:localhost,IP:127.0.0.1" || { echo "❌ Failed to generate server certificate"; exit 1; }
-    generate_cert_with_san "prometheus" "prometheus" "DNS:prometheus,DNS:localhost,IP:127.0.0.1" || { echo "❌ Failed to generate prometheus certificate"; exit 1; }
-    generate_cert_with_san "grafana" "grafana" "DNS:grafana,DNS:localhost,IP:127.0.0.1" || { echo "❌ Failed to generate grafana certificate"; exit 1; }
     generate_cert_with_san "elasticsearch" "elasticsearch" "DNS:elasticsearch,DNS:localhost,IP:127.0.0.1" || { echo "❌ Failed to generate elasticsearch certificate"; exit 1; }
-    generate_cert_with_san "kibana" "kibana" "DNS:kibana,DNS:localhost,IP:127.0.0.1" || { echo "❌ Failed to generate kibana certificate"; exit 1; }
     generate_cert_with_san "rabbitmq" "rabbitmq" "DNS:rabbitmq,DNS:localhost,IP:127.0.0.1" || { echo "❌ Failed to generate rabbitmq certificate"; exit 1; }
     
     # Set permissions so containers can read the keys
@@ -578,10 +569,7 @@ ensure_certificates() {
   # Check for expiring certificates
   warn_if_cert_expiring "$certs_dir/server.crt" "server"
   warn_if_cert_expiring "$certs_dir/rabbitmq.crt" "rabbitmq"
-  warn_if_cert_expiring "$certs_dir/prometheus.crt" "prometheus"
-  warn_if_cert_expiring "$certs_dir/grafana.crt" "grafana"
   warn_if_cert_expiring "$certs_dir/elasticsearch.crt" "elasticsearch"
-  warn_if_cert_expiring "$certs_dir/kibana.crt" "kibana"
 
   # Ensure existing certs are readable by containers running as non-root (e.g. RabbitMQ uid 999)
   normalize_cert_permissions

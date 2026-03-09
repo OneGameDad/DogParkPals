@@ -199,8 +199,8 @@ services:
       - ./docker-secrets
     environment:
       - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
-      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME:-elastic}
-      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD:-${ELASTIC_PASSWORD}}
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=elastic
       - SERVER_SSL_ENABLED=true
       - SERVER_SSL_CERTIFICATE=/usr/share/kibana/config/certs/kibana.crt
       - SERVER_SSL_KEY=/usr/share/kibana/config/certs/kibana.key

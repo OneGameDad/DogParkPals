@@ -36,8 +36,8 @@ else
 fi
 
 # Step 2: Wait for Kibana to be ready
-echo "⏳ Waiting for Kibana to be ready (this can take 2-5 minutes on first run)..."
-for i in {1..300}; do
+echo "⏳ Waiting for Kibana to be ready (this can take 2-3 minutes on first run)..."
+for i in {1..180}; do
   # Check if Kibana status endpoint returns valid response
   response=$(curl $CURL_FLAGS "$KIBANA_URL/api/status" 2>&1)
   
@@ -52,11 +52,11 @@ for i in {1..300}; do
   
   # Show progress every 30 seconds
   if [ $((i % 30)) -eq 0 ]; then
-    echo "  Still waiting... ($i/300 seconds)"
+    echo "  Still waiting... ($i/180 seconds)"
   fi
   
-  if [ $i -eq 300 ]; then
-    echo "✗ Kibana did not become ready after 5 minutes"
+  if [ $i -eq 180 ]; then
+    echo "✗ Kibana did not become ready after 3 minutes"
     echo "  Check: docker compose logs kibana"
     exit 1
   fi
@@ -65,14 +65,14 @@ done
 
 # Step 2b: Wait for Kibana saved objects API to be available
 echo "⏳ Waiting for Kibana API to be ready..."
-for i in {1..120}; do
+for i in {1..60}; do
   http_code=$(curl $CURL_FLAGS -w "%{http_code}" -o /dev/null "$KIBANA_URL/api/saved_objects/search")
   if [ "$http_code" != "000" ] && [ "$http_code" != "503" ] && [ "$http_code" != "504" ]; then
     echo "✓ Kibana API is ready"
     break
   fi
-  if [ $i -eq 120 ]; then
-    echo "⚠ Kibana API not fully ready, but continuing (may retry requests)..."
+  if [ $i -eq 60 ]; then
+    echo "⚠ Kibana API not fully ready after 60s, but continuing (may retry requests)..."
     break
   fi
   sleep 1
@@ -109,9 +109,6 @@ else
     echo "⚠ Could not create index pattern (HTTP $http_code) - logs will be discoverable when data arrives"
   fi
 fi
-
-# Wait for index pattern to be available
-sleep 2
 
 # Import saved searches
 if [ -f "$SAVED_SEARCHES_FILE" ]; then

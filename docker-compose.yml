@@ -188,15 +188,20 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
       - ELASTICSEARCH_SERVICEACCOUNT_TOKEN=${KIBANA_SERVICE_ACCOUNT_TOKEN:-}
+      # Performance optimizations
+      - LOGGING_QUIET=true
+      - MONITORING_UI_CONTAINER_ELASTICSEARCH_ENABLED=false
+      - TELEMETRY_ENABLED=false
+      - TELEMETRY_OPTIN=false
     depends_on:
       elasticsearch:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -s -f http://localhost:5601/api/status >/dev/null || exit 1"]
-      start_period: 180s
-      interval: 15s
-      timeout: 10s
-      retries: 15
+      start_period: 120s
+      interval: 10s
+      timeout: 5s
+      retries: 10
     restart: unless-stopped
 
 volumes:

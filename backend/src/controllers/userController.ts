@@ -132,8 +132,15 @@ const userController = {
             typeSafeLogger.logRequest("Received request to delete user", { method: req.method, path: req.path });
             const { id } = parseValidation(deleteUserSchema, req.params);
 
-            if (!req.userId || req.userId !== Number(id)) {
-                throw ForbiddenError("You can only delete your own account");
+            if (!req.userId) {
+                throw ForbiddenError("Authentication required");
+            }
+
+            const isPrivilegedUser = req.user?.role === 'ADMIN' || req.user?.role === 'DEVELOPER';
+            const isSelfDeletion = req.userId === Number(id);
+
+            if (!isSelfDeletion && !isPrivilegedUser) {
+                throw ForbiddenError("You can only delete your own account unless you are an admin or developer");
             }
 
             await userService.deleteUser(Number(id));

@@ -13,6 +13,13 @@ OBS_SERVICES=(elasticsearch logstash kibana prometheus grafana rabbitmq-exporter
 # Error trap for better error reporting
 trap 'echo "❌ Command failed on line $LINENO"; exit 1' ERR
 
+# Detect sed variant once for portability
+if sed --version 2>&1 | grep -q GNU; then
+  SED_INPLACE="sed -i"
+else
+  SED_INPLACE="sed -i ''"
+fi
+
 print_usage() {
   cat <<EOF
 DogParkPals stack control
@@ -106,7 +113,8 @@ update_or_add_secret() {
   local file="$3"
   
   if grep -q "^${key}=" "$file"; then
-    sed -i "s|^${key}=.*|${key}=${value}|" "$file"
+    # Use portable sed (detected at script start)
+    $SED_INPLACE "s|^${key}=.*|${key}=${value}|" "$file"
   else
     echo "${key}=${value}" >> "$file"
   fi
@@ -130,7 +138,7 @@ fix_elasticsearch_auth() {
   
   # Remove problematic ELASTICSEARCH_SERVICEACCOUNTTOKEN if present
   if grep -q "^ELASTICSEARCH_SERVICEACCOUNTTOKEN=" "$SECRETS_FILE"; then
-    sed -i '/^ELASTICSEARCH_SERVICEACCOUNTTOKEN=/d' "$SECRETS_FILE"
+    $SED_INPLACE '/^ELASTICSEARCH_SERVICEACCOUNTTOKEN=/d' "$SECRETS_FILE"
     echo "✓ Removed ELASTICSEARCH_SERVICEACCOUNTTOKEN (causes Kibana issues)"
   fi
   
@@ -168,9 +176,22 @@ fix_jwt_secret() {
 
 validate_observability_secrets() {
   echo "🔐 Validating and configuring authentication..."
-  fix_jwt_secret
-  fix_elasticsearch_auth
-  require_nonempty_secret "ELASTIC_PASSWORD" "$SECRETS_FILE"
+  
+  if ! fix_jwt_secret; then
+    echo "❌ Failed to configure JWT secret"
+    exit 1
+  fi
+  
+  if ! fix_elasticsearch_auth; then
+    echo "❌ Failed to configure Elasticsearch auth"
+    exit 1
+  fi
+  
+  if ! require_nonempty_secret "ELASTIC_PASSWORD" "$SECRETS_FILE"; then
+    echo "❌ ELASTIC_PASSWORD validation failed"
+    exit 1
+  fi
+  
   echo "✅ Authentication configured"
   echo ""
 }

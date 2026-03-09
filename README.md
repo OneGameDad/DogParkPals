@@ -96,7 +96,7 @@ docker compose logs -f frontend
 
 **Elasticsearch Authentication:**
 - The stack script automatically configures secure Elasticsearch credentials
-- Uses `elastic` superuser for backend/deployment-init.sh access
+- Uses `elastic` superuser for backend access
 - Removes problematic `ELASTICSEARCH_SERVICEACCOUNTTOKEN` if present
 - Auto-generates strong passwords if placeholders are detected
 
@@ -239,21 +239,15 @@ docker compose restart backend
   - Startup time: 3-5 minutes (Kibana alone takes 2-5 min first run)
 
 ```bash
-# Seed database
-chmod +x scripts/docker-seed.sh
-./scripts/docker-seed.sh
-
 # Minimal evaluation setup (core app only + seed database)
-docker compose --env-file docker-secrets up -d backend frontend rabbitmq db-init && bash scripts/docker-seed.sh
+./scripts/stack.sh --core-only
 
-# Full evaluation setup (all services + seed + ELK/Prometheus setup + test logs)
-chmod +x scripts/deployment-init.sh
-docker compose --env-file docker-secrets up -d && bash scripts/deployment-init.sh
+# Full evaluation setup (all services + seed + ELK/Prometheus setup)
+./scripts/stack.sh --fresh
 # ⏱️ Note: Kibana can take 2-5 minutes to fully initialize on first run; the script will wait
 
 # Reset everything (WARNING: deletes all data)
-chmod +x scripts/docker-reset.sh
-./scripts/docker-reset.sh
+./scripts/stack.sh --clean
 
 # Generate test logs (verify Elasticsearch is working)
 bash elasticsearch/generate-test-logs.sh
@@ -364,7 +358,7 @@ bash kibana/setup-kibana.sh
 
 **For 42 evaluation-ready setup** (starts all services + seeds DB + configures Kibana + generates test logs):
 ```bash
-docker compose --env-file docker-secrets up -d && bash scripts/deployment-init.sh
+./scripts/stack.sh --fresh
 ```
 
 This will:
@@ -510,10 +504,12 @@ Incident Response:
 ### Common checks
 - Run migrations (db-init should do this):
    - `docker exec -it dogparkpals-backend npx prisma migrate deploy`
-- Seed data:
-   - `./scripts/docker-seed.sh`
+- Full stack startup with seeding:
+   - `./scripts/stack.sh --fresh`
+- Core services only:
+   - `./scripts/stack.sh --core-only`
 - Reset all data:
-   - `./scripts/docker-reset.sh`
+   - `./scripts/stack.sh --clean`
 - Verify ELK stack (logs are flowing to Elasticsearch):
    - `bash elasticsearch/generate-test-logs.sh`
    - `ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"; ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"; curl -k -u "$ES_USER:$ES_PASS" 'https://localhost:9200/dogparkpals-logs-*/_count'`

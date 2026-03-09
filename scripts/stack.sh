@@ -11,6 +11,15 @@ SECRETS_EXAMPLE_FILE="$ROOT_DIR/docker-secrets-example"
 OBS_SERVICES=(elasticsearch logstash kibana prometheus grafana rabbitmq-exporter)
 COMPOSE_CMD=()
 
+# Deployment initialization variables
+BACKEND_URL="${BACKEND_URL:-https://localhost:3000}"
+ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-https://localhost:9200}"
+KIBANA_URL="${KIBANA_URL:-https://localhost:5601}"
+ELASTICSEARCH_USERNAME="${ELASTICSEARCH_USERNAME:-elastic}"
+ELASTICSEARCH_PASSWORD="${ELASTICSEARCH_PASSWORD:-${ELASTIC_PASSWORD:-}}"
+WAIT_INTERVAL_SECONDS="${WAIT_INTERVAL_SECONDS:-5}"
+CERT_RENEWAL_WARNING_DAYS="${CERT_RENEWAL_WARNING_DAYS:-30}"
+
 # Error trap for better error reporting
 trap 'echo "❌ Command failed on line $LINENO"; exit 1' ERR
 
@@ -21,16 +30,206 @@ else
   SED_INPLACE="sed -i ''"
 fi
 
+# ==============================================================================
+# Utility Functions (inlined from deployment-init.sh)
+# ==============================================================================
+
+load_env_file() {
+  local file="$1"
+
+  [ -f "$file" ] || return 0
+
+  while IFS= read -r line || [ -n "$line" ]; do
+    # Ignore blanks and comments.
+    case "$line" in
+      ''|\#*)
+        continue
+        ;;
+    esac
+
+    # Ignore non-assignment lines.
+    case "$line" in
+      *=*)
+        ;;
+      *)
+        continue
+        ;;
+    esac
+
+    local key value
+    key="${line%%=*}"
+    value="${line#*=}"
+
+    # Trim surrounding whitespace in key only.
+    key="$(printf '%s' "$key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+
+    # Strip matching quotes around value.
+    if [[ "$value" =~ ^\".*\"$ ]]; then
+      value="${value:1:${#value}-2}"
+    elif [[ "$value" =~ ^\'.*\'$ ]]; then
+      value="${value:1:${#value}-2}"
+    fi
+
+    export "$key=$value"
+  done < "$file"
+}
+
+check_container_health() {
+  local container_name="$1"
+  local max_attempts="${2:-20}"
+  local attempt=0
+  
+  while [ "$attempt" -lt "$max_attempts" ]; do
+    local health_status
+    health_status=$(docker inspect --format='{{.State.Health.Status}}' "$container_name" 2>/dev/null || echo "none")
+    local running_status
+    running_status=$(docker inspect --format='{{.State.Status}}' "$container_name" 2>/dev/null || echo "not_found")
+    
+    # Container crashed or died - fail immediately
+    if [ "$running_status" = "exited" ] || [ "$running_status" = "dead" ]; then
+      echo "❌ Container $container_name has stopped running (status: $running_status)"
+      echo "   Check logs: docker logs $container_name"
+      return 1
+    fi
+    
+    # Container is healthy - success
+    if [ "$health_status" = "healthy" ]; then
+      return 0
+    fi
+    
+    # Container has no health check but is running - success
+    if [ "$health_status" = "none" ] && [ "$running_status" = "running" ]; then
+      return 0
+    fi
+    
+    # Still starting, wait and retry
+    if [ "$attempt" -eq 0 ]; then
+      echo "⏳ Waiting for $container_name to be ready..."
+    fi
+    sleep 2
+    attempt=$((attempt + 1))
+  done
+  
+  # Final check after timeout
+  local final_status
+  final_status=$(docker inspect --format='{{.State.Status}}' "$container_name" 2>/dev/null || echo "not_found")
+  
+  if [ "$final_status" = "running" ]; then
+    echo "⚠️  Timeout waiting for $container_name health check, but container is running"
+    return 0
+  else
+    echo "❌ Container $container_name not ready after timeout (status: $final_status)"
+    echo "   Check logs: docker logs $container_name"
+    return 1
+  fi
+}
+
+wait_for_url() {
+  local name="$1"
+  local url="$2"
+  local timeout="${3:-120}"
+  local interval="${4:-$WAIT_INTERVAL_SECONDS}"
+  local auth_user="${5:-}"
+  local auth_password="${6:-}"
+  local is_optional="${7:-false}"
+  local elapsed=0
+
+  echo "⏳ Waiting for $name at $url ..."
+  # Use -k for self-signed HTTPS and optional basic auth for secured endpoints.
+  local curl_flags="-s -f"
+  if [[ "$url" == https://* ]]; then
+    curl_flags="-s -f -k"
+  fi
+
+  if [ -n "$auth_user" ] && [ -n "$auth_password" ]; then
+    curl_flags="$curl_flags -u ${auth_user}:${auth_password}"
+  fi
+
+  until curl $curl_flags "$url" > /dev/null 2>&1; do
+    if [ "$name" = "Elasticsearch" ]; then
+      local status_code
+      status_code=$(curl $curl_flags -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || true)
+      if [ "$status_code" = "401" ] || [ "$status_code" = "403" ]; then
+        echo "❌ Elasticsearch credentials are invalid (HTTP $status_code)."
+        echo "   Check ELASTICSEARCH_USERNAME/ELASTICSEARCH_PASSWORD in docker-secrets."
+        exit 1
+      fi
+    fi
+
+    if [ "$elapsed" -ge "$timeout" ]; then
+      if [ "$is_optional" = "true" ]; then
+        echo "⚠️  Timeout waiting for $name ($timeout seconds) - continuing anyway"
+        return 1
+      else
+        echo "❌ Timeout waiting for $name ($timeout seconds)"
+        echo "   Check logs: docker logs dogparkpals-$(echo "$name" | tr '[:upper:]' '[:lower:]')"
+        exit 1
+      fi
+    fi
+    
+    # Only show progress every 10 seconds to reduce noise
+    if [ $((elapsed % 10)) -eq 0 ]; then
+      echo "   ... still waiting for $name (${elapsed}s/${timeout}s)"
+    fi
+    
+    sleep "$interval"
+    elapsed=$((elapsed + interval))
+  done
+  echo "✅ $name is ready"
+  return 0
+}
+
+warn_if_cert_expiring() {
+  local cert_path="$1"
+  local cert_name="$2"
+  local warning_days="${3:-$CERT_RENEWAL_WARNING_DAYS}"
+  local check_seconds=$((warning_days * 24 * 60 * 60))
+
+  if [ ! -f "$cert_path" ]; then
+    return
+  fi
+
+  if ! openssl x509 -in "$cert_path" -checkend "$check_seconds" -noout > /dev/null 2>&1; then
+    echo "⚠️  Certificate $cert_name expires in less than $warning_days days: $cert_path"
+  fi
+}
+
+all_required_certs_exist() {
+  local required=(
+    server.crt server.key
+    rabbitmq.crt rabbitmq.key
+    prometheus.crt prometheus.key
+    grafana.crt grafana.key
+    elasticsearch.crt elasticsearch.key
+    kibana.crt kibana.key
+  )
+
+  for cert in "${required[@]}"; do
+    if [ ! -f "$ROOT_DIR/certs/$cert" ]; then
+      return 1
+    fi
+  done
+
+  return 0
+}
+
+# ==============================================================================
+# Stack Control Functions
+# ==============================================================================
+
 print_usage() {
   cat <<EOF
-DogParkPals stack control
+DogParkPals Stack Control (All-in-One)
 
 Usage:
-  ./scripts/stack.sh --fresh       Start full stack and run deployment initialization + seeding
+  ./scripts/stack.sh --fresh       Start full stack with deployment initialization + seeding
   ./scripts/stack.sh --core-only   Start core app only (backend, frontend, no observability)
   ./scripts/stack.sh --obs-down    Stop observability services only
   ./scripts/stack.sh --clean       Stop all services and remove app volumes/images
   ./scripts/stack.sh --help
+
+This script handles certificate generation, seeding, and observability setup inline.
+No external scripts required (docker-seed.sh and deployment-init.sh are integrated).
 EOF
 }
 
@@ -256,17 +455,8 @@ server_cert_has_san() {
 ensure_certificates() {
   local certs_dir="$ROOT_DIR/certs"
   local force_regen="${1:-false}"
-  local required_certs=(server.crt server.key elasticsearch.crt elasticsearch.key kibana.crt kibana.key prometheus.crt prometheus.key grafana.crt grafana.key rabbitmq.crt rabbitmq.key)
   
-  local missing=0
-  for cert in "${required_certs[@]}"; do
-    if [ ! -f "$certs_dir/$cert" ]; then
-      missing=1
-      break
-    fi
-  done
-  
-  if [ "$missing" -eq 1 ] || [ "$force_regen" = "true" ] || ! server_cert_has_san; then
+  if [ "$force_regen" = "true" ] || ! all_required_certs_exist || ! server_cert_has_san; then
     echo "🔐 Generating SSL certificates..."
     
     # Clean up any corrupt cert files/directories
@@ -288,8 +478,19 @@ ensure_certificates() {
     cd "$ROOT_DIR" || exit 1
     
     echo "✅ SSL certificates generated"
-    echo ""
+  else
+    echo "✅ SSL certificates already exist"
   fi
+  
+  # Check for expiring certificates
+  warn_if_cert_expiring "$certs_dir/server.crt" "server"
+  warn_if_cert_expiring "$certs_dir/rabbitmq.crt" "rabbitmq"
+  warn_if_cert_expiring "$certs_dir/prometheus.crt" "prometheus"
+  warn_if_cert_expiring "$certs_dir/grafana.crt" "grafana"
+  warn_if_cert_expiring "$certs_dir/elasticsearch.crt" "elasticsearch"
+  warn_if_cert_expiring "$certs_dir/kibana.crt" "kibana"
+  
+  echo ""
 }
 
 cleanup_volumes() {
@@ -321,11 +522,96 @@ run_fresh() {
   echo "⏳ Waiting for core services..."
   sleep 5
   
+  # Load environment variables from docker-secrets
+  load_env_file "$SECRETS_FILE"
+  
   echo ""
-  echo "🔧 Running deployment initialization (seeding, observability setup)..."
-  if ! (cd "$ROOT_DIR" && bash "$SCRIPT_DIR/deployment-init.sh"); then
-    echo "⚠️  Deployment initialization had issues (check logs above)"
-    echo "   Core services (backend/frontend) should still be running"
+  echo "🔧 Running deployment initialization..."
+  
+  # Check if backend container is running
+  if ! docker ps | grep -q "dogparkpals-backend"; then
+    echo "❌ Backend container is not running."
+    exit 1
+  fi
+  
+  echo "Checking container health..."
+  if check_container_health "dogparkpals-backend" 30; then
+    echo "✅ Backend container is healthy"
+  else
+    echo "❌ Backend container failed health check"
+    echo "   Check logs: docker logs dogparkpals-backend"
+    exit 1
+  fi
+  
+  wait_for_url "Backend" "$BACKEND_URL/health" 120
+  
+  # Check if Elasticsearch is running before waiting
+  if docker ps | grep -q "dogparkpals-elasticsearch"; then
+    echo ""
+    echo "Checking Elasticsearch health..."
+    if check_container_health "dogparkpals-elasticsearch" 60; then
+      echo "✅ Elasticsearch container is healthy"
+    else
+      echo "⚠️  Elasticsearch container not healthy yet, trying direct connection..."
+    fi
+    
+    wait_for_url "Elasticsearch" "$ELASTICSEARCH_URL/_cluster/health" 180 "$WAIT_INTERVAL_SECONDS" "$ELASTICSEARCH_USERNAME" "$ELASTICSEARCH_PASSWORD"
+  else
+    echo "⚠️  Elasticsearch not running - skipping observability setup"
+  fi
+  
+  # Kibana is optional - if it times out, continue anyway
+  local KIBANA_AVAILABLE=false
+  if docker ps | grep -q "dogparkpals-kibana"; then
+    echo ""
+    if wait_for_url "Kibana" "$KIBANA_URL/api/status" 180 5 "" "" "true"; then
+      KIBANA_AVAILABLE=true
+    else
+      echo "⚠️  Kibana not available yet (still initializing)"
+      echo "   This is normal - Kibana can take 5-10 minutes on first start"
+      echo "   You can check later: docker logs dogparkpals-kibana"
+      KIBANA_AVAILABLE=false
+    fi
+  else
+    echo "⚠️  Kibana not running - skipping Kibana setup"
+    KIBANA_AVAILABLE=false
+  fi
+  
+  echo ""
+  echo "1) Seeding production database"
+  echo "🌱 Seeding production database..."
+  
+  # Run seed script inside container
+  if [ -t 0 ]; then
+    if docker exec -it dogparkpals-backend sh -c "cd /app && npx tsx prisma/seedProduction.ts"; then
+      echo "✅ Database seeded successfully!"
+    else
+      echo "❌ Database seeding failed"
+      exit 1
+    fi
+  else
+    if docker exec -i dogparkpals-backend sh -c "cd /app && npx tsx prisma/seedProduction.ts"; then
+      echo "✅ Database seeded successfully!"
+    else
+      echo "❌ Database seeding failed"
+      exit 1
+    fi
+  fi
+  
+  # Only setup Kibana if it's available
+  if [ "$KIBANA_AVAILABLE" = "true" ]; then
+    echo ""
+    echo "2) Initializing Kibana + Elasticsearch template/ILM"
+    if bash "$ROOT_DIR/kibana/setup-kibana.sh"; then
+      echo "✅ Kibana setup complete"
+    else
+      echo "⚠️  Kibana setup had issues - you may need to run it manually later"
+      echo "   Command: bash kibana/setup-kibana.sh"
+    fi
+  else
+    echo ""
+    echo "2) Skipping Kibana setup (not available yet)"
+    echo "   Once Kibana is ready, you can run: bash kibana/setup-kibana.sh"
   fi
 
   echo ""
@@ -365,8 +651,26 @@ run_core_only() {
   
   echo ""
   echo "🌱 Seeding database..."
-  if ! (cd "$ROOT_DIR" && bash "$SCRIPT_DIR/docker-seed.sh"); then
-    echo "⚠️  Database seeding had issues"
+  
+  # Check if backend container is running
+  if ! docker ps | grep -q dogparkpals-backend; then
+    echo "❌ Backend container is not running!"
+    exit 1
+  fi
+  
+  # Run seed script inside container
+  if [ -t 0 ]; then
+    if docker exec -it dogparkpals-backend sh -c "cd /app && npx tsx prisma/seedProduction.ts"; then
+      echo "✅ Database seeded successfully!"
+    else
+      echo "⚠️  Database seeding had issues"
+    fi
+  else
+    if docker exec -i dogparkpals-backend sh -c "cd /app && npx tsx prisma/seedProduction.ts"; then
+      echo "✅ Database seeded successfully!"
+    else
+      echo "⚠️  Database seeding had issues"
+    fi
   fi
 
   echo ""

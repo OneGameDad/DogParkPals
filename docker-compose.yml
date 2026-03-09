@@ -78,20 +78,10 @@ services:
       - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
     environment:
       - RABBITMQ_NODENAME=rabbit@localhost
-    command: >
-      sh -ec '
-      for f in /etc/rabbitmq/certs/rabbitmq.crt /etc/rabbitmq/certs/rabbitmq.key; do
-        if [ ! -f "$$f" ]; then
-          echo "Missing RabbitMQ TLS file: $$f" >&2
-          exit 1
-        fi
-        if [ ! -r "$$f" ]; then
-          echo "RabbitMQ TLS file is not readable: $$f" >&2
-          exit 1
-        fi
-      done
-      exec rabbitmq-server
-      '
+    command:
+      - sh
+      - -ec
+      - 'for f in /etc/rabbitmq/certs/rabbitmq.crt /etc/rabbitmq/certs/rabbitmq.key; do if [ ! -f "$$f" ]; then echo "Missing RabbitMQ TLS file: $$f" >&2; exit 1; fi; if [ ! -r "$$f" ]; then echo "RabbitMQ TLS file is not readable: $$f" >&2; exit 1; fi; done; exec rabbitmq-server'
     tmpfs:
       - /var/lib/rabbitmq
       - /tmp

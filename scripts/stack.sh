@@ -433,9 +433,8 @@ fix_elasticsearch_auth() {
   local current_elastic_pass
   current_elastic_pass=$(secret_value "ELASTIC_PASSWORD" "$SECRETS_FILE")
   
-  # Generate secure password if missing or using placeholder values
+  # Generate secure password if missing or using placeholder values (but allow "elastic" as valid)
   if [ -z "$current_elastic_pass" ] || 
-     [ "$current_elastic_pass" = "elastic" ] || 
      [ "$current_elastic_pass" = "your-elastic-password" ] || 
      [ "$current_elastic_pass" = "changeme" ]; then
     local new_pass

@@ -174,7 +174,7 @@ Click → Export → CSV (in Kibana UI)
 
 ### Accessing Dashboards
 
-1. Open Kibana: https://localhost:5601
+1. Open Kibana: http://localhost:5601
 2. Click **Menu** (☰) → **Dashboards**
 3. Search: "dogparkpals"
 4. Click dashboard name

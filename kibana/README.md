@@ -11,7 +11,7 @@ chmod +x kibana/setup-kibana.sh
 bash kibana/setup-kibana.sh
 ```
 
-Then open Kibana: https://localhost:5601
+Then open Kibana: http://localhost:5601
 
 ## What Gets Created
 
@@ -221,7 +221,7 @@ bash kibana/setup-kibana.sh
 
 ### Create Index Pattern
 
-1. Open https://localhost:5601
+1. Open http://localhost:5601
 2. Go to **Stack Management** → **Index Patterns**
 3. Click **Create index pattern**
 4. Enter pattern: `dogparkpals-logs-*`

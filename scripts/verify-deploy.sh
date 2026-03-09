@@ -104,7 +104,7 @@ else
   fail "Elasticsearch healthcheck is missing curl -f and/or auth"
 fi
 
-if grep -Fq 'curl -s -f -k https://localhost:5601/api/status' "$COMPOSE_FILE"; then
+if grep -Fq 'curl -s -f http://localhost:5601/api/status' "$COMPOSE_FILE"; then
   pass "Kibana healthcheck uses curl -f"
 else
   fail "Kibana healthcheck is missing curl -f"

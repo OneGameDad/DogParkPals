@@ -267,6 +267,68 @@ normalize_cert_permissions() {
   done
 }
 
+create_kibana_service_account_token() {
+  local es_url="$1"
+  local es_user="$2"
+  local es_password="$3"
+  local secrets_file="$4"
+  
+  echo "🔐 Creating Kibana service account token..."
+  
+  # Check if token already exists in docker-secrets
+  if grep -q "^KIBANA_SERVICE_ACCOUNT_TOKEN=" "$secrets_file" 2>/dev/null; then
+    echo "✅ Kibana service account token already configured"
+    return 0
+  fi
+  
+  # Create or get service account for kibana
+  # First, check if service account exists
+  local service_account_exists
+  service_account_exists=$(curl -s -k -u "${es_user}:${es_password}" \
+    "$es_url/_security/service/elastic/kibana/credential?pretty" 2>/dev/null | grep -c "token" || echo "0")
+  
+  if [ "$service_account_exists" -eq "0" ]; then
+    # Create token for built-in kibana service account
+    echo "   Creating token for elastic/kibana service account..."
+    local token_response
+    token_response=$(curl -s -k -X POST \
+      -u "${es_user}:${es_password}" \
+      -H "Content-Type: application/json" \
+      "$es_url/_security/service/elastic/kibana/credential/token/dogparkpals" 2>/dev/null)
+    
+    local token
+    token=$(echo "$token_response" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
+    
+    if [ -z "$token" ]; then
+      echo "❌ Failed to create Kibana service account token"
+      echo "   Response: $token_response"
+      return 1
+    fi
+  else
+    # Token already exists, retrieve it
+    echo "   Service account already exists, generating new token..."
+    local token_response
+    token_response=$(curl -s -k -X POST \
+      -u "${es_user}:${es_password}" \
+      -H "Content-Type: application/json" \
+      "$es_url/_security/service/elastic/kibana/credential/token/dogparkpals_$(date +%s)" 2>/dev/null)
+    
+    local token
+    token=$(echo "$token_response" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
+    
+    if [ -z "$token" ]; then
+      echo "❌ Failed to create Kibana service account token"
+      echo "   Response: $token_response"
+      return 1
+    fi
+  fi
+  
+  # Add token to docker-secrets
+  echo "KIBANA_SERVICE_ACCOUNT_TOKEN=$token" >> "$secrets_file"
+  echo "✅ Kibana service account token created and saved"
+  return 0
+}
+
 # ==============================================================================
 # Stack Control Functions
 # ==============================================================================
@@ -612,6 +674,25 @@ run_fresh() {
     fi
     
     wait_for_url "Elasticsearch" "$ELASTICSEARCH_URL/_cluster/health" 180 "$WAIT_INTERVAL_SECONDS" "$ELASTICSEARCH_USERNAME" "$ELASTICSEARCH_PASSWORD"
+    
+    # Create Kibana service account token for Elasticsearch 8.11+ security requirements
+    if docker ps | grep -q "dogparkpals-kibana"; then
+      if create_kibana_service_account_token "$ELASTICSEARCH_URL" "$ELASTICSEARCH_USERNAME" "$ELASTICSEARCH_PASSWORD" "$SECRETS_FILE"; then
+        # Reload docker-secrets to pick up the new token
+        load_env_file "$SECRETS_FILE"
+        
+        # Restart Kibana to apply the token
+        echo "🔄 Restarting Kibana with service account token..."
+        if command -v docker-compose &> /dev/null; then
+          docker-compose -f "$COMPOSE_FILE" restart kibana
+        else
+          docker compose -f "$COMPOSE_FILE" restart kibana
+        fi
+        
+        # Give Kibana time to restart
+        sleep 5
+      fi
+    fi
   else
     echo "⚠️  Elasticsearch not running - skipping observability setup"
   fi

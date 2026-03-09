@@ -32,7 +32,6 @@ services:
     container_name: dogparkpals-frontend
     ports:
       - "5173:443"
-      - "8080:80"
     volumes:
       - ./certs:/etc/nginx/certs:ro
     restart: unless-stopped

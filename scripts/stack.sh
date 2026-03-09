@@ -124,6 +124,38 @@ check_container_health() {
   fi
 }
 
+wait_for_running_container() {
+  local container_name="$1"
+  local timeout_seconds="${2:-180}"
+  local interval_seconds="${3:-3}"
+  local elapsed=0
+
+  echo "⏳ Waiting for container $container_name to start..."
+
+  while [ "$elapsed" -lt "$timeout_seconds" ]; do
+    local running_status
+    running_status=$(docker inspect --format='{{.State.Status}}' "$container_name" 2>/dev/null || echo "not_found")
+
+    if [ "$running_status" = "running" ]; then
+      echo "✅ $container_name is running"
+      return 0
+    fi
+
+    if [ "$running_status" = "exited" ] || [ "$running_status" = "dead" ]; then
+      echo "❌ $container_name exited during startup (status: $running_status)"
+      echo "   Check logs: docker logs $container_name"
+      return 1
+    fi
+
+    sleep "$interval_seconds"
+    elapsed=$((elapsed + interval_seconds))
+  done
+
+  echo "❌ Timed out waiting for $container_name to start (${timeout_seconds}s)"
+  echo "   Note: db-init is expected to stop after migrations; this check targets backend only."
+  return 1
+}
+
 wait_for_url() {
   local name="$1"
   local url="$2"
@@ -552,10 +584,9 @@ run_fresh() {
   
   echo ""
   echo "🔧 Running deployment initialization..."
-  
-  # Check if backend container is running
-  if ! docker ps | grep -q "dogparkpals-backend"; then
-    echo "❌ Backend container is not running."
+
+  if ! wait_for_running_container "dogparkpals-backend" 180 3; then
+    echo "❌ Backend container did not reach running state in time."
     exit 1
   fi
   
@@ -676,10 +707,9 @@ run_core_only() {
   
   echo ""
   echo "🌱 Seeding database..."
-  
-  # Check if backend container is running
-  if ! docker ps | grep -q dogparkpals-backend; then
-    echo "❌ Backend container is not running!"
+
+  if ! wait_for_running_container "dogparkpals-backend" 180 3; then
+    echo "❌ Backend container did not reach running state in time."
     exit 1
   fi
   

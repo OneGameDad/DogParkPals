@@ -12,7 +12,7 @@ export function createQueueClient(): QueueClient {
     return new InMemoryQueueClient();
   }
 
-  const url = process.env.RABBITMQ_URL ?? 'amqp://localhost:5672';
+  const url = process.env.RABBITMQ_URL ?? 'amqps://localhost:5671';
   const queueName = process.env.EVENT_QUEUE_NAME ?? DEFAULT_QUEUE_NAME;
   const maxRetries = Number(process.env.EVENT_QUEUE_MAX_RETRIES ?? 5);
   const dlqName = process.env.EVENT_QUEUE_DLQ_NAME;

@@ -213,6 +213,28 @@ all_required_certs_exist() {
   return 0
 }
 
+normalize_cert_permissions() {
+  local certs_dir="$ROOT_DIR/certs"
+  local required=(
+    server.crt server.key
+    rabbitmq.crt rabbitmq.key
+    prometheus.crt prometheus.key
+    grafana.crt grafana.key
+    elasticsearch.crt elasticsearch.key
+    kibana.crt kibana.key
+  )
+
+  for cert in "${required[@]}"; do
+    if [ -f "$certs_dir/$cert" ]; then
+      if ! chmod a+r "$certs_dir/$cert" 2>/dev/null; then
+        echo "❌ Cannot set read permission on $certs_dir/$cert"
+        echo "   RabbitMQ/Grafana/Prometheus may fail to start without readable cert files."
+        exit 1
+      fi
+    fi
+  done
+}
+
 # ==============================================================================
 # Stack Control Functions
 # ==============================================================================
@@ -489,6 +511,9 @@ ensure_certificates() {
   warn_if_cert_expiring "$certs_dir/grafana.crt" "grafana"
   warn_if_cert_expiring "$certs_dir/elasticsearch.crt" "elasticsearch"
   warn_if_cert_expiring "$certs_dir/kibana.crt" "kibana"
+
+  # Ensure existing certs are readable by containers running as non-root (e.g. RabbitMQ uid 999)
+  normalize_cert_permissions
   
   echo ""
 }

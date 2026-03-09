@@ -4,6 +4,7 @@ import app from "../../app";
 import { makeToken, ids } from "../fixtures/integrationFixtures";
 
 const adminToken = () => makeToken({ id: ids.users.admin, role: "ADMIN" });
+const developerToken = () => makeToken({ id: ids.users.developer, role: "DEVELOPER" });
 const userAToken = () => makeToken({ id: ids.users.userA, role: "CLIENT" });
 const userBToken = () => makeToken({ id: ids.users.userB, role: "CLIENT" });
 
@@ -148,13 +149,37 @@ describe("user flows", () => {
     expect(res.status).toBe(204);
   });
 
-  test("delete other user is forbidden", async () => {
+  test("regular user cannot delete another user", async () => {
     const res = await request(app)
       .delete(`/users/${ids.users.userB}`)
       .set("Authorization", `Bearer ${userAToken()}`);
 
     expect(res.status).toBe(403);
     expect(res.body.code).toBe("FORBIDDEN");
+  });
+
+  test("admin can delete another user", async () => {
+    const created = await request(app)
+      .post("/users")
+      .send({ username: "deletebyadmin", email: "deletebyadmin@example.com", password: "password123" });
+
+    const res = await request(app)
+      .delete(`/users/${created.body.id}`)
+      .set("Authorization", `Bearer ${adminToken()}`);
+
+    expect(res.status).toBe(204);
+  });
+
+  test("developer can delete another user", async () => {
+    const created = await request(app)
+      .post("/users")
+      .send({ username: "deletebydev", email: "deletebydev@example.com", password: "password123" });
+
+    const res = await request(app)
+      .delete(`/users/${created.body.id}`)
+      .set("Authorization", `Bearer ${developerToken()}`);
+
+    expect(res.status).toBe(204);
   });
 
   test("change password succeeds", async () => {

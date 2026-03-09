@@ -547,9 +547,9 @@ describe('User Controller', () => {
   });
 
   describe('deleteUser', () => {
-    test('forwards forbidden when userId does not match', async () => {
+    test('forwards forbidden when unauthenticated', async () => {
       mockReq.params = { id: '3' } as any;
-      (mockReq as any).userId = 2;
+      (mockReq as any).userId = undefined;
 
       await userController.deleteUser(mockReq as Request, mockRes as Response, mockNext as any);
 
@@ -558,9 +558,46 @@ describe('User Controller', () => {
       expect(forwardedError.statusCode).toBe(403);
     });
 
+    test('forwards forbidden when regular user deletes another account', async () => {
+      mockReq.params = { id: '3' } as any;
+      (mockReq as any).userId = 2;
+      (mockReq as any).user = { id: 2, role: 'CLIENT' };
+
+      await userController.deleteUser(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockDeleteUser).not.toHaveBeenCalled();
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError.statusCode).toBe(403);
+    });
+
+    test('allows admin to delete another user', async () => {
+      mockReq.params = { id: '5' } as any;
+      (mockReq as any).userId = 1;
+      (mockReq as any).user = { id: 1, role: 'ADMIN' };
+      mockDeleteUser.mockResolvedValue(undefined);
+
+      await userController.deleteUser(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockDeleteUser).toHaveBeenCalledWith(5);
+      expect(mockStatus).toHaveBeenCalledWith(204);
+    });
+
+    test('allows developer to delete another user', async () => {
+      mockReq.params = { id: '5' } as any;
+      (mockReq as any).userId = 1;
+      (mockReq as any).user = { id: 1, role: 'DEVELOPER' };
+      mockDeleteUser.mockResolvedValue(undefined);
+
+      await userController.deleteUser(mockReq as Request, mockRes as Response, mockNext as any);
+
+      expect(mockDeleteUser).toHaveBeenCalledWith(5);
+      expect(mockStatus).toHaveBeenCalledWith(204);
+    });
+
     test('returns 204 when deletion succeeds', async () => {
       mockReq.params = { id: '5' } as any;
       (mockReq as any).userId = 5;
+      (mockReq as any).user = { id: 5, role: 'CLIENT' };
       mockDeleteUser.mockResolvedValue(undefined);
 
       await userController.deleteUser(mockReq as Request, mockRes as Response, mockNext as any);

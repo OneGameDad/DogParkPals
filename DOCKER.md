@@ -69,16 +69,15 @@ The project supports both plaintext and encrypted RabbitMQ connections. The choi
 
 | Protocol | Port | Security | Default | Notes |
 |----------|------|----------|---------|-------|
-| `amqp://` | 5672 | ❌ Plaintext | ✅ Yes | Development default, no cert setup |
-| `amqps://` | 5671 | ✅ TLS encrypted | ❌ No | Production recommended, requires certs |
+| `amqp://` | 5672 | ❌ Plaintext | ❌ No | Local debugging only |
+| `amqps://` | 5671 | ✅ TLS encrypted | ✅ Yes | Default and recommended |
 
-**Why Plaintext is Default:**
+**Why AMQPS is Default:**
 
-For **local development**, plaintext AMQP is the default to reduce friction:
-- ✅ Works immediately after `docker compose up`
-- ✅ No certificate generation required
-- ✅ Faster developer onboarding
-- ❌ No encryption (acceptable for local dev)
+For **secure local and production parity**, AMQPS is the default:
+- ✅ Encrypted queue traffic by default
+- ✅ Matches production-style transport settings
+- ✅ Reduces accidental plaintext deployments
 
 **Enabling AMQPS for Production:**
 
@@ -543,7 +542,7 @@ curl -k https://localhost:3000/api/parks
 
 **Test 6: Frontend Serving**
 ```bash
-curl -I http://localhost:5173
+curl -k -I https://localhost:5173
 ```
 
 **Results**:
@@ -558,9 +557,9 @@ Content-Length: 459
 
 **Test 7: Frontend SPA Routing**
 ```bash
-curl -I http://localhost:5173/parks
-curl -I http://localhost:5173/events
-curl -I http://localhost:5173/profile
+curl -k -I https://localhost:5173/parks
+curl -k -I https://localhost:5173/events
+curl -k -I https://localhost:5173/profile
 ```
 
 **Results**: All routes return 200 OK (Nginx try_files serves index.html)
@@ -724,7 +723,7 @@ Error querying the database: Error code 14: Unable to open the database file
 - ✅ Backend container starts and stays running (up 36+ seconds)
 - ✅ Health check endpoint responds: `curl -k https://localhost:3000/health` → `{"status":"ok"}`
 - ✅ Database migrations complete successfully (15 migrations applied)
-- ✅ Frontend accessible at http://localhost:5173
+- ✅ Frontend accessible at https://localhost:5173
 - ✅ RabbitMQ connections established successfully
 - ✅ Database file persists in named volume across container restarts
 - ✅ HTTPS enforced with SSL/TLS certificates

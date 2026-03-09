@@ -263,7 +263,7 @@ echo ""
 
 if ! docker ps | grep -q "dogparkpals-backend"; then
   echo "❌ Backend container is not running."
-  echo "   Start services first: docker compose --env-file docker-secrets up -d"
+  echo "   Start services first: docker-compose --env-file docker-secrets up -d"
   exit 1
 fi
 

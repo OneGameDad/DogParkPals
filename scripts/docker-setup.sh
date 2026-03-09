@@ -5,6 +5,22 @@
 
 set -e
 
+compose() {
+    if command -v docker-compose >/dev/null 2>&1; then
+        docker-compose "$@"
+    else
+        docker compose "$@"
+    fi
+}
+
+compose_cmd_display() {
+    if command -v docker-compose >/dev/null 2>&1; then
+        echo "docker-compose"
+    else
+        echo "docker compose"
+    fi
+}
+
 echo "🐕 DogParkPals Docker Setup"
 echo "=========================="
 echo ""
@@ -102,11 +118,11 @@ fi
 # Build and start containers
 echo ""
 echo "🔨 Building Docker images..."
-docker compose --env-file docker-secrets build
+compose --env-file docker-secrets build
 
 echo ""
 echo "🚀 Starting containers..."
-docker compose --env-file docker-secrets up -d
+compose --env-file docker-secrets up -d
 
 echo ""
 echo "⏳ Waiting for services to be ready..."
@@ -122,8 +138,8 @@ echo ""
 echo "Note: You'll see certificate warnings for self-signed certificates"
 echo ""
 echo "Useful commands:"
-echo "  - View logs:     docker compose --env-file docker-secrets logs -f"
-echo "  - Stop:          docker compose down"
-echo "  - Restart:       docker compose --env-file docker-secrets restart"
+echo "  - View logs:     $(compose_cmd_display) --env-file docker-secrets logs -f"
+echo "  - Stop:          $(compose_cmd_display) down"
+echo "  - Restart:       $(compose_cmd_display) --env-file docker-secrets restart"
 echo "  - Shell access:  docker exec -it dogparkpals-backend sh"
 echo ""

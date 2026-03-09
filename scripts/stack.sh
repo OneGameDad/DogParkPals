@@ -9,6 +9,7 @@ SECRETS_FILE="$ROOT_DIR/docker-secrets"
 SECRETS_EXAMPLE_FILE="$ROOT_DIR/docker-secrets-example"
 
 OBS_SERVICES=(elasticsearch logstash kibana prometheus grafana rabbitmq-exporter)
+COMPOSE_CMD=()
 
 # Error trap for better error reporting
 trap 'echo "❌ Command failed on line $LINENO"; exit 1' ERR
@@ -56,6 +57,21 @@ check_requirements() {
     echo "Please install missing dependencies and try again."
     exit 1
   fi
+}
+
+detect_compose_cmd() {
+  if command -v docker-compose > /dev/null 2>&1; then
+    COMPOSE_CMD=(docker-compose)
+  elif docker compose version > /dev/null 2>&1; then
+    COMPOSE_CMD=(docker compose)
+  else
+    echo "❌ Missing required Docker Compose command (docker-compose or docker compose)"
+    exit 1
+  fi
+}
+
+compose() {
+  "${COMPOSE_CMD[@]}" "$@"
 }
 
 ensure_repo_root() {
@@ -295,11 +311,11 @@ run_fresh() {
   cleanup_volumes
 
   echo "🔨 Building Docker images..."
-  (cd "$ROOT_DIR" && docker compose --env-file docker-secrets build)
+  (cd "$ROOT_DIR" && compose --env-file docker-secrets build)
   
   echo ""
   echo "🚀 Starting containers..."
-  (cd "$ROOT_DIR" && docker compose --env-file docker-secrets up -d)
+  (cd "$ROOT_DIR" && compose --env-file docker-secrets up -d)
   
   echo ""
   echo "⏳ Waiting for core services..."
@@ -323,8 +339,8 @@ run_fresh() {
   echo "  Prometheus: https://localhost:9090"
   echo ""
   echo "Useful commands:"
-  echo "  View logs:          docker compose logs -f"
-  echo "  Check status:       docker compose ps"
+  echo "  View logs:          ${COMPOSE_CMD[*]} logs -f"
+  echo "  Check status:       ${COMPOSE_CMD[*]} ps"
   echo "  Stop observability: ./scripts/stack.sh --obs-down"
   echo "  Full cleanup:       ./scripts/stack.sh --clean"
 }
@@ -337,11 +353,11 @@ run_core_only() {
   ensure_certificates true
 
   echo "🔨 Building Docker images..."
-  (cd "$ROOT_DIR" && docker compose --env-file docker-secrets build backend frontend db-init)
+  (cd "$ROOT_DIR" && compose --env-file docker-secrets build backend frontend db-init)
   
   echo ""
   echo "🚀 Starting core containers..."
-  (cd "$ROOT_DIR" && docker compose --env-file docker-secrets up -d backend frontend rabbitmq db-init)
+  (cd "$ROOT_DIR" && compose --env-file docker-secrets up -d backend frontend rabbitmq db-init)
   
   echo ""
   echo "⏳ Waiting for services..."
@@ -369,7 +385,7 @@ run_obs_down() {
   ensure_secrets_file
   ensure_certificates false
 
-  (cd "$ROOT_DIR" && docker compose --env-file docker-secrets stop "${OBS_SERVICES[@]}")
+  (cd "$ROOT_DIR" && compose --env-file docker-secrets stop "${OBS_SERVICES[@]}")
 
   echo ""
   echo "✅ Observability stack stopped"
@@ -379,7 +395,7 @@ run_clean() {
   echo "🧹 Stopping and cleaning DogParkPals stack..."
   ensure_secrets_file
 
-  (cd "$ROOT_DIR" && docker compose --env-file docker-secrets down -v --remove-orphans --rmi local)
+  (cd "$ROOT_DIR" && compose --env-file docker-secrets down -v --remove-orphans --rmi local)
 
   echo ""
   echo "🗑️  Running system-wide Docker cleanup..."
@@ -392,6 +408,7 @@ run_clean() {
 main() {
   ensure_repo_root
   check_requirements
+  detect_compose_cmd
 
   if [ "$#" -ne 1 ]; then
     print_usage

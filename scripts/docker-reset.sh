@@ -5,6 +5,14 @@
 
 set -e
 
+compose() {
+    if command -v docker-compose >/dev/null 2>&1; then
+        docker-compose "$@"
+    else
+        docker compose "$@"
+    fi
+}
+
 echo "⚠️  This will stop all containers and remove volumes (including database)"
 read -p "Are you sure? (y/N) " -n 1 -r
 echo ""
@@ -16,11 +24,11 @@ fi
 
 echo ""
 echo "🛑 Stopping containers..."
-docker compose down -v
+compose down -v
 
 echo ""
 echo "🗑️  Removing images..."
-docker compose rm -f
+compose rm -f
 
 echo ""
 echo "✅ Docker environment reset complete!"

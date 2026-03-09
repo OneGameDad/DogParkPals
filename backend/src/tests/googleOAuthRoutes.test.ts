@@ -5,7 +5,7 @@ let app: any;
 beforeAll(async () => {
   process.env.GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'test-client-id';
   process.env.GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'test-client-secret';
-  process.env.GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3000/auth/google/callback';
+  process.env.GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || 'https://localhost:3000/auth/google/callback';
   app = (await import('../app')).default;
 });
 

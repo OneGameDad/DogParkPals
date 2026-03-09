@@ -3,15 +3,12 @@ import { startEventConsumer } from './jobs/eventConsumer';
 import { startOutboxPublisher } from './jobs/outboxPublisher';
 import typeSafeLogger from "./utils/typeSafeLogger";
 import app from "./app";
-import { createServer } from "http";
 import { initializeSocket } from "./infrastructure/socket";
 import { initializeNotificationSocket } from "./services/notificationService";
 import { initializeMessageSocket } from "./services/messageService";
 import https from 'https';
 import fs from 'fs';
 import path from 'path';
-import { initializeSocket } from "./infrastructure/socket";
-import { initializeNotificationSocket } from "./services/notificationService";
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 
@@ -41,21 +38,8 @@ const keyPath = resolveFirstExistingPath(process.env.KEY_PATH, [
   path.join(process.cwd(), 'certs/server.key'),
 ]);
 
-// Initialize notification service with Socket.io
-initializeNotificationSocket(io);
-
-// Initialize message service with Socket.io
-initializeMessageSocket(io);
-
-// Make io available globally for notification service
-export { io };
-
-httpServer.listen(PORT, () => {
-  typeSafeLogger.info("Server listening", { port: PORT });
-});
-
 // Declare io variable at module level for export
-let io: ReturnType<typeof initializeSocket>;
+let io!: ReturnType<typeof initializeSocket>;
 
 try {
   // Validate certificate files exist
@@ -78,8 +62,9 @@ try {
   const httpsServer = https.createServer(httpsOptions, app);
   io = initializeSocket(httpsServer);
 
-  // Initialize notification service with Socket.io
+  // Initialize notification and messaging channels after Socket.io is ready.
   initializeNotificationSocket(io);
+  initializeMessageSocket(io);
 
   httpsServer.listen(PORT, () => {
     typeSafeLogger.info("HTTPS Server listening", { 

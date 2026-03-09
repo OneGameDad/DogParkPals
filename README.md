@@ -139,7 +139,7 @@ docker compose logs -f frontend
    - Prometheus: https://localhost:9090
    - Grafana: https://localhost:3001 (admin/admin)
    - Kibana: https://localhost:5601
-   - RabbitMQ Management: https://localhost:15671 (guest/guest) - HTTP also available on port 15672
+   - RabbitMQ Management: https://localhost:15671 (guest/guest)
    - Elasticsearch: https://localhost:9200 (use `ELASTICSEARCH_USERNAME`/`ELASTICSEARCH_PASSWORD` from `docker-secrets`)
    
    **Note:** You'll see a certificate warning in your browser when accessing HTTPS URLs with the self-signed certificate. This is expected for local development and can be safely bypassed.
@@ -147,8 +147,7 @@ docker compose logs -f frontend
 ### RabbitMQ (Event Queue & Management UI)
 
 **Management UI:**
-- HTTPS URL: https://localhost:15671 (recommended)
-- HTTP URL: http://localhost:15672 (backward compatibility)
+- HTTPS URL: https://localhost:15671
 - Default credentials: `guest` / `guest`
 
 **Queue Transport Security:**
@@ -157,10 +156,10 @@ The project supports both plaintext and encrypted RabbitMQ connections:
 
 | Protocol | Port | Default | Use Case |
 |----------|------|---------|----------|
-| `amqp://` | 5672 | ✅ Yes | Development (ease of use, no cert setup required) |
-| `amqps://` | 5671 | ❌ No | Production (encrypted queue traffic, requires certs) |
+| `amqp://` | 5672 | ❌ No | Local debugging only |
+| `amqps://` | 5671 | ✅ Yes | Default and recommended (encrypted queue traffic) |
 
-**⚠️ Development Default:** Plaintext AMQP (`amqp://rabbitmq:5672`) is used by default for frictionless local development.
+**Default:** AMQPS (`amqps://rabbitmq:5671`) is enabled by default.
 
 **🔒 Enabling AMQPS (Recommended for Production):**
 
@@ -286,7 +285,7 @@ Quick reference for running DogParkPals locally with Docker and validating the e
 - Backend: `https://localhost:3000/health`
 - Status: `https://localhost:3000/status`
 - Frontend: `https://localhost:5173`
-- RabbitMQ UI: `https://localhost:15671` (default `guest`/`guest`) - HTTP also available on port 15672
+- RabbitMQ UI: `https://localhost:15671` (default `guest`/`guest`)
 
 ### Monitoring (Prometheus + Grafana)
 DogParkPals includes Prometheus metrics and Grafana dashboards for observability.
@@ -295,7 +294,7 @@ DogParkPals includes Prometheus metrics and Grafana dashboards for observability
 - Prometheus: `https://localhost:9090`
 - Grafana: `https://localhost:3001` (username: `admin`, password: `admin`)
 - Backend Metrics: `https://localhost:3000/metrics`
-- RabbitMQ Exporter: `http://localhost:9419/metrics`
+- RabbitMQ Exporter: `http://rabbitmq-exporter:9419/metrics` (internal Docker network)
 - Elasticsearch: `https://localhost:9200` (credentials from `docker-secrets`)
 - Kibana: `https://localhost:5601`
 

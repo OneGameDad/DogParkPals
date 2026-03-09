@@ -72,8 +72,6 @@ services:
     user: "999:999"
     ports:
       - "5671:5671"
-      - "5672:5672"
-      - "15672:15672"
       - "15671:15671"
     volumes:
       - ./certs:/etc/rabbitmq/certs:ro
@@ -92,8 +90,6 @@ services:
   rabbitmq-exporter:
     image: kbudde/rabbitmq-exporter:latest
     container_name: dogparkpals-rabbitmq-exporter
-    ports:
-      - "9419:9419"
     volumes:
       - ./certs/rabbitmq.crt:/etc/rabbitmq-exporter/ca.pem:ro
     env_file:

@@ -58,11 +58,7 @@ function AppContent() {
         <div className={isMessagesPage ? "flex-1 overflow-hidden relative flex flex-col min-h-0" : "flex-1 overflow-y-auto p-8"}>
           <Routes>
             {/* Public routes - accessible to everyone */}
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Home />
-              </ProtectedRoute>
-            } />
+            <Route path="/" element={<Home />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
 

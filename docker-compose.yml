@@ -133,14 +133,8 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
-      - ./certs/grafana.crt:/etc/grafana/grafana.crt:ro
-      - ./certs/grafana.key:/etc/grafana/grafana.key:ro
     env_file:
       - ./docker-secrets
-    environment:
-      - GF_SERVER_PROTOCOL=https
-      - GF_SERVER_CERT_FILE=/etc/grafana/grafana.crt
-      - GF_SERVER_CERT_KEY=/etc/grafana/grafana.key
     depends_on:
       - prometheus
     restart: unless-stopped

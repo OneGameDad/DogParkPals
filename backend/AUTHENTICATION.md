@@ -6,6 +6,13 @@ This guide explains how to implement authentication and protect routes in the Do
 
 The application uses JWT (JSON Web Token) based authentication. Users receive a token upon login, which they include in subsequent requests to access protected resources.
 
+## Current Authorization Notes
+
+- User deletion endpoint: `DELETE /users/:id`
+- Self-deletion is allowed for authenticated users.
+- Cross-user deletion is restricted to users with role `ADMIN` or `DEVELOPER`.
+- A non-privileged user deleting another account receives `403 Forbidden`.
+
 ## Architecture
 
 ### Components

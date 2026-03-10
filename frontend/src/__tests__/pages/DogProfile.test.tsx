@@ -39,6 +39,32 @@ vi.mock('../../hooks/users/useDogFriends', () => ({
     }),
 }));
 
+// Mock useDogEnemies hook
+vi.mock('../../hooks/users/useDogEnemies', () => ({
+    useDogEnemies: () => ({
+        enemies: [],
+        loading: false,
+        removeEnemy: vi.fn(),
+        refetch: vi.fn(),
+    }),
+}));
+
+// Mock useDogOwners hook
+vi.mock('../../hooks/users/useDogOwners', () => ({
+    useDogOwners: () => ({
+        owners: [],
+        loading: false,
+    }),
+}));
+
+// Mock useFriends hook
+vi.mock('../../hooks/users/useFriends', () => ({
+    useFriends: () => ({
+        friends: [],
+        loading: false,
+    }),
+}));
+
 // Mock useAuth hook
 vi.mock('../../hooks/useAuth', () => ({
     useAuth: () => ({

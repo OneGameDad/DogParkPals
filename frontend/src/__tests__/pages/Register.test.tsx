@@ -22,14 +22,11 @@ vi.mock('react-hot-toast', () => ({
     error: vi.fn(),
     success: vi.fn(),
     promise: vi.fn((promise, messages) => {
-      // Simulate toast.promise behavior for testing
-      // Suppress errors to prevent unhandled rejections in tests
       return promise.catch((err: Error) => {
         if (messages?.error && typeof messages.error === 'function') {
           messages.error(err);
         }
-        // Don't re-throw in tests to avoid unhandled rejections
-        return undefined;
+        throw err;
       });
     }),
   },
@@ -53,6 +50,13 @@ vi.mock('react-router-dom', async () => {
     useNavigate: () => mockNavigate,
   };
 });
+
+// Mock useAuth hook
+vi.mock('../../hooks/useAuth', () => ({
+  useAuth: () => ({
+    refreshUser: vi.fn(),
+  }),
+}));
 
 describe('Register Component', () => {
   beforeEach(() => {

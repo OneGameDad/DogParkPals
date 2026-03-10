@@ -3,7 +3,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import DogFinder from '../../../components/users/DogFinder';
 import { useDogSearch } from '../../../hooks/users/useDogSearch';
-import type { Dog, DogBreed, DogGender, DogSize, DogPlaystyle } from '../../../types';
+import { DogBreed, DogGender, DogSize, DogPlaystyle } from '../../../types';
+import type { Dog } from '../../../types';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({

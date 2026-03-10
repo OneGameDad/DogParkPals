@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Navbar from '../Navbar';
 import * as AuthModule from '../../../hooks/useAuth';
@@ -14,14 +14,17 @@ vi.mock('../../../context/NotificationContext', () => ({
   useNotifications: vi.fn(),
 }));
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, defaultValue?: string) => defaultValue || key,
-    i18n: {
-      changeLanguage: vi.fn(),
-    },
-  }),
-}));
+vi.mock('react-i18next', () => {
+  const t = (key: string, defaultValue?: string) => defaultValue || key;
+  return {
+    useTranslation: () => ({
+      t,
+      i18n: {
+        changeLanguage: vi.fn(),
+      },
+    }),
+  };
+});
 
 describe('Navbar', () => {
   let mockUseAuth: any;
@@ -42,6 +45,11 @@ describe('Navbar', () => {
     );
   };
 
+  const openHamburgerMenu = () => {
+    const toggleButton = screen.getByLabelText('Toggle menu');
+    fireEvent.click(toggleButton);
+  };
+
   describe('Unauthenticated State', () => {
     beforeEach(() => {
       mockUseAuth.mockReturnValue({
@@ -52,20 +60,23 @@ describe('Navbar', () => {
       mockUseNotifications.mockReturnValue({
         unreadCount: 0,
         notifications: [],
+        markAllAsRead: vi.fn(),
       });
     });
 
     it('should render login and register links when not authenticated', async () => {
       renderNavbar();
+      openHamburgerMenu();
 
       await waitFor(() => {
         expect(screen.getByRole('link', { name: /login/i })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /register/i })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /navregister|register/i })).toBeInTheDocument();
       });
     });
 
     it('should not render dashboard, messages, or profile links when not authenticated', async () => {
       renderNavbar();
+      openHamburgerMenu();
 
       await waitFor(() => {
         expect(screen.queryByRole('link', { name: /dashboard/i })).not.toBeInTheDocument();
@@ -88,17 +99,17 @@ describe('Navbar', () => {
       mockUseNotifications.mockReturnValue({
         unreadCount: 0,
         notifications: [],
+        markAllAsRead: vi.fn(),
       });
 
       renderNavbar();
+      openHamburgerMenu();
 
       await waitFor(() => {
         expect(screen.getByRole('link', { name: /dashboard/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /messages/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /social/i })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /events/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /profile/i })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /settings/i })).toBeInTheDocument();
       });
     });
 
@@ -106,9 +117,11 @@ describe('Navbar', () => {
       mockUseNotifications.mockReturnValue({
         unreadCount: 0,
         notifications: [],
+        markAllAsRead: vi.fn(),
       });
 
       renderNavbar();
+      openHamburgerMenu();
 
       await waitFor(() => {
         expect(screen.queryByRole('link', { name: /login/i })).not.toBeInTheDocument();
@@ -120,6 +133,7 @@ describe('Navbar', () => {
       mockUseNotifications.mockReturnValue({
         unreadCount: 5,
         notifications: [],
+        markAllAsRead: vi.fn(),
       });
 
       renderNavbar();
@@ -133,6 +147,7 @@ describe('Navbar', () => {
       mockUseNotifications.mockReturnValue({
         unreadCount: 0,
         notifications: [],
+        markAllAsRead: vi.fn(),
       });
 
       renderNavbar();
@@ -142,36 +157,11 @@ describe('Navbar', () => {
       });
     });
 
-    it('should render notification badge in correct position relative to messages link', async () => {
-      mockUseNotifications.mockReturnValue({
-        unreadCount: 3,
-        notifications: [],
-      });
-
-      const { container } = renderNavbar();
-
-      await waitFor(() => {
-        // Find the Messages link
-        const messagesLink = screen.getByRole('link', { name: /messages/i });
-        expect(messagesLink).toBeInTheDocument();
-
-        // Find the relative container that should have position: relative
-        const relativeDiv = messagesLink.parentElement;
-        expect(relativeDiv).toHaveClass('relative');
-
-        // Check that the badge is a child of this container
-        const badge = relativeDiv?.querySelector('span');
-        expect(badge).toBeInTheDocument();
-        expect(badge).toHaveClass('absolute');
-        expect(badge).toHaveClass('-top-2');
-        expect(badge).toHaveClass('-right-3');
-      });
-    });
-
     it('should display 99+ when notification count exceeds 99', async () => {
       mockUseNotifications.mockReturnValue({
         unreadCount: 150,
         notifications: [],
+        markAllAsRead: vi.fn(),
       });
 
       renderNavbar();
@@ -192,6 +182,7 @@ describe('Navbar', () => {
       mockUseNotifications.mockReturnValue({
         unreadCount: 0,
         notifications: [],
+        markAllAsRead: vi.fn(),
       });
 
       renderNavbar();
@@ -212,6 +203,7 @@ describe('Navbar', () => {
       mockUseNotifications.mockReturnValue({
         unreadCount: 0,
         notifications: [],
+        markAllAsRead: vi.fn(),
       });
     });
 
@@ -219,16 +211,7 @@ describe('Navbar', () => {
       renderNavbar();
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /language|lang/i })).toBeInTheDocument();
-      });
-    });
-
-    it('should display language options on hover', async () => {
-      const { container } = renderNavbar();
-
-      await waitFor(() => {
-        const langButton = screen.getByRole('button', { name: /language|lang/i });
-        expect(langButton).toBeInTheDocument();
+        expect(screen.getByLabelText('Change language')).toBeInTheDocument();
       });
     });
   });

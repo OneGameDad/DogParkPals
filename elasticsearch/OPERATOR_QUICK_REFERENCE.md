@@ -49,25 +49,25 @@ curl -k -u "$ES_USER:$ES_PASS" 'https://localhost:9200/dogparkpals-logs-*/_count
 curl -k -u "$ES_USER:$ES_PASS" -X POST 'https://localhost:9200/dogparkpals-logs-*/_search' -d '{"query": {"term": {"severity": "error"}}}'
 
 # Get last 10 logs
-curl 'https://localhost:9200/dogparkpals-logs-*/_search?size=10&sort=@timestamp:desc'
+curl -k 'https://localhost:9200/dogparkpals-logs-*/_search?size=10&sort=@timestamp:desc'
 
 # Export logs to JSON
-curl 'https://localhost:9200/dogparkpals-logs-2026.02.18/_search?size=10000' > backup.json
+curl -k 'https://localhost:9200/dogparkpals-logs-2026.02.18/_search?size=10000' > backup.json
 ```
 
 ### Maintenance
 ```bash
 # Delete old indices (permanent!)
-curl -X DELETE 'https://localhost:9200/dogparkpals-logs-2026.01.*'
+curl -k -X DELETE 'https://localhost:9200/dogparkpals-logs-2026.01.*'
 
 # Force rollover now (don't wait for 1 day)
-curl -X POST 'https://localhost:9200/dogparkpals-logs-write/_rollover'
+curl -k -X POST 'https://localhost:9200/dogparkpals-logs-write/_rollover'
 
 # Close index (prevent new writes)
-curl -X POST 'https://localhost:9200/dogparkpals-logs-2026.02.15/_close'
+curl -k -X POST 'https://localhost:9200/dogparkpals-logs-2026.02.15/_close'
 
 # Open index (allow writes again)
-curl -X POST 'https://localhost:9200/dogparkpals-logs-2026.02.15/_open'
+curl -k -X POST 'https://localhost:9200/dogparkpals-logs-2026.02.15/_open'
 ```
 
 ### Customization
@@ -131,25 +131,25 @@ bash elasticsearch/apply-template.sh
 ### Disk Full
 ```bash
 # 1. Check current size
-curl 'https://localhost:9200/_cat/nodes?v' | grep disk
+curl -k 'https://localhost:9200/_cat/nodes?v' | grep disk
 
 # 2. List oldest indices
-curl 'https://localhost:9200/_cat/indices?v&s=creation.date&h=index' | head
+curl -k 'https://localhost:9200/_cat/indices?v&s=creation.date&h=index' | head
 
 # 3. Delete oldest
-curl -X DELETE 'https://localhost:9200/dogparkpals-logs-2025.12.*'
+curl -k -X DELETE 'https://localhost:9200/dogparkpals-logs-2025.12.*'
 
 # 4. Re-check
-curl 'https://localhost:9200/_cat/nodes?v' | grep disk
+curl -k 'https://localhost:9200/_cat/nodes?v' | grep disk
 ```
 
 ### Elasticsearch Unresponsive
 ```bash
 # 1. Check cluster health
-curl 'https://localhost:9200/_cluster/health'
+curl -k 'https://localhost:9200/_cluster/health'
 
 # 2. Check if ILM is stuck
-curl 'https://localhost:9200/dogparkpals-logs-*/_ilm/explain?pretty'
+curl -k 'https://localhost:9200/dogparkpals-logs-*/_ilm/explain?pretty'
 
 # 3. Check logs
 docker compose logs elasticsearch
@@ -161,7 +161,7 @@ docker compose restart elasticsearch
 ### Can't Find Logs
 ```bash
 # 1. Check indices exist
-curl 'https://localhost:9200/_cat/indices' | grep dogparkpals
+curl -k 'https://localhost:9200/_cat/indices' | grep dogparkpals
 
 # 2. Check index pattern in Kibana
 # Stack Management → Index Patterns → dogparkpals-logs-*
@@ -328,7 +328,7 @@ kibana/
 ## Helpful URLs
 
 - **Elasticsearch:** https://localhost:9200
-- **Kibana:** https://localhost:5601
+- **Kibana:** http://localhost:5602
 - **Cluster Health:** https://localhost:9200/_cluster/health
 - **Node Stats:** https://localhost:9200/_nodes/stats
 - **ILM Status:** https://localhost:9200/_ilm/status

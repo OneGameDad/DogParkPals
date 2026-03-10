@@ -35,7 +35,7 @@ This single command will:
 **What you get:**
 - Frontend: https://localhost:5173
 - Backend API: https://localhost:3000
-- Kibana: http://localhost:5601
+- Kibana: http://localhost:5602
 - Grafana: http://localhost:3001
 - Prometheus: http://localhost:9090
 
@@ -104,7 +104,7 @@ docker compose logs -f frontend
 - First startup can take 2-5 minutes
 - Status `health: starting` is normal during initialization
 - If Kibana times out, core services continue - setup can be run manually later
-- Access at http://localhost:5601 once healthy
+- Access at http://localhost:5602 once healthy
 
 **Deployment Reliability:**
 - ✅ Automatic volume cleanup prevents stale Elasticsearch state
@@ -138,7 +138,7 @@ docker compose logs -f frontend
    - Backend API: https://localhost:3000
    - Prometheus: http://localhost:9090
    - Grafana: http://localhost:3001 (admin/admin)
-   - Kibana: http://localhost:5601
+   - Kibana: http://localhost:5602
    - RabbitMQ Management: https://localhost:15671 (guest/guest)
    - Elasticsearch: https://localhost:9200 (use `ELASTICSEARCH_USERNAME`/`ELASTICSEARCH_PASSWORD` from `docker-secrets`)
    
@@ -290,7 +290,7 @@ DogParkPals includes Prometheus metrics and Grafana dashboards for observability
 - Backend Metrics: `https://localhost:3000/metrics`
 - RabbitMQ Exporter: `http://rabbitmq-exporter:9419/metrics` (internal Docker network)
 - Elasticsearch: `https://localhost:9200` (credentials from `docker-secrets`)
-- Kibana: `http://localhost:5601`
+- Kibana: `http://localhost:5602`
 
 **Available Metrics:**
 - Node.js runtime (memory, event loop lag, GC)
@@ -314,7 +314,7 @@ DogParkPals includes Prometheus metrics and Grafana dashboards for observability
 DogParkPals includes an ELK stack (Elasticsearch, Logstash, Kibana) for centralized log aggregation, search, and audit trail capabilities.
 
 **Access:**
-- Kibana: `http://localhost:5601`
+- Kibana: `http://localhost:5602`
 - Elasticsearch: `https://localhost:9200` (HTTPS API, basic auth)
 - Logstash: Receives logs on TCP/UDP port 5000 (not user-facing)
 
@@ -346,7 +346,7 @@ In a fresh deployment, logs are generated automatically but may be minimal initi
        'https://localhost:9200/dogparkpals-logs-*/_search?size=5&sort=@timestamp:desc' | jq '.hits.hits[]._source | {timestamp: .["@timestamp"], severity, log_message}'
    ```
 
-4. **Open Kibana** to browse logs visually at `http://localhost:5601`
+4. **Open Kibana** to browse logs visually at `http://localhost:5602`
 
 **Note:** Logs take 5-10 seconds to flow from backend → Logstash → Elasticsearch → Kibana indexing.
 

@@ -15,6 +15,7 @@ services:
     volumes:
       - ./backend/uploads:/app/uploads
       - backend-db:/app/data
+      - ./certs:/app/certs:ro
     depends_on:
       db-init:
         condition: service_completed_successfully
@@ -27,10 +28,12 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_BASE_URL=http://localhost:3000
+        - VITE_API_BASE_URL=https://localhost:3000
     container_name: dogparkpals-frontend
     ports:
-      - "5173:80"
+      - "5173:443"
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
     restart: unless-stopped
 
   db-init:
@@ -68,10 +71,17 @@ services:
     container_name: dogparkpals-rabbitmq
     user: "999:999"
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "5671:5671"
+      - "15671:15671"
+    volumes:
+      - ./certs:/etc/rabbitmq/certs:ro
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
     environment:
       - RABBITMQ_NODENAME=rabbit@localhost
+    command:
+      - sh
+      - -ec
+      - 'for f in /etc/rabbitmq/certs/rabbitmq.crt /etc/rabbitmq/certs/rabbitmq.key; do if [ ! -f "$$f" ]; then echo "Missing RabbitMQ TLS file: $$f" >&2; exit 1; fi; if [ ! -r "$$f" ]; then echo "RabbitMQ TLS file is not readable: $$f" >&2; exit 1; fi; done; exec rabbitmq-server'
     tmpfs:
       - /var/lib/rabbitmq
       - /tmp
@@ -84,13 +94,14 @@ services:
   rabbitmq-exporter:
     image: kbudde/rabbitmq-exporter:latest
     container_name: dogparkpals-rabbitmq-exporter
-    ports:
-      - "9419:9419"
+    volumes:
+      - ./certs/rabbitmq.crt:/etc/rabbitmq-exporter/ca.pem:ro
+    env_file:
+      - ./docker-secrets
     environment:
-      - RABBIT_URL=http://rabbitmq:15672
-      - RABBIT_USER=guest
-      - RABBIT_PASSWORD=guest
-      - PUBLISH_PORT=9419
+      - RABBIT_URL=https://rabbitmq:15671
+      - CAFILE=/etc/rabbitmq-exporter/ca.pem
+      - SKIPVERIFY=false
     depends_on:
       - rabbitmq
     restart: unless-stopped
@@ -118,10 +129,8 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
+    env_file:
+      - ./docker-secrets
     depends_on:
       - prometheus
     restart: unless-stopped
@@ -132,17 +141,20 @@ services:
     ports:
       - "9200:9200"
       - "9300:9300"
+    env_file:
+      - ./docker-secrets
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - bootstrap.memory_lock=false
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
     healthcheck:
-      test: curl -s http://localhost:9200 >/dev/null || exit 1
-      interval: 30s
+      test: ["CMD-SHELL", "curl -s -f http://localhost:9200 >/dev/null || exit 1"]
+      start_period: 120s
+      interval: 15s
       timeout: 10s
-      retries: 5
+      retries: 10
     restart: unless-stopped
 
   logstash:
@@ -154,8 +166,8 @@ services:
       - "9600:9600"
     volumes:
       - ./logstash/pipeline:/usr/share/logstash/pipeline
-    environment:
-      - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
+    env_file:
+      - ./docker-secrets
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -165,12 +177,25 @@ services:
     image: docker.elastic.co/kibana/kibana:8.11.0
     container_name: dogparkpals-kibana
     ports:
-      - "5601:5601"
+      - "5602:5601"
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=
+      - ELASTICSEARCH_PASSWORD=
+      # Performance optimizations
+      - LOGGING_QUIET=true
+      - MONITORING_UI_CONTAINER_ELASTICSEARCH_ENABLED=false
+      - TELEMETRY_ENABLED=false
+      - TELEMETRY_OPTIN=false
     depends_on:
       elasticsearch:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -f http://localhost:5601/api/status >/dev/null || exit 1"]
+      start_period: 120s
+      interval: 10s
+      timeout: 5s
+      retries: 10
     restart: unless-stopped
 
 volumes:

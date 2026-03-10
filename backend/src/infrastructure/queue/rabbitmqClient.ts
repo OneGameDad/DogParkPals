@@ -1,4 +1,4 @@
-import { connect, type Channel, type ChannelModel } from 'amqplib';
+import { connect, type Channel, type ChannelModel, type Options } from 'amqplib';
 import type { DomainEventUnion } from '../../events/eventTypes';
 import type { QueueClient, QueueHandler } from './queueClient';
 
@@ -11,22 +11,24 @@ export class RabbitMqClient implements QueueClient {
   private readonly dlqName: string;
   private readonly url: string;
   private readonly maxRetries: number;
+  private readonly connectionOptions?: Record<string, unknown>;
 
   constructor(
     url: string,
     queueName = DEFAULT_QUEUE_NAME,
-    options: { maxRetries?: number; dlqName?: string } = {}
+    options: { maxRetries?: number; dlqName?: string; connectionOptions?: Record<string, unknown> } = {}
   ) {
     this.url = url;
     this.queueName = queueName;
     this.dlqName = options.dlqName ?? `${queueName}.dlq`;
     this.maxRetries = options.maxRetries ?? 5;
+    this.connectionOptions = options.connectionOptions;
   }
 
   private async ensureChannel() {
     if (this.channel) return;
 
-    this.connection = await connect(this.url);
+    this.connection = await connect(this.url, this.connectionOptions as Options.Connect | undefined);
     const channel = await this.connection.createChannel();
     this.channel = channel;
     await channel.assertQueue(this.queueName, { durable: true });

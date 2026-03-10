@@ -28,7 +28,7 @@ describe('Google Auth Service', () => {
     jest.clearAllMocks();
     process.env.GOOGLE_CLIENT_ID = 'test-client-id';
     process.env.GOOGLE_CLIENT_SECRET = 'test-client-secret';
-    process.env.GOOGLE_CALLBACK_URL = 'http://localhost:3000/auth/google/callback';
+    process.env.GOOGLE_CALLBACK_URL = 'https://localhost:3000/auth/google/callback';
   });
 
   test('should have google strategy registered', () => {

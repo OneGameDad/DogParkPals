@@ -130,7 +130,7 @@ describe('EditProfile Component', () => {
     renderEditProfile();
 
     const profileImage = screen.getByAltText('Profile Preview');
-    expect(profileImage).toHaveAttribute('src', '/imgs/exampleprofilepic.jpg');
+    expect(profileImage).toHaveAttribute('src', '/imgs/default_user.png');
   });
 
   it('should update first name input value', () => {

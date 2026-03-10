@@ -5,6 +5,8 @@ import { useAuth } from '../../../hooks/useAuth';
 import { useFetch } from '../../../hooks/useFetch';
 import { useFriendActions } from '../../../hooks/users/useFriendActions';
 import { useDogFriends } from '../../../hooks/users/useDogFriends';
+import { useDogEnemies } from '../../../hooks/users/useDogEnemies';
+import { useDogEnemyActions } from '../../../hooks/users/useDogEnemyActions';
 import type { Dog } from '../../../types';
 import { DogBreed, DogGender, DogSize, DogPlaystyle } from '../../../types';
 
@@ -23,6 +25,14 @@ vi.mock('../../../hooks/users/useFriendActions', () => ({
 
 vi.mock('../../../hooks/users/useDogFriends', () => ({
     useDogFriends: vi.fn(),
+}));
+
+vi.mock('../../../hooks/users/useDogEnemies', () => ({
+    useDogEnemies: vi.fn(),
+}));
+
+vi.mock('../../../hooks/users/useDogEnemyActions', () => ({
+    useDogEnemyActions: vi.fn(),
 }));
 
 // ... (existing mocks)
@@ -65,6 +75,16 @@ describe('DogProfileModal Component', () => {
             loading: false,
             removeFriend: mockRemoveFriend,
             refetch: vi.fn(),
+        });
+        (useDogEnemies as any).mockReturnValue({
+            enemies: [],
+            loading: false,
+            removeEnemy: vi.fn(),
+            refetch: vi.fn(),
+        });
+        (useDogEnemyActions as any).mockReturnValue({
+            addDogEnemy: vi.fn(),
+            addEnemyLoading: false,
         });
     });
 

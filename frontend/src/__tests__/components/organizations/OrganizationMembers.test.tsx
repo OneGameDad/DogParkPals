@@ -3,7 +3,8 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import OrganizationMembers from '../../../components/organizations/OrganizationMembers';
 import { useUserSearch } from '../../../hooks';
 import api from '../../../services/api';
-import type { OrganizationMember, OrgRole, User } from '../../../types';
+import { OrgRole } from '../../../types';
+import type { OrganizationMember, User } from '../../../types';
 
 // Mock hooks
 vi.mock('../../../hooks', () => ({

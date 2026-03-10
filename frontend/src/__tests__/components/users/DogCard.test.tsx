@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import DogCard from '../../../components/users/DogCard';
-import type { Dog, DogBreed, DogGender, DogSize, DogPlaystyle } from '../../../types';
+import { DogBreed, DogGender, DogSize, DogPlaystyle } from '../../../types';
+import type { Dog } from '../../../types';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -40,7 +41,7 @@ describe('DogCard Component', () => {
         render(<DogCard dog={dogWithoutPic} />);
 
         const img = screen.getByAltText('Buddy') as HTMLImageElement;
-        expect(img.src).toContain('/imgs/exampledogpic.jpg');
+        expect(img.src).toContain('/imgs/default_dog.png');
     });
 
     it('should call onClick when clicked', () => {

@@ -12,14 +12,16 @@ vi.mock('react-i18next', () => ({
     }),
 }));
 
-const mockMessageService = {
-    getConversation: vi.fn(),
-    sendMessage: vi.fn(),
-};
-vi.mock('../../../services/messageService', () => ({
-    default: mockMessageService,
-    messageService: mockMessageService,
-}));
+vi.mock('../../../services/messageService', () => {
+    const mockMessageService = {
+        getConversation: vi.fn(),
+        sendMessage: vi.fn(),
+    };
+    return {
+        default: mockMessageService,
+        messageService: mockMessageService,
+    };
+});
 
 vi.mock('../../../services/api', () => ({
     api: {

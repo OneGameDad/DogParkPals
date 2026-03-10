@@ -55,7 +55,33 @@ vi.mock('../../components/common', () => ({
     ),
     Loading: () => <div>Loading...</div>,
     ErrorMessage: ({ message }: any) => <div>Error: {message}</div>,
+    Picture: ({ src, alt }: any) => <img src={src} alt={alt} />,
 }));
+
+// Mock FileUpload
+vi.mock('../../components/features/FileUpload', () => ({
+    default: () => <div data-testid="file-upload">FileUpload</div>,
+}));
+
+// Mock uploadService
+vi.mock('../../services/uploadService', () => ({
+    default: {
+        upload: vi.fn(),
+    },
+}));
+
+// Mock constants
+vi.mock('../../constants', () => ({
+    getOrgPhotoUrl: () => '/imgs/default_organization.png',
+}));
+
+// Mock react-i18next
+vi.mock('react-i18next', () => {
+    const t = (key: string, fallback?: string) => fallback || key;
+    return {
+        useTranslation: () => ({ t }),
+    };
+});
 
 describe('OrganizationUpdate Component', () => {
     const mockOrganization = {

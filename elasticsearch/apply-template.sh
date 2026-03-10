@@ -5,7 +5,7 @@
 
 set -e
 
-ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-https://localhost:9200}"
+ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-http://localhost:9200}"
 ELASTICSEARCH_USERNAME="${ELASTICSEARCH_USERNAME:-elastic}"
 ELASTICSEARCH_PASSWORD="${ELASTICSEARCH_PASSWORD:-${ELASTIC_PASSWORD:-}}"
 TEMPLATE_FILE="$(dirname "$0")/index-template.json"
@@ -93,7 +93,7 @@ echo "📋 Applying ILM policy..."
 http_code=$(curl $CURL_FLAGS -w "%{http_code}" -X PUT \
   -H "Content-Type: application/json" \
   "$ELASTICSEARCH_URL/_ilm/policy/dogparkpals-logs-ilm" \
-  -d @"$ILM_POLICY_FILE" 2>/dev/null -o /dev/null)
+  -d @"$ILM_POLICY_FILE" 2>/dev/null -o /dev/null || true)
 
 if [ "$http_code" = "200" ]; then
   echo "✓ ILM policy applied"
@@ -106,7 +106,7 @@ echo "📋 Applying index template..."
 http_code=$(curl $CURL_FLAGS -w "%{http_code}" -X PUT \
   -H "Content-Type: application/json" \
   "$ELASTICSEARCH_URL/_index_template/dogparkpals-logs" \
-  -d @"$TEMPLATE_FILE" 2>/dev/null -o /dev/null)
+  -d @"$TEMPLATE_FILE" 2>/dev/null -o /dev/null || true)
 
 if [ "$http_code" = "200" ]; then
   echo "✓ Index template applied"

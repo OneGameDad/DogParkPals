@@ -1,31 +1,32 @@
 {
-  "policy": "dogparkpals-logs-ilm",
-  "phases": {
-    "hot": {
-      "min_age": "0d",
-      "actions": {
-        "rollover": {
-          "max_primary_shard_size": "50gb",
-          "max_age": "1d"
-        },
-        "set_priority": {
-          "priority": 100
+  "policy": {
+    "phases": {
+      "hot": {
+        "min_age": "0d",
+        "actions": {
+          "rollover": {
+            "max_primary_shard_size": "50gb",
+            "max_age": "1d"
+          },
+          "set_priority": {
+            "priority": 100
+          }
         }
-      }
-    },
-    "warm": {
-      "min_age": "7d",
-      "actions": {
-        "set_priority": {
-          "priority": 50
-        },
-        "readonly": {}
-      }
-    },
-    "delete": {
-      "min_age": "30d",
-      "actions": {
-        "delete": {}
+      },
+      "warm": {
+        "min_age": "7d",
+        "actions": {
+          "set_priority": {
+            "priority": 50
+          },
+          "readonly": {}
+        }
+      },
+      "delete": {
+        "min_age": "30d",
+        "actions": {
+          "delete": {}
+        }
       }
     }
   }

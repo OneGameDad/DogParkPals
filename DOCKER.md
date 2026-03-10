@@ -115,14 +115,15 @@ For AMQPS to work:
 
 This section captures the most common orchestration failures observed during real startup tests and how to prevent them.
 
-### 1) Kibana Superuser Rejection
+### 1) Observability Auth Assumptions
 
 Pitfall:
-- Setting `ELASTICSEARCH_USERNAME=elastic` for Kibana causes fatal startup failure in Kibana 8.x.
+- Troubleshooting the current local stack as if Elasticsearch and Kibana require credentials.
 
 Prevention:
-- Use a service account token (preferred), or `kibana_system` credentials.
-- Keep `ELASTICSEARCH_USERNAME=elastic` out of `docker-secrets` for Kibana.
+- The current branch runs Elasticsearch with `xpack.security.enabled=false` and Kibana without auth.
+- Use `http://localhost:9200` for Elasticsearch and `http://localhost:5602` for Kibana in local verification steps.
+- If you re-enable security later, update both `docker-compose.yml` and the helper scripts together.
 
 ### 2) Elasticsearch Checks Passing On HTTP Errors
 
@@ -131,38 +132,36 @@ Pitfall:
 
 Prevention:
 - Use `curl -f` in all health/readiness probes.
-- Include auth for secured Elasticsearch endpoints.
+- Match the protocol the stack actually uses.
 
 Example (good):
 
 ```bash
-curl -s -f -k -u "elastic:$ELASTIC_PASSWORD" https://localhost:9200 >/dev/null
+curl -s -f http://localhost:9200 >/dev/null
 ```
 
-### 3) Missing Observability Credentials
+### 3) Kibana Port Mismatch
 
 Pitfall:
-- Missing `ELASTIC_PASSWORD`, or missing Kibana auth settings, causes long waits and confusing startup behavior.
+- Reaching for `http://localhost:5601` when the compose stack publishes Kibana on host port `5602`.
 
 Prevention:
-- Use the stack.sh script which auto-configures all authentication:
+- Use the stack script defaults and helper docs consistently:
 
 ```bash
 ./scripts/stack.sh --fresh
 ```
 
-Or manually ensure `docker-secrets` includes required auth values:
-- `ELASTIC_PASSWORD` (auto-generated if placeholder detected)
-- `ELASTICSEARCH_USERNAME=elastic` (auto-configured)
-- `ELASTICSEARCH_PASSWORD` (synced with ELASTIC_PASSWORD)
+- Or open Kibana directly at `http://localhost:5602`.
 
 ### 4) Compose Env Drift / Stale Container Environment
 
 Pitfall:
-- After changing Kibana auth values, plain restart may not apply expected env state in practice.
+- Changing only `docker-secrets` and expecting Kibana auth settings to change.
 
 Prevention:
-- Force-recreate Kibana after auth changes:
+- The current compose file hardcodes blank `ELASTICSEARCH_USERNAME` and `ELASTICSEARCH_PASSWORD` for Kibana.
+- If you change the auth model, update `docker-compose.yml` and force-recreate Kibana:
 
 ```bash
 docker compose --env-file docker-secrets up -d --force-recreate --no-deps kibana
@@ -177,14 +176,14 @@ Prevention:
 - Prefer Docker Compose `--env-file docker-secrets`.
 - Let project scripts load secrets in controlled ways.
 
-### 6) Legacy Service Account Token Leftovers
+### 6) Legacy Helper-Script Assumptions
 
 Pitfall:
-- `ELASTICSEARCH_SERVICEACCOUNTTOKEN` left in `docker-secrets` can conflict with current local auth flow.
+- Older notes and helper snippets may still assume HTTPS + basic auth for Elasticsearch.
 
 Prevention:
-- Prefer the default `stack.sh` behavior (`ELASTICSEARCH_USERNAME=elastic` + synced password).
-- Remove legacy token entries if present; `./scripts/stack.sh --fresh` does this automatically.
+- For the current local stack, use plain HTTP examples.
+- Reserve HTTPS/auth guidance for production hardening or a future secured compose configuration.
 
 ### 7) Slow Kibana Initialization Misread As Failure
 
@@ -250,7 +249,8 @@ bash scripts/verify-deploy.sh
 docker compose ps
 docker logs --tail 80 dogparkpals-kibana
 docker logs --tail 80 dogparkpals-rabbitmq-exporter
-docker exec dogparkpals-kibana env | grep ELASTICSEARCH
+curl -s http://localhost:9200/_cluster/health
+curl -s http://localhost:5602/api/status
 ```
 
 ### Backend Container

@@ -4,7 +4,7 @@ This directory contains configuration and scripts for setting up Kibana to displ
 
 ## Quick Start
 
-After running `docker compose up -d`, setup Kibana with:
+After starting the stack (`./scripts/stack.sh --fresh`), setup Kibana with:
 
 ```bash
 chmod +x kibana/setup-kibana.sh
@@ -111,7 +111,9 @@ nano elasticsearch/ilm-policy.json
 bash elasticsearch/apply-template.sh
 
 # 3. Verify it was applied
-curl http://localhost:9200/_ilm/policy/dogparkpals-logs-ilm
+ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"
+ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"
+curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/_ilm/policy/dogparkpals-logs-ilm
 ```
 
 ### Production Configuration
@@ -140,17 +142,23 @@ curl http://localhost:9200/_ilm/policy/dogparkpals-logs-ilm
 
 **Check policy status:**
 ```bash
-curl http://localhost:9200/_ilm/policy/dogparkpals-logs-ilm | jq
+ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"
+ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"
+curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/_ilm/policy/dogparkpals-logs-ilm | jq
 ```
 
 **Check index lifecycle status:**
 ```bash
-curl http://localhost:9200/dogparkpals-logs-*/_ilm/explain | jq '.indices'
+ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"
+ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"
+curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/dogparkpals-logs-*/_ilm/explain | jq '.indices'
 ```
 
 **View indices and their phases:**
 ```bash
-curl http://localhost:9200/_cat/custom?v&s=index&h=index,creation.date.string,ilm.managed,ilm.status,ilm.phase
+ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"
+ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"
+curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/_cat/custom?v&s=index\&h=index,creation.date.string,ilm.managed,ilm.status,ilm.phase
 ```
 
 ### Disk Space Estimation
@@ -173,7 +181,9 @@ For long-term archival beyond 30 days:
 
 1. **Before deletion date, manually export:**
 ```bash
-curl "http://localhost:9200/dogparkpals-logs-2025.12.01/_search?size=10000" \
+ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"
+ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"
+curl -k -u "$ES_USER:$ES_PASS" "https://localhost:9200/dogparkpals-logs-2025.12.01/_search?size=10000" \
   > dogparkpals-logs-2025-12-01.json
 ```
 
@@ -318,7 +328,7 @@ duration_ms > 100
 
 **No logs appearing?**
 - Check Logstash is running: `docker compose logs logstash`
-- Verify Elasticsearch has data: `curl http://localhost:9200/dogparkpals-logs-*/_count`
+- Verify Elasticsearch has data: `ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"; ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"; curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/dogparkpals-logs-*/_count`
 - Check index template: `bash elasticsearch/apply-template.sh`
 
 **Index pattern not showing data?**

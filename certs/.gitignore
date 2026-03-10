@@ -1,0 +1,5 @@
+# SSL/TLS Certificates
+# Keep certificates out of version control for security
+*.key
+*.crt
+*.pem

@@ -37,13 +37,31 @@ import searchRouter from "./routes/searchRouter";
 import typeSafeLogger from "./utils/typeSafeLogger";
 import { requestIdMiddleware } from "./middlewares/requestId";
 import { errorHandler } from "./middlewares/errorHandler";
+import { httpsRedirect } from "./middlewares/httpsRedirect";
+import { securityHeaders } from "./middlewares/securityHeaders";
 import { register } from "./config/metrics";
 
 const app = express();
 
+app.use(httpsRedirect);
+app.use(securityHeaders);
+
+// CORS configuration - allows HTTPS origin in development, configurable for production
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? [process.env.FRONTEND_URL || 'https://yourdomain.com']
+  : ['https://localhost:5173'];
+
 app.use(cors({
-  // Hardcoded for development purposes
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Origin ${origin} not allowed by CORS policy`));
+    }
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,

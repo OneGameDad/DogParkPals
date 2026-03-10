@@ -37,7 +37,7 @@ vi.mock('../../services/api', () => ({
   api: {
     register: vi.fn(),
     login: vi.fn(),
-    getBaseUrl: vi.fn(() => 'http://localhost:3000'),
+    getBaseUrl: vi.fn(() => 'https://localhost:3000'),
   },
 }));
 
@@ -307,7 +307,7 @@ describe('Register Component', () => {
     const googleButton = screen.getByRole('button', { name: 'auth.register.signUpWithGoogle' });
     fireEvent.click(googleButton);
     
-    expect(window.location.href).toBe('http://localhost:3000/auth/google');
+    expect(window.location.href).toBe('https://localhost:3000/auth/google');
   });
 
   it('should require all form fields', () => {

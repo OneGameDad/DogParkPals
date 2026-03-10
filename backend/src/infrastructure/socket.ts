@@ -1,4 +1,5 @@
 import { Server as HttpServer } from "http";
+import { Server as HttpsServer } from "https";
 import { Server, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
 import { isTokenBlacklisted } from "../utils/tokenBlacklist";
@@ -18,11 +19,15 @@ interface AuthenticatedSocket extends Socket {
 function isPositiveInteger(value: unknown): value is number {
   return Number.isInteger(value) && (value as number) > 0;
 }
+export function initializeSocket(httpServer: HttpServer | HttpsServer): Server {
+  // WebSocket CORS - allows HTTPS origin in development, configurable for production
+  const allowedOrigins = process.env.NODE_ENV === 'production'
+    ? [process.env.FRONTEND_URL || 'https://yourdomain.com']
+    : ['https://localhost:5173'];
 
-export function initializeSocket(httpServer: HttpServer): Server {
   const io = new Server(httpServer, {
     cors: {
-      origin: process.env.FRONTEND_URL || "http://localhost:5173",
+      origin: allowedOrigins,
       credentials: true,
     },
     // Enable fallback to long-polling if WebSocket fails

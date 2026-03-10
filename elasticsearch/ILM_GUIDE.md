@@ -2,6 +2,19 @@
 
 This guide explains DogParkPals's automatic log retention and disk management using Elasticsearch Index Lifecycle Management (ILM).
 
+## Connection Notes
+
+DogParkPals runs Elasticsearch over HTTPS with authentication.
+
+Before running any `curl` command in this guide, load credentials from `docker-secrets` and use `-k` for the local self-signed cert:
+
+```bash
+ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"
+ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"
+# Example pattern used throughout this guide:
+curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/_cluster/health
+```
+
 ## Quick Reference
 
 **Default Policy: `dogparkpals-logs-ilm`**
@@ -78,17 +91,17 @@ Consider backing up logs older than 30 days if your compliance requirements dema
 
 **View ILM policy definition:**
 ```bash
-curl http://localhost:9200/_ilm/policy/dogparkpals-logs-ilm | jq
+curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/_ilm/policy/dogparkpals-logs-ilm | jq
 ```
 
 **Check which phase each index is in:**
 ```bash
-curl http://localhost:9200/dogparkpals-logs-*/_ilm/explain | jq '.indices | to_entries[] | {key, value.phase}'
+curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/dogparkpals-logs-*/_ilm/explain | jq '.indices | to_entries[] | {key, value.phase}'
 ```
 
 **Pretty view of all indices and their status:**
 ```bash
-curl -s 'http://localhost:9200/_cat/ilm?format=json' | jq '.[] | select(.index | startswith("dogparkpals")) | {index, phase, age}'
+curl -s -k -u "$ES_USER:$ES_PASS" 'https://localhost:9200/_cat/ilm?format=json' | jq '.[] | select(.index | startswith("dogparkpals")) | {index, phase, age}'
 ```
 
 ### Reapplying ILM Policy
@@ -139,7 +152,7 @@ bash elasticsearch/apply-template.sh
 
 5. Verify:
 ```bash
-curl http://localhost:9200/_ilm/policy/dogparkpals-logs-ilm | jq '.policy.phases.delete'
+curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/_ilm/policy/dogparkpals-logs-ilm | jq '.policy.phases.delete'
 ```
 
 ### Changing Rollover Thresholds
@@ -173,13 +186,13 @@ Or switch to time-based rollover only:
 
 **Force an index to warm phase (stop accepting writes):**
 ```bash
-curl -X POST "http://localhost:9200/dogparkpals-logs-2026.02.15/_close"
+curl -k -u "$ES_USER:$ES_PASS" -X POST "https://localhost:9200/dogparkpals-logs-2026.02.15/_close"
 # Then manually set its ILM phase
 ```
 
 **Delete an index immediately (don't wait for ILM):**
 ```bash
-curl -X DELETE "http://localhost:9200/dogparkpals-logs-2026.02.01"
+curl -k -u "$ES_USER:$ES_PASS" -X DELETE "https://localhost:9200/dogparkpals-logs-2026.02.01"
 ```
 
 **Caution:** Manual operations bypass ILM safety checks. Use only when necessary.
@@ -207,17 +220,17 @@ curl -X DELETE "http://localhost:9200/dogparkpals-logs-2026.02.01"
 
 **Check Elasticsearch disk usage:**
 ```bash
-curl -s 'http://localhost:9200/_cat/nodes?v&h=name,disk.used,disk.total,disk.avail' | column -t
+curl -s -k -u "$ES_USER:$ES_PASS" 'https://localhost:9200/_cat/nodes?v&h=name,disk.used,disk.total,disk.avail' | column -t
 ```
 
 **Check by index:**
 ```bash
-curl -s 'http://localhost:9200/_cat/indices?v&h=index,store.size' | grep dogparkpals
+curl -s -k -u "$ES_USER:$ES_PASS" 'https://localhost:9200/_cat/indices?v&h=index,store.size' | grep dogparkpals
 ```
 
 **Set Elasticsearch disk threshold warning (80%):**
 ```bash
-curl -X PUT "http://localhost:9200/_cluster/settings" -H 'Content-Type: application/json' -d '{
+curl -k -u "$ES_USER:$ES_PASS" -X PUT "https://localhost:9200/_cluster/settings" -H 'Content-Type: application/json' -d '{
   "transient": {
     "cluster.routing.allocation.disk.watermark.low": "80%",
     "cluster.routing.allocation.disk.watermark.high": "90%"
@@ -230,8 +243,8 @@ curl -X PUT "http://localhost:9200/_cluster/settings" -H 'Content-Type: applicat
 **Delete all logs older than 60 days:**
 ```bash
 # WARNING: This is permanent and cannot be undone
-curl -X DELETE "http://localhost:9200/dogparkpals-logs-2025-12-*"
-curl -X DELETE "http://localhost:9200/dogparkpals-logs-2025-11-*"
+curl -k -u "$ES_USER:$ES_PASS" -X DELETE "https://localhost:9200/dogparkpals-logs-2025-12-*"
+curl -k -u "$ES_USER:$ES_PASS" -X DELETE "https://localhost:9200/dogparkpals-logs-2025-11-*"
 ```
 
 **Or reduce retention period:**
@@ -317,12 +330,12 @@ Always verify your jurisdiction's requirements before deploying to production.
 
 **Check if ILM is enabled:**
 ```bash
-curl -s http://localhost:9200/_cluster/settings | jq '.persistent | select(. != {})'
+curl -s -k -u "$ES_USER:$ES_PASS" https://localhost:9200/_cluster/settings | jq '.persistent | select(. != {})'
 ```
 
 **Enable ILM manually:**
 ```bash
-curl -X PUT "http://localhost:9200/_cluster/settings" -H 'Content-Type: application/json' -d '{
+curl -k -u "$ES_USER:$ES_PASS" -X PUT "https://localhost:9200/_cluster/settings" -H 'Content-Type: application/json' -d '{
   "persistent": {
     "xpack.ilm.enabled": true
   }
@@ -333,12 +346,12 @@ curl -X PUT "http://localhost:9200/_cluster/settings" -H 'Content-Type: applicat
 
 **Check index settings:**
 ```bash
-curl -s 'http://localhost:9200/dogparkpals-logs-2026.02.18/_settings?pretty' | jq '.[] | .settings.index.lifecycle'
+curl -s -k -u "$ES_USER:$ES_PASS" 'https://localhost:9200/dogparkpals-logs-2026.02.18/_settings?pretty' | jq '.[] | .settings.index.lifecycle'
 ```
 
 **Manually move to warm:**
 ```bash
-curl -X POST "http://localhost:9200/dogparkpals-logs-2026.02.18/_ilm/move-to-step" -H 'Content-Type: application/json' -d '{
+curl -k -u "$ES_USER:$ES_PASS" -X POST "https://localhost:9200/dogparkpals-logs-2026.02.18/_ilm/move-to-step" -H 'Content-Type: application/json' -d '{
   "current_step": {
     "phase": "hot",
     "action": "rollover"
@@ -354,17 +367,17 @@ curl -X POST "http://localhost:9200/dogparkpals-logs-2026.02.18/_ilm/move-to-ste
 
 1. **Check usage:**
 ```bash
-curl -s 'http://localhost:9200/_cat/nodes?v' | grep disk
+curl -s -k -u "$ES_USER:$ES_PASS" 'https://localhost:9200/_cat/nodes?v' | grep disk
 ```
 
 2. **Check oldest index:**
 ```bash
-curl -s 'http://localhost:9200/_cat/indices?v&s=creation.date&h=creation.date,index' | head -5
+curl -s -k -u "$ES_USER:$ES_PASS" 'https://localhost:9200/_cat/indices?v&s=creation.date&h=creation.date,index' | head -5
 ```
 
 3. **Delete old indices:**
 ```bash
-curl -X DELETE "http://localhost:9200/dogparkpals-logs-2026.01.*"
+curl -k -u "$ES_USER:$ES_PASS" -X DELETE "https://localhost:9200/dogparkpals-logs-2026.01.*"
 ```
 
 4. **Or reduce retention to 14 days:**
@@ -378,7 +391,7 @@ bash elasticsearch/apply-template.sh
 
 **Check rollover settings:**
 ```bash
-curl -s 'http://localhost:9200/_ilm/policy/dogparkpals-logs-ilm' | jq '.policy.phases.hot.actions.rollover'
+curl -s -k -u "$ES_USER:$ES_PASS" 'https://localhost:9200/_ilm/policy/dogparkpals-logs-ilm' | jq '.policy.phases.hot.actions.rollover'
 ```
 
 **Currently set to:**
@@ -395,7 +408,7 @@ If logs exceed 50GB/day, increase threshold:
 ## Deployment Checklist
 
 - [ ] ILM policy applied: `bash elasticsearch/apply-template.sh`
-- [ ] Policy verified: `curl http://localhost:9200/_ilm/policy/dogparkpals-logs-ilm`
+- [ ] Policy verified: `curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/_ilm/policy/dogparkpals-logs-ilm`
 - [ ] Disk capacity calculated based on daily volume
 - [ ] Retention period matches compliance requirements
 - [ ] Alerting configured for disk usage > 80%

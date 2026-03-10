@@ -140,7 +140,7 @@ describe('Auth Controller', () => {
       mockReq.user = { id: 1, email: 'user@gmail.com', role: 'CLIENT' };
       mockRes.redirect = mockRedirect;
       mockJwtSign.mockReturnValue('google-jwt-token');
-      process.env.FRONTEND_URL = 'http://localhost:5173';
+      process.env.FRONTEND_URL = 'https://localhost:5173';
 
       await authController.googleCallback(mockReq as Request, mockRes as Response, mockNext);
 
@@ -157,7 +157,7 @@ describe('Auth Controller', () => {
         path: '/'
       });
       expect(awardExperience).toHaveBeenCalledWith(1, XP_REWARDS.LOGIN, 'login');
-      expect(mockRedirect).toHaveBeenCalledWith('http://localhost:5173/auth/google/callback');
+      expect(mockRedirect).toHaveBeenCalledWith('https://localhost:5173/auth/google/callback');
     });
 
     test('uses default frontend url when env not set', async () => {
@@ -169,7 +169,7 @@ describe('Auth Controller', () => {
 
       await authController.googleCallback(mockReq as Request, mockRes as Response, mockNext);
 
-      expect(mockRedirect).toHaveBeenCalledWith('http://localhost:5173/auth/google/callback');
+      expect(mockRedirect).toHaveBeenCalledWith('https://localhost:5173/auth/google/callback');
       expect(awardExperience).toHaveBeenCalledWith(2, XP_REWARDS.LOGIN, 'login');
     });
 

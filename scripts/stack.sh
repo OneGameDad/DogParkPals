@@ -261,46 +261,6 @@ normalize_cert_permissions() {
   done
 }
 
-create_kibana_service_account_token() {
-  local es_url="$1"
-  local es_user="$2"
-  local es_password="$3"
-  local secrets_file="$4"
-  
-  # Check if token already exists and is valid
-  if grep -q "^KIBANA_SERVICE_ACCOUNT_TOKEN=" "$secrets_file" 2>/dev/null; then
-    local existing_token
-    existing_token=$(grep "^KIBANA_SERVICE_ACCOUNT_TOKEN=" "$secrets_file" | cut -d= -f2-)
-    if [ -n "$existing_token" ]; then
-      echo "✅ Kibana service account token already configured"
-      return 0
-    fi
-  fi
-  
-  echo "Creating new Kibana service account token..."
-  
-  # Create token for built-in kibana service account
-  local token_response
-  token_response=$(curl -s -k -X POST \
-    -u "${es_user}:${es_password}" \
-    -H "Content-Type: application/json" \
-    "$es_url/_security/service/elastic/kibana/credential/token/dogparkpals_$(date +%s)" 2>/dev/null)
-  
-  local token
-  token=$(echo "$token_response" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
-  
-  if [ -z "$token" ]; then
-    echo "❌ Failed to create Kibana service account token"
-    echo "   Response: $token_response"
-    return 1
-  fi
-  
-  # Add token to docker-secrets
-  echo "KIBANA_SERVICE_ACCOUNT_TOKEN=$token" >> "$secrets_file"
-  echo "✅ Kibana service account token created and saved"
-  return 0
-}
-
 # ==============================================================================
 # Stack Control Functions
 # ==============================================================================
@@ -620,21 +580,11 @@ run_fresh() {
     fi
     
     wait_for_url "Elasticsearch" "$ELASTICSEARCH_URL/_cluster/health" 180 "$WAIT_INTERVAL_SECONDS" "$ELASTICSEARCH_USERNAME" "$ELASTICSEARCH_PASSWORD"
-    
-    # Create Kibana service account token BEFORE starting the rest of the stack
-    # This way, when Kibana starts, the token is already in docker-secrets
-    echo ""
-    echo "🔐 Creating Kibana service account token..."
-    if create_kibana_service_account_token "$ELASTICSEARCH_URL" "$ELASTICSEARCH_USERNAME" "$ELASTICSEARCH_PASSWORD" "$SECRETS_FILE"; then
-      echo "✅ Token created and saved to docker-secrets"
-    else
-      echo "⚠️  Token creation failed (non-fatal, will attempt without it)"
-    fi
   else
-    echo "⚠️  Elasticsearch not running - skipping token pre-generation"
+    echo "⚠️  Elasticsearch not running"
   fi
-  
-  # Now start the full stack with token already available in docker-secrets
+
+  # Now start the full stack
   echo ""
   echo "🚀 Starting full stack (Phase 2)..."
   (cd "$ROOT_DIR" && compose --env-file docker-secrets up -d)

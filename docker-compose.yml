@@ -187,7 +187,6 @@ services:
       - ./docker-secrets
     environment:
       - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
-      - ELASTICSEARCH_SERVICEACCOUNT_TOKEN=${KIBANA_SERVICE_ACCOUNT_TOKEN:-}
       # Performance optimizations
       - LOGGING_QUIET=true
       - MONITORING_UI_CONTAINER_ELASTICSEARCH_ENABLED=false

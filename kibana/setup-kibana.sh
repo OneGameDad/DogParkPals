@@ -7,7 +7,7 @@
 set -e
 
 KIBANA_URL="${KIBANA_URL:-http://localhost:5601}"
-ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-https://localhost:9200}"
+ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-http://localhost:9200}"
 SCRIPT_DIR="$(dirname "$0")"
 SAVED_SEARCHES_FILE="$SCRIPT_DIR/saved_searches.ndjson"
 DASHBOARDS_FILE="$SCRIPT_DIR/dashboards.ndjson"

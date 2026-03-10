@@ -38,6 +38,9 @@ export const es = {
     },
     // ... existing notifications ...
     notifications: { // don't change the {name} bits, it's part of the code
+      title: "Notificaciones",
+      markAllRead: "Marcar todo como leído",
+      empty: "No hay notificaciones",
       friendRequest: '{name} quiere ser tu amigo',
       messageReceived: 'Has recibido un mensaje de {name}',
       eventCreated: '{name} creó un nuevo evento',
@@ -286,10 +289,16 @@ export const es = {
     dogList: {
       noDogs: "Aún no se han agregado perros"
     },
+    homePage: {
+      welcome: "Bienvenido a ParkPals",
+      loggedInAs: "Conectado como: {{name}}",
+      notLoggedIn: "No conectado"
+    },
     social: {
       title: "Conexiones",
       people: "Personas",
       dogs: "Perros",
+      events: "Eventos",
       viewFullProfile: "Ver Perfil Completo"
     },
     organizations: {

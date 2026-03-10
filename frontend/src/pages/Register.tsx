@@ -3,12 +3,14 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import { useSubmit } from '../hooks/useSubmit';
+import { useAuth } from '../hooks/useAuth';
 import { Button, InputText, BodyText } from '../components/common';
 import { Header } from '../components/layout';
 
 const Register = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { refreshUser } = useAuth();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,7 +20,7 @@ const Register = () => {
     onSuccess: async () => {
       try {
         await api.login(email, password);
-        window.dispatchEvent(new Event('auth:login'));
+        await refreshUser();
         navigate('/dashboard');
       } catch (error) {
         console.error('Auto-login failed after registration:', error);

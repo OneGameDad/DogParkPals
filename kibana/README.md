@@ -11,7 +11,7 @@ chmod +x kibana/setup-kibana.sh
 bash kibana/setup-kibana.sh
 ```
 
-Then open Kibana: http://localhost:5601
+Then open Kibana: http://localhost:5602
 
 ## What Gets Created
 
@@ -111,9 +111,7 @@ nano elasticsearch/ilm-policy.json
 bash elasticsearch/apply-template.sh
 
 # 3. Verify it was applied
-ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"
-ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"
-curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/_ilm/policy/dogparkpals-logs-ilm
+curl http://localhost:9200/_ilm/policy/dogparkpals-logs-ilm
 ```
 
 ### Production Configuration
@@ -142,23 +140,17 @@ curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/_ilm/policy/dogparkpals-lo
 
 **Check policy status:**
 ```bash
-ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"
-ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"
-curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/_ilm/policy/dogparkpals-logs-ilm | jq
+curl http://localhost:9200/_ilm/policy/dogparkpals-logs-ilm | jq
 ```
 
 **Check index lifecycle status:**
 ```bash
-ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"
-ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"
-curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/dogparkpals-logs-*/_ilm/explain | jq '.indices'
+curl http://localhost:9200/dogparkpals-logs-*/_ilm/explain | jq '.indices'
 ```
 
 **View indices and their phases:**
 ```bash
-ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"
-ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"
-curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/_cat/custom?v&s=index\&h=index,creation.date.string,ilm.managed,ilm.status,ilm.phase
+curl 'http://localhost:9200/_cat/indices?v&s=index&h=index,creation.date.string,health,status,index,store.size'
 ```
 
 ### Disk Space Estimation
@@ -181,9 +173,7 @@ For long-term archival beyond 30 days:
 
 1. **Before deletion date, manually export:**
 ```bash
-ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"
-ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"
-curl -k -u "$ES_USER:$ES_PASS" "https://localhost:9200/dogparkpals-logs-2025.12.01/_search?size=10000" \
+curl "http://localhost:9200/dogparkpals-logs-2025.12.01/_search?size=10000" \
   > dogparkpals-logs-2025-12-01.json
 ```
 
@@ -221,7 +211,7 @@ bash kibana/setup-kibana.sh
 
 ### Create Index Pattern
 
-1. Open http://localhost:5601
+1. Open http://localhost:5602
 2. Go to **Stack Management** → **Index Patterns**
 3. Click **Create index pattern**
 4. Enter pattern: `dogparkpals-logs-*`
@@ -328,7 +318,7 @@ duration_ms > 100
 
 **No logs appearing?**
 - Check Logstash is running: `docker compose logs logstash`
-- Verify Elasticsearch has data: `ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"; ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"; curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/dogparkpals-logs-*/_count`
+- Verify Elasticsearch has data: `curl http://localhost:9200/dogparkpals-logs-*/_count`
 - Check index template: `bash elasticsearch/apply-template.sh`
 
 **Index pattern not showing data?**

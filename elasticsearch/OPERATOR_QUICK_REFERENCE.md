@@ -2,13 +2,11 @@
 
 ## Connection Notes
 
-Elasticsearch is exposed via HTTPS with basic auth.
+The current local Docker stack exposes Elasticsearch via plain HTTP without authentication.
 
 ```bash
-ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"
-ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"
-# Use this form for Elasticsearch API calls:
-curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/_cluster/health
+# Use this form for Elasticsearch API calls in the current branch:
+curl http://localhost:9200/_cluster/health
 ```
 
 ## Quick Commands
@@ -28,46 +26,46 @@ bash elasticsearch/apply-ilm.sh
 ### Check Status
 ```bash
 # View ILM policy
-curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/_ilm/policy/dogparkpals-logs-ilm
+curl http://localhost:9200/_ilm/policy/dogparkpals-logs-ilm
 
 # Check index phases
-curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/dogparkpals-logs-*/_ilm/explain?pretty
+curl http://localhost:9200/dogparkpals-logs-*/_ilm/explain?pretty
 
 # List all indices with sizes
-curl -k -u "$ES_USER:$ES_PASS" 'https://localhost:9200/_cat/indices?v&h=index,store.size,creation.date'
+curl 'http://localhost:9200/_cat/indices?v&h=index,store.size,creation.date'
 
 # Monitor disk usage
-curl -k -u "$ES_USER:$ES_PASS" 'https://localhost:9200/_cat/nodes?v&h=name,disk.used,disk.total,disk.avail'
+curl 'http://localhost:9200/_cat/nodes?v&h=name,disk.used,disk.total,disk.avail'
 ```
 
 ### Logs & Queries
 ```bash
 # Count all logs
-curl -k -u "$ES_USER:$ES_PASS" 'https://localhost:9200/dogparkpals-logs-*/_count'
+curl 'http://localhost:9200/dogparkpals-logs-*/_count'
 
 # Find logs with errors
-curl -k -u "$ES_USER:$ES_PASS" -X POST 'https://localhost:9200/dogparkpals-logs-*/_search' -d '{"query": {"term": {"severity": "error"}}}'
+curl -X POST 'http://localhost:9200/dogparkpals-logs-*/_search' -H 'Content-Type: application/json' -d '{"query": {"term": {"severity": "error"}}}'
 
 # Get last 10 logs
-curl 'https://localhost:9200/dogparkpals-logs-*/_search?size=10&sort=@timestamp:desc'
+curl 'http://localhost:9200/dogparkpals-logs-*/_search?size=10&sort=@timestamp:desc'
 
 # Export logs to JSON
-curl 'https://localhost:9200/dogparkpals-logs-2026.02.18/_search?size=10000' > backup.json
+curl 'http://localhost:9200/dogparkpals-logs-2026.02.18/_search?size=10000' > backup.json
 ```
 
 ### Maintenance
 ```bash
 # Delete old indices (permanent!)
-curl -X DELETE 'https://localhost:9200/dogparkpals-logs-2026.01.*'
+curl -X DELETE 'http://localhost:9200/dogparkpals-logs-2026.01.*'
 
 # Force rollover now (don't wait for 1 day)
-curl -X POST 'https://localhost:9200/dogparkpals-logs-write/_rollover'
+curl -X POST 'http://localhost:9200/dogparkpals-logs-write/_rollover'
 
 # Close index (prevent new writes)
-curl -X POST 'https://localhost:9200/dogparkpals-logs-2026.02.15/_close'
+curl -X POST 'http://localhost:9200/dogparkpals-logs-2026.02.15/_close'
 
 # Open index (allow writes again)
-curl -X POST 'https://localhost:9200/dogparkpals-logs-2026.02.15/_open'
+curl -X POST 'http://localhost:9200/dogparkpals-logs-2026.02.15/_open'
 ```
 
 ### Customization
@@ -131,25 +129,25 @@ bash elasticsearch/apply-template.sh
 ### Disk Full
 ```bash
 # 1. Check current size
-curl 'https://localhost:9200/_cat/nodes?v' | grep disk
+curl 'http://localhost:9200/_cat/nodes?v' | grep disk
 
 # 2. List oldest indices
-curl 'https://localhost:9200/_cat/indices?v&s=creation.date&h=index' | head
+curl 'http://localhost:9200/_cat/indices?v&s=creation.date&h=index' | head
 
 # 3. Delete oldest
-curl -X DELETE 'https://localhost:9200/dogparkpals-logs-2025.12.*'
+curl -X DELETE 'http://localhost:9200/dogparkpals-logs-2025.12.*'
 
 # 4. Re-check
-curl 'https://localhost:9200/_cat/nodes?v' | grep disk
+curl 'http://localhost:9200/_cat/nodes?v' | grep disk
 ```
 
 ### Elasticsearch Unresponsive
 ```bash
 # 1. Check cluster health
-curl 'https://localhost:9200/_cluster/health'
+curl 'http://localhost:9200/_cluster/health'
 
 # 2. Check if ILM is stuck
-curl 'https://localhost:9200/dogparkpals-logs-*/_ilm/explain?pretty'
+curl 'http://localhost:9200/dogparkpals-logs-*/_ilm/explain?pretty'
 
 # 3. Check logs
 docker compose logs elasticsearch
@@ -161,7 +159,7 @@ docker compose restart elasticsearch
 ### Can't Find Logs
 ```bash
 # 1. Check indices exist
-curl 'https://localhost:9200/_cat/indices' | grep dogparkpals
+curl 'http://localhost:9200/_cat/indices' | grep dogparkpals
 
 # 2. Check index pattern in Kibana
 # Stack Management → Index Patterns → dogparkpals-logs-*
@@ -229,14 +227,14 @@ ufw allow 3001/tcp        # Grafana
 ufw allow 5173/tcp        # Frontend
 ufw deny 9200/tcp         # Block Elasticsearch (internal only)
 ufw deny 9300/tcp         # Block ES transport
-ufw deny 5601/tcp         # Block Kibana (use reverse proxy)
+ufw deny 5602/tcp         # Block Kibana (use reverse proxy)
 ufw deny 9090/tcp         # Block Prometheus (use reverse proxy)
 ```
 
 #### 5. Reverse Proxies
 ```bash
 # Setup nginx reverse proxies for:
-# - Kibana on :5601    → with authentication
+# - Kibana on :5602    → with authentication
 # - Prometheus on :9090 → with basic auth
 # - Elasticsearch :9200 → private/internal only
 ```
@@ -327,11 +325,11 @@ kibana/
 
 ## Helpful URLs
 
-- **Elasticsearch:** https://localhost:9200
-- **Kibana:** https://localhost:5601
-- **Cluster Health:** https://localhost:9200/_cluster/health
-- **Node Stats:** https://localhost:9200/_nodes/stats
-- **ILM Status:** https://localhost:9200/_ilm/status
+- **Elasticsearch:** http://localhost:9200
+- **Kibana:** http://localhost:5602
+- **Cluster Health:** http://localhost:9200/_cluster/health
+- **Node Stats:** http://localhost:9200/_nodes/stats
+- **ILM Status:** http://localhost:9200/_ilm/status
 
 ## Documentation
 

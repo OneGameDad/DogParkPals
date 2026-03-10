@@ -174,7 +174,7 @@ Click → Export → CSV (in Kibana UI)
 
 ### Accessing Dashboards
 
-1. Open Kibana: http://localhost:5601
+1. Open Kibana: http://localhost:5602
 2. Click **Menu** (☰) → **Dashboards**
 3. Search: "dogparkpals"
 4. Click dashboard name
@@ -245,7 +245,7 @@ Click → Export → CSV (in Kibana UI)
 **Dashboard shows no data?**
 - Check time range includes log data
 - Verify events are flowing: Use Event Timeline dashboard and zoom to Last 1 hour
-- Check logs exist in Elasticsearch: `ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"; ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"; curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/dogparkpals-logs-*/_count`
+- Check logs exist in Elasticsearch: `curl http://localhost:9200/dogparkpals-logs-*/_count`
 
 **Visualizations are slow?**
 - Reduce time range

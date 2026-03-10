@@ -35,7 +35,7 @@ This single command will:
 **What you get:**
 - Frontend: https://localhost:5173
 - Backend API: https://localhost:3000
-- Kibana: http://localhost:5601
+- Kibana: http://localhost:5602
 - Grafana: http://localhost:3001
 - Prometheus: http://localhost:9090
 
@@ -94,17 +94,17 @@ docker compose logs -f frontend
 
 ### Important Notes
 
-**Elasticsearch Authentication:**
-- The stack script automatically configures secure Elasticsearch credentials
-- Uses `elastic` superuser for backend access
-- Removes problematic `ELASTICSEARCH_SERVICEACCOUNTTOKEN` if present
-- Auto-generates strong passwords if placeholders are detected
+**Elasticsearch Connectivity:**
+- The local observability stack exposes Elasticsearch on `http://localhost:9200`
+- The current branch runs Elasticsearch without X-Pack auth in local Docker compose
+- Kibana connects to Elasticsearch over plain HTTP in the default local setup
+- If you re-enable Elasticsearch security later, update the compose env and curl examples accordingly
 
 **Kibana Startup:**
 - First startup can take 2-5 minutes
 - Status `health: starting` is normal during initialization
 - If Kibana times out, core services continue - setup can be run manually later
-- Access at http://localhost:5601 once healthy
+- Access at http://localhost:5602 once healthy
 
 **Deployment Reliability:**
 - ✅ Automatic volume cleanup prevents stale Elasticsearch state
@@ -114,11 +114,10 @@ docker compose logs -f frontend
 - ✅ Progress shown every 10 seconds (less noise)
 - ✅ Core-only mode available for quick testing without observability
 
-**Service Account Token Issues (Resolved):**
-- Previous versions used `ELASTICSEARCH_SERVICEACCOUNTTOKEN`
-- This caused Kibana startup failures in Elasticsearch 8.x
-- Current version uses simpler `elastic` user authentication
-- No manual token generation needed
+**Observability Security Model:**
+- The current local branch configuration keeps Kibana and Elasticsearch unauthenticated
+- This reduces local setup friction while HTTPS remains enabled for the app and RabbitMQ management
+- Production hardening still requires re-enabling auth and transport security for observability services
        - `CAFILE=/etc/rabbitmq-exporter/ca.pem`
        - `SKIPVERIFY=false`
        - volume mount: `./certs/rabbitmq.crt:/etc/rabbitmq-exporter/ca.pem:ro`
@@ -138,9 +137,9 @@ docker compose logs -f frontend
    - Backend API: https://localhost:3000
    - Prometheus: http://localhost:9090
    - Grafana: http://localhost:3001 (admin/admin)
-   - Kibana: http://localhost:5601
+   - Kibana: http://localhost:5602
    - RabbitMQ Management: https://localhost:15671 (guest/guest)
-   - Elasticsearch: https://localhost:9200 (use `ELASTICSEARCH_USERNAME`/`ELASTICSEARCH_PASSWORD` from `docker-secrets`)
+   - Elasticsearch: http://localhost:9200 (local Docker setup uses plain HTTP with no auth)
    
    **Note:** You'll see a certificate warning in your browser when accessing HTTPS URLs with the self-signed certificate. This is expected for local development and can be safely bypassed.
 
@@ -195,7 +194,7 @@ RABBIT_SKIP_VERIFY=false
 ./scripts/stack.sh --clean      # Stop all + remove volumes/images (fresh slate)
 
 # Deployment verification
-bash scripts/verify-deploy.sh   # Run pitfall checks (auth, healthchecks, etc.)
+bash scripts/verify-deploy.sh   # Run pitfall checks (ports, healthchecks, TLS wiring, etc.)
 ```
 
 **Manual Docker Compose Commands:**
@@ -289,8 +288,8 @@ DogParkPals includes Prometheus metrics and Grafana dashboards for observability
 - Grafana: `http://localhost:3001` (username: `admin`, password: `admin`)
 - Backend Metrics: `https://localhost:3000/metrics`
 - RabbitMQ Exporter: `http://rabbitmq-exporter:9419/metrics` (internal Docker network)
-- Elasticsearch: `https://localhost:9200` (credentials from `docker-secrets`)
-- Kibana: `http://localhost:5601`
+- Elasticsearch: `http://localhost:9200` (local Docker setup uses plain HTTP with no auth)
+- Kibana: `http://localhost:5602`
 
 **Available Metrics:**
 - Node.js runtime (memory, event loop lag, GC)
@@ -314,8 +313,8 @@ DogParkPals includes Prometheus metrics and Grafana dashboards for observability
 DogParkPals includes an ELK stack (Elasticsearch, Logstash, Kibana) for centralized log aggregation, search, and audit trail capabilities.
 
 **Access:**
-- Kibana: `http://localhost:5601`
-- Elasticsearch: `https://localhost:9200` (HTTPS API, basic auth)
+- Kibana: `http://localhost:5602`
+- Elasticsearch: `http://localhost:9200` (plain HTTP in the default local Docker stack)
 - Logstash: Receives logs on TCP/UDP port 5000 (not user-facing)
 
 **Verifying Logs (Fresh Deployments):**
@@ -335,18 +334,15 @@ In a fresh deployment, logs are generated automatically but may be minimal initi
 
 3. **Verify logs exist in Elasticsearch**:
    ```bash
-   ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"
-   ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"
    # Check total log count
-   curl -k -u "$ES_USER:$ES_PASS" \
-       'https://localhost:9200/dogparkpals-logs-*/_count'
+   curl 'http://localhost:9200/dogparkpals-logs-*/_count'
    
    # View 5 most recent logs
-   curl -s -k -u "$ES_USER:$ES_PASS" \
-       'https://localhost:9200/dogparkpals-logs-*/_search?size=5&sort=@timestamp:desc' | jq '.hits.hits[]._source | {timestamp: .["@timestamp"], severity, log_message}'
+   curl -s \
+      'http://localhost:9200/dogparkpals-logs-*/_search?size=5&sort=@timestamp:desc' | jq '.hits.hits[]._source | {timestamp: .["@timestamp"], severity, log_message}'
    ```
 
-4. **Open Kibana** to browse logs visually at `http://localhost:5601`
+4. **Open Kibana** to browse logs visually at `http://localhost:5602`
 
 **Note:** Logs take 5-10 seconds to flow from backend → Logstash → Elasticsearch → Kibana indexing.
 
@@ -470,7 +466,7 @@ Incident Response:
 
 **No logs appearing in Kibana?**
 - Verify Logstash is running: `docker compose logs logstash`
-- Check Elasticsearch has data: `ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"; ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"; curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/dogparkpals-logs-*/_count`
+- Check Elasticsearch has data: `curl http://localhost:9200/dogparkpals-logs-*/_count`
 - Generate test logs: `bash elasticsearch/generate-test-logs.sh`
 - Run setup script: `bash kibana/setup-kibana.sh`
 - Ensure backend is logging (check `docker compose logs backend`)
@@ -485,8 +481,8 @@ Incident Response:
 - Archive indices older than 30 days (advanced: see Elasticsearch docs)
 
 **Disk space filling up?**
-- Check retention policy is active: `ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"; ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"; curl -k -u "$ES_USER:$ES_PASS" https://localhost:9200/_ilm/policy/dogparkpals-logs-ilm`
-- Manually delete old indices: `ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"; ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"; curl -k -u "$ES_USER:$ES_PASS" -X DELETE https://localhost:9200/dogparkpals-logs-2026.01.*`
+- Check retention policy is active: `curl http://localhost:9200/_ilm/policy/dogparkpals-logs-ilm`
+- Manually delete old indices: `curl -X DELETE http://localhost:9200/dogparkpals-logs-2026.01.*`
 - Reduce retention period: Edit [elasticsearch/ilm-policy.json](./elasticsearch/ilm-policy.json)
 
 **Complete Documentation:**
@@ -512,7 +508,7 @@ Incident Response:
    - `./scripts/stack.sh --clean`
 - Verify ELK stack (logs are flowing to Elasticsearch):
    - `bash elasticsearch/generate-test-logs.sh`
-   - `ES_USER="$(grep '^ELASTICSEARCH_USERNAME=' docker-secrets | cut -d= -f2-)"; ES_PASS="$(grep '^ELASTICSEARCH_PASSWORD=' docker-secrets | cut -d= -f2-)"; curl -k -u "$ES_USER:$ES_PASS" 'https://localhost:9200/dogparkpals-logs-*/_count'`
+   - `curl 'http://localhost:9200/dogparkpals-logs-*/_count'`
 
 ### Backup event emission (docker task)
 - Emit backup started:

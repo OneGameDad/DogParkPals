@@ -67,41 +67,24 @@ if [ ! -f "$COMPOSE_FILE" ]; then
   exit 1
 fi
 
-# 1) ELASTIC_PASSWORD present
-if has_nonempty_secret "ELASTIC_PASSWORD" "$SECRETS_FILE"; then
-  pass "ELASTIC_PASSWORD is set"
+# 1) Local observability mode
+if grep -Fq 'xpack.security.enabled=false' "$COMPOSE_FILE"; then
+  pass "Elasticsearch local security is disabled as documented"
 else
-  fail "ELASTIC_PASSWORD is missing or empty"
+  warn "Elasticsearch security mode differs from the documented local stack"
 fi
 
-# 2) Kibana auth configuration sanity
-TOKEN_VALUE=$(secret_value "ELASTICSEARCH_SERVICEACCOUNTTOKEN" "$SECRETS_FILE")
-KIBANA_USER=$(secret_value "ELASTICSEARCH_USERNAME" "$SECRETS_FILE")
-KIBANA_PASS=$(secret_value "ELASTICSEARCH_PASSWORD" "$SECRETS_FILE")
-
-if [ -n "$TOKEN_VALUE" ]; then
-  if printf '%s' "$TOKEN_VALUE" | grep -q '[[:space:]]'; then
-    fail "ELASTICSEARCH_SERVICEACCOUNTTOKEN contains whitespace"
-  else
-    pass "Kibana service account token is configured"
-  fi
+if grep -Fq 'ELASTICSEARCH_HOSTS=http://elasticsearch:9200' "$COMPOSE_FILE"; then
+  pass "Kibana points to Elasticsearch over HTTP"
 else
-  if [ -n "$KIBANA_USER" ] && [ -n "$KIBANA_PASS" ]; then
-    if [ "$KIBANA_USER" = "kibana_system" ] || [ "$KIBANA_USER" = "elastic" ]; then
-      pass "Kibana credentials are configured"
-    else
-      warn "Kibana username is '$KIBANA_USER' (expected kibana_system or elastic in this stack)"
-    fi
-  else
-    fail "Kibana auth is not configured (set service account token or kibana_system credentials)"
-  fi
+  fail "Kibana is not configured for the documented local Elasticsearch endpoint"
 fi
 
-# 3) Healthcheck hardening present
-if grep -Fq 'curl -s -f -k -u elastic:$$ELASTIC_PASSWORD https://localhost:9200' "$COMPOSE_FILE"; then
-  pass "Elasticsearch healthcheck uses curl -f and auth"
+# 2) Healthcheck hardening present
+if grep -Fq 'curl -s -f http://localhost:9200 >/dev/null || exit 1' "$COMPOSE_FILE"; then
+  pass "Elasticsearch healthcheck uses curl -f over HTTP"
 else
-  fail "Elasticsearch healthcheck is missing curl -f and/or auth"
+  fail "Elasticsearch healthcheck does not match the documented local HTTP setup"
 fi
 
 if grep -Fq 'curl -s -f http://localhost:5601/api/status' "$COMPOSE_FILE"; then
@@ -110,7 +93,7 @@ else
   fail "Kibana healthcheck is missing curl -f"
 fi
 
-# 3b) RabbitMQ exporter TLS safety checks in compose
+# 2b) RabbitMQ exporter TLS safety checks in compose
 if grep -Fq 'RABBIT_URL=https://rabbitmq:15671' "$COMPOSE_FILE"; then
   pass "rabbitmq-exporter targets RabbitMQ HTTPS management endpoint"
 else
@@ -136,12 +119,6 @@ if command -v docker >/dev/null 2>&1 && [ ${#COMPOSE_CMD[@]} -gt 0 ]; then
   RABBIT_EXPORTER_CID=$(compose ps -q rabbitmq-exporter 2>/dev/null || true)
   if [ -n "$KIBANA_CID" ]; then
     if docker inspect "$KIBANA_CID" >/dev/null 2>&1; then
-      if docker exec "$KIBANA_CID" env 2>/dev/null | grep -q '^ELASTICSEARCH_USERNAME='; then
-        pass "Running Kibana container has ELASTICSEARCH_USERNAME set"
-      else
-        warn "Running Kibana container is missing ELASTICSEARCH_USERNAME"
-      fi
-
       KIBANA_HEALTH=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$KIBANA_CID" 2>/dev/null || true)
       case "$KIBANA_HEALTH" in
         healthy)

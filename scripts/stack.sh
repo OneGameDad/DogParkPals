@@ -14,7 +14,7 @@ COMPOSE_CMD=()
 # Deployment initialization variables
 BACKEND_URL="${BACKEND_URL:-https://localhost:3000}"
 ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-http://localhost:9200}"
-KIBANA_URL="${KIBANA_URL:-http://localhost:5601}"
+KIBANA_URL="${KIBANA_URL:-http://localhost:5602}"
 ELASTICSEARCH_USERNAME="${ELASTICSEARCH_USERNAME:-elastic}"
 ELASTICSEARCH_PASSWORD="${ELASTICSEARCH_PASSWORD:-${ELASTIC_PASSWORD:-}}"
 WAIT_INTERVAL_SECONDS="${WAIT_INTERVAL_SECONDS:-5}"
@@ -675,7 +675,7 @@ run_fresh() {
   echo "Access points:"
   echo "  Frontend:  https://localhost:5173"
   echo "  Backend:   https://localhost:3000"
-  echo "  Kibana:    http://localhost:5601 (if running, may take 2-5 minutes)"
+  echo "  Kibana:    http://localhost:5602 (if running, may take 2-5 minutes)"
   echo "  Grafana:   http://localhost:3001"
   echo "  Prometheus: http://localhost:9090"
   echo ""

@@ -180,6 +180,8 @@ services:
       - "5602:5601"
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=
+      - ELASTICSEARCH_PASSWORD=
       # Performance optimizations
       - LOGGING_QUIET=true
       - MONITORING_UI_CONTAINER_ELASTICSEARCH_ENABLED=false

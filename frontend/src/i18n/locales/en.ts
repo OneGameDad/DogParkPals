@@ -367,6 +367,22 @@ export const en = {
       deleteError: "Failed to delete event.",
       deletingEvent: "Deleting...",
       deleteEvent: "Delete Event"
+    },
+    privacyPolicy: {
+      title: "Privacy Policy",
+      lastUpdated: "Last updated: March 2026",
+      intro: "We collect basic account information such as your name, username, email, and password, as well as data related to how you use the app, including check-ins, messages, and profile details.",
+      use: "This information is used to operate the app, provide its features, and improve the overall experience. We do not sell your personal data. If you choose to sign in using a third-party service such as Google, some information may be provided by that service.",
+      security: "Your privacy is important to us. We take reasonable steps to protect your data.",
+      update: "We may update this policy over time, and continued use of the app means you accept any changes."
+    },
+    termsOfService: {
+      title: "Terms of Service",
+      lastUpdated: "Last updated: March 2026",
+      intro: "By using DogParkPals, you agree to these Terms. If you do not agree, you should not use the app.",
+      description: "DogParkPals allows users to check in at dog parks, see who is present, and interact with others through social features. You are responsible for your account and for any activity that occurs under it. You agree not to use the service to harass or harm others, impersonate other people, post illegal or inappropriate content, or interfere with the normal operation of the app.",
+      content: "You retain ownership of any content you post, but by using the service, you give permission for it to be used within the app as needed to provide its features. We may remove content or suspend accounts that violate these Terms. The service is provided as is, and we are not responsible for any issues, errors, or loss of data that may occur while using it.",
+      update: "We may update these Terms at any time, and continued use of the app means you accept any changes."
     }
   }
 };

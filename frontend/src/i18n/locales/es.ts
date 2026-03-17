@@ -367,6 +367,22 @@ export const es = {
       deleteError: "Error al eliminar el evento.",
       deletingEvent: "Eliminando...",
       deleteEvent: "Eliminar Evento"
+    },
+      privacyPolicy: {
+      title: "Política de Privacidad",
+      lastUpdated: "Última actualización: marzo 2026",
+      intro: "Recopilamos información básica de la cuenta como tu nombre, nombre de usuario, correo electrónico y contraseña, así como datos relacionados con el uso de la aplicación, incluyendo registros, mensajes y detalles del perfil.",
+      use: "Esta información se utiliza para operar la aplicación, ofrecer sus funciones y mejorar la experiencia general. No vendemos tus datos personales. Si eliges iniciar sesión con un servicio de terceros como Google, parte de la información puede ser proporcionada por ese servicio.",
+      security: "Tu privacidad es importante para nosotros. Tomamos medidas razonables para proteger tus datos.",
+      update: "Podemos actualizar esta política con el tiempo, y el uso continuado de la aplicación significa que aceptas cualquier cambio."
+    },
+    termsOfService: {
+      title: "Términos de Servicio",
+      lastUpdated: "Última actualización: marzo 2026",
+      intro: "Al usar DogParkPals, aceptas estos Términos. Si no estás de acuerdo, no deberías usar la aplicación.",
+      description: "DogParkPals permite a los usuarios registrarse en parques para perros, ver quién está presente y interactuar con otros a través de características sociales. Eres responsable de tu cuenta y de cualquier actividad que ocurra en ella. Aceptas no usar el servicio para acosar o dañar a otros, suplantar a otras personas, publicar contenido ilegal o inapropiado, o interferir con el funcionamiento normal de la aplicación.",
+      content: "Conservas la propiedad de cualquier contenido que publiques, pero al usar el servicio, das permiso para que sea utilizado dentro de la aplicación según sea necesario para proporcionar sus características. Podemos eliminar contenido o suspender cuentas que infrinjan estos Términos. El servicio se proporciona tal cual, y no somos responsables de ningún problema, error o pérdida de datos que puedan ocurrir mientras lo usas.",
+      update: "Podemos actualizar estos Términos en cualquier momento, y el uso continuado de la aplicación significa que aceptas cualquier cambio."
     }
   }
 };

@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next';
 
 export const Privacy = () => {
     const { t } = useTranslation();
-
     return (
         <div>
             <h1>{t('privacyPolicy.title')}</h1>

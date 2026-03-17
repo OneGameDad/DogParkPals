@@ -367,6 +367,22 @@ export const fi = {
       deleteError: "Tapahtuman poisto epäonnistui.",
       deletingEvent: "Poistetaan...",
       deleteEvent: "Poista tapahtuma"
+    },
+    privacyPolicy: {
+      title: "Tietosuojakäytäntö",
+      lastUpdated: "Viimeksi päivitetty: maaliskuu 2026",
+      intro: "Keräämme perustietoja tilistäsi, kuten nimen, käyttäjänimen, sähköpostiosoitteen ja salasanan, sekä tietoja sovelluksen käytöstä, kuten kirjautumiset, viestit ja profiilitiedot.",
+      use: "Käytämme näitä tietoja sovelluksen toiminnan mahdollistamiseen, sen ominaisuuksien tarjoamiseen ja käyttökokemuksen parantamiseen. Emme myy henkilötietojasi. Jos kirjaudut sisään kolmannen osapuolen palvelun, kuten Googlen, kautta, osa tiedoista voidaan saada kyseiseltä palvelulta.",
+      security: "Yksityisyytesi on meille tärkeää. Toteutamme kohtuullisia toimenpiteitä tietojesi suojaamiseksi.",
+      update: "Voimme päivittää tätä käytäntöä ajoittain, ja sovelluksen käytön jatkaminen tarkoittaa, että hyväksyt muutokset."
+    },
+    termsOfService: {
+      title: "Käyttöehdot",
+      lastUpdated: "Viimeksi päivitetty: maaliskuu 2026",
+      intro: "Käyttämällä DogParkPals-sovellusta hyväksyt nämä käyttöehdot. Jos et hyväksy ehtoja, älä käytä sovellusta.",
+      description: "DogParkPals mahdollistaa kirjautumisen koirapuistoihin, muiden käyttäjien näkemisen sekä vuorovaikutuksen sosiaalisten ominaisuuksien kautta. Olet vastuussa tilistäsi ja kaikesta sen kautta tapahtuvasta toiminnasta. Sitoudut olemaan käyttämättä palvelua muiden häirintään tai vahingoittamiseen, esiintymään toisena henkilönä, julkaisemaan laitonta tai sopimatonta sisältöä tai häiritsemään sovelluksen normaalia toimintaa.",
+      content: "Säilytät omistusoikeuden julkaisemaasi sisältöön, mutta myönnät meille oikeuden käyttää sitä sovelluksessa sen toiminnan mahdollistamiseksi. Voimme poistaa sisältöä tai keskeyttää tilejä, jotka rikkovat näitä ehtoja. Palvelu tarjotaan sellaisenaan, emmekä ole vastuussa mistään ongelmista, virheistä tai tietojen menetyksestä, joita voi ilmetä käytön aikana.",
+      update: "Voimme päivittää näitä ehtoja milloin tahansa, ja sovelluksen käytön jatkaminen tarkoittaa, että hyväksyt muutokset."
     }
   }
 };

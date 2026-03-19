@@ -105,7 +105,7 @@ const AdminParks = () => {
       setDeleteModal(null);
       fetchParks();
     } catch (err: any) {
-      toast.error(err.message || t('admin.parks.failedToSavePark'));
+      toast.error(err.message || t('admin.common.failedToDelete', { resource: t('admin.parks.park') }));
     } finally {
       setIsSubmitting(false);
     }

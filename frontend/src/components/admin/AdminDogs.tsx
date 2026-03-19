@@ -161,7 +161,7 @@ const AdminDogs = () => {
                 <td className="px-4 py-3 text-gray-600">{dog.breed.replace(/_/g, ' ')}</td>
                 <td className="px-4 py-3 text-gray-600">{dog.gender}</td>
                 <td className="px-4 py-3 text-gray-600">{dog.size}</td>
-                <td className="px-4 py-3 text-gray-600">{dog.fixed ? 'Yes' : 'No'}</td>
+                <td className="px-4 py-3 text-gray-600">{dog.fixed ? t('admin.dogs.yes') : t('admin.dogs.no')}</td>
                 <td className="px-4 py-3 flex gap-2">
                   <button onClick={() => openEdit(dog)} className="text-blue-600 hover:text-blue-800 text-xs font-medium">{t('admin.common.edit')}</button>
                   <button onClick={() => setDeleteModal(dog)} className="text-red-600 hover:text-red-800 text-xs font-medium">{t('admin.common.delete')}</button>

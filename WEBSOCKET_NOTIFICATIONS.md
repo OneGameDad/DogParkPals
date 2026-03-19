@@ -16,6 +16,7 @@ This document describes the complete WebSocket-based real-time notification syst
 - Implements JWT-based authentication middleware
 - Manages user rooms for targeted notifications (`user:${userId}`)
 - Handles connection/disconnection events
+- Tracks active per-user sessions for controlled disconnect scenarios
 
 #### 2. Notification Service (`backend/src/services/notificationService.ts`)
 - Enhanced with Socket.io integration
@@ -89,6 +90,16 @@ This document describes the complete WebSocket-based real-time notification syst
 5. Backend validates signature, audience, token type, and blacklist state.
 6. Backend attaches `userId` to the socket.
 7. User joins personal room: `user:${userId}` and receives targeted notifications.
+
+### Account Deletion Behavior
+
+When a user is deleted via `DELETE /users/:id`, active sockets for that user are handled as follows:
+
+1. Server emits `account_deleted` with a reason payload.
+2. Server force-disconnects those sockets.
+3. User record deletion proceeds in the database flow.
+
+This ensures real-time channels do not remain open for deleted accounts.
 
 ## Notification Types
 

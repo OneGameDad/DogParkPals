@@ -212,7 +212,7 @@ const AdminDogs = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Playstyle</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.dogs.playstyle')}</label>
               <select value={formData.playstyle} onChange={(e) => setFormData(prev => ({ ...prev, playstyle: e.target.value }))} className={selectClass}>
                 {Object.values(DogPlaystyle).map(p => <option key={p} value={p}>{p}</option>)}
               </select>

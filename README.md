@@ -556,8 +556,10 @@ Incident Response:
    ```bash
    npm run dev
    ```
-   - Frontend runs on `https://localhost:5173`
-   - Open in browser: `https://localhost:5173`
+   - Frontend app runs on `https://localhost:5174`
+   - `http://localhost:5173` returns a `308` redirect to `https://localhost:5174`
+   - Open in browser: `https://localhost:5174`
+   - If backend OAuth callbacks are used locally, set `FRONTEND_URL=https://localhost:5174` in `backend/.env`
 
 ### Notes
 - Do not commit `backend/prisma/generated/client/` (generated Prisma client; run `npx prisma generate` after pulling).

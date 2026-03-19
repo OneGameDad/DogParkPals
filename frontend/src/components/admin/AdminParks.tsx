@@ -164,7 +164,7 @@ const AdminParks = () => {
                 <td className="px-4 py-3 text-gray-800 font-medium">{park.name}</td>
                 <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{park.address}</td>
                 <td className="px-4 py-3 text-gray-600 text-xs">{park.amenities?.length || 0}</td>
-                <td className="px-4 py-3 text-gray-600">{park.separateSmallDogArea ? 'Yes' : 'No'}</td>
+                <td className="px-4 py-3 text-gray-600">{park.separateSmallDogArea ? t('admin.parks.yes') : t('admin.parks.no')}</td>
                 <td className="px-4 py-3 flex gap-2">
                   <button onClick={() => openEdit(park)} className="text-blue-600 hover:text-blue-800 text-xs font-medium">{t('admin.common.edit')}</button>
                   <button onClick={() => setDeleteModal(park)} className="text-red-600 hover:text-red-800 text-xs font-medium">{t('admin.common.delete')}</button>

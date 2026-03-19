@@ -182,6 +182,41 @@ describe('User Services', () => {
     jest.dontMock('@prisma/client');
   });
 
+  test('listUsers excludes deleted_user sentinel account', async () => {
+    const mockUsers = [
+      { id: 1, username: 'admin', email: 'admin@example.com' },
+      { id: 2, username: 'usera', email: 'a@example.com' },
+    ] as unknown as User[];
+
+    const mockFindMany = jest.fn<any>().mockResolvedValue(mockUsers);
+
+    jest.doMock('@prisma/client', () => ({
+      PrismaClient: jest.fn(() => ({
+        user: {
+          findMany: mockFindMany,
+        },
+      })),
+    }));
+
+    const userService = await import('../services/userServices');
+    const users = await userService.default.listUsers(1, 50);
+
+    expect(users).toEqual(mockUsers);
+    expect(mockFindMany).toHaveBeenCalledWith({
+      where: {
+        NOT: [
+          { username: 'deleted_user' },
+          { email: 'deleted_user@dogparkpals.local' },
+        ],
+      },
+      skip: 0,
+      take: 50,
+      orderBy: { id: 'asc' },
+    });
+
+    jest.dontMock('@prisma/client');
+  });
+
   test('deleteUser anonymizes dependencies, removes friendships, and deletes by id', async () => {
     const mockFindUnique = jest
       .fn<any>()

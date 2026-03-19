@@ -250,7 +250,17 @@ const userService = {
     typeSafeLogger.info('Listing users', { page, pageSize });
     try {
       const skip = (page - 1) * pageSize;
-      const users = await prisma.user.findMany({ skip, take: pageSize, orderBy: { id: 'asc' } });
+      const users = await prisma.user.findMany({
+        where: {
+          NOT: [
+            { username: DELETED_USER_USERNAME },
+            { email: DELETED_USER_EMAIL },
+          ],
+        },
+        skip,
+        take: pageSize,
+        orderBy: { id: 'asc' },
+      });
       return users;
     } catch (error) {
       const appError = toAppError(error, {

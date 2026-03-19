@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import api from '../../services/api';
 import { Modal, Button, Loading } from '../common';
@@ -6,6 +7,7 @@ import type { User } from '../../types';
 import { UserRole } from '../../types';
 
 const AdminUsers = () => {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -19,11 +21,11 @@ const AdminUsers = () => {
       const data = await api.get<User[]>('/users');
       setUsers(data);
     } catch {
-      toast.error('Failed to load users');
+      toast.error(t('admin.users.failedToLoadUsers'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
@@ -35,11 +37,11 @@ const AdminUsers = () => {
         userId: roleModal.user.id,
         role: roleModal.newRole,
       });
-      toast.success(`Role updated to ${roleModal.newRole}`);
+      toast.success(t('admin.users.roleUpdated', { role: roleModal.newRole }));
       setRoleModal(null);
       fetchUsers();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to change role');
+      toast.error(err.message || t('admin.users.failedToChangeRole'));
     } finally {
       setIsSubmitting(false);
     }
@@ -50,11 +52,11 @@ const AdminUsers = () => {
     setIsSubmitting(true);
     try {
       await api.delete(`/users/${deleteModal.id}`);
-      toast.success(`User "${deleteModal.username}" deleted`);
+      toast.success(t('admin.users.userDeleted', { username: deleteModal.username }));
       setDeleteModal(null);
       fetchUsers();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to delete user');
+      toast.error(err.message || t('admin.users.failedToDeleteUser'));
     } finally {
       setIsSubmitting(false);
     }
@@ -65,15 +67,15 @@ const AdminUsers = () => {
     u.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  if (loading) return <Loading message="Loading users..." />;
+  if (loading) return <Loading message={t('admin.users.loadingMessage')} />;
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-800">Users ({users.length})</h2>
+        <h2 className="text-xl font-bold text-gray-800">{t('admin.users.title')} ({users.length})</h2>
         <input
           type="text"
-          placeholder="Search by username or email..."
+          placeholder={t('admin.users.searchPlaceholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="border border-gray-300 rounded-lg px-4 py-2 w-72 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -84,12 +86,12 @@ const AdminUsers = () => {
         <table className="w-full text-sm text-left border-collapse">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="px-4 py-3 font-semibold text-gray-600">ID</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Username</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Email</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Role</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Created</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Actions</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.common.id')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.users.username')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.users.email')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.users.role')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.common.created')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.common.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -123,7 +125,7 @@ const AdminUsers = () => {
                       onClick={() => setDeleteModal(user)}
                       className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
                     >
-                      Delete
+                      {t('admin.common.delete')}
                     </button>
                   </div>
                 </td>
@@ -132,7 +134,7 @@ const AdminUsers = () => {
           </tbody>
         </table>
         {filtered.length === 0 && (
-          <p className="text-center text-gray-500 py-8">No users found.</p>
+          <p className="text-center text-gray-500 py-8">{t('admin.users.noFound')}</p>
         )}
       </div>
 
@@ -140,17 +142,16 @@ const AdminUsers = () => {
       <Modal
         isOpen={!!deleteModal}
         onClose={() => setDeleteModal(null)}
-        title="Delete User"
+        title={t('admin.users.deleteTitle')}
       >
         <div className="p-6">
           <p className="text-gray-700">
-            Are you sure you want to permanently delete{' '}
-            <strong>{deleteModal?.username}</strong>? This action cannot be undone.
+            {t('admin.users.deleteMessage', { username: deleteModal?.username || '' })}
           </p>
           <div className="flex justify-end gap-3 mt-6">
-            <Button text="Cancel" variant="outline" onClick={() => setDeleteModal(null)} />
+            <Button text={t('admin.common.cancel')} variant="outline" onClick={() => setDeleteModal(null)} />
             <Button
-              text="Delete"
+              text={t('admin.common.delete')}
               variant="danger"
               onClick={handleDeleteUser}
               loading={isSubmitting}
@@ -164,18 +165,20 @@ const AdminUsers = () => {
       <Modal
         isOpen={!!roleModal}
         onClose={() => setRoleModal(null)}
-        title="Confirm Role Change"
+        title={t('admin.users.roleChangeTitle')}
       >
         <div className="p-6">
           <p className="text-gray-700">
-            Change <strong>{roleModal?.user.username}</strong>'s role from{' '}
-            <strong>{roleModal?.user.role}</strong> to{' '}
-            <strong>{roleModal?.newRole}</strong>?
+            {t('admin.users.roleChangeMessage', {
+              username: roleModal?.user.username || '',
+              oldRole: roleModal?.user.role || '',
+              newRole: roleModal?.newRole || ''
+            })}
           </p>
           <div className="flex justify-end gap-3 mt-6">
-            <Button text="Cancel" variant="outline" onClick={() => setRoleModal(null)} />
+            <Button text={t('admin.common.cancel')} variant="outline" onClick={() => setRoleModal(null)} />
             <Button
-              text="Confirm"
+              text={t('admin.common.confirm')}
               variant="danger"
               onClick={handleRoleChange}
               loading={isSubmitting}

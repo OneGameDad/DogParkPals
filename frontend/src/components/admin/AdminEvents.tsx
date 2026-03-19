@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import api from '../../services/api';
 import { Modal, Button, Loading } from '../common';
@@ -26,6 +27,7 @@ const emptyForm: EventFormData = {
 };
 
 const AdminEvents = () => {
+  const { t } = useTranslation();
   const [events, setEvents] = useState<Event[]>([]);
   const [parks, setParks] = useState<Park[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,11 +47,11 @@ const AdminEvents = () => {
       setEvents(eventsData);
       setParks(parksData);
     } catch {
-      toast.error('Failed to load events');
+      toast.error(t('admin.events.failedToLoadEvents'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -85,15 +87,15 @@ const AdminEvents = () => {
 
       if (editModal?.event) {
         await api.put(`/api/events/${editModal.event.id}`, payload);
-        toast.success('Event updated');
+        toast.success(t('admin.events.eventUpdated'));
       } else {
         await api.post('/api/events', payload);
-        toast.success('Event created');
+        toast.success(t('admin.events.eventCreated'));
       }
       setEditModal(null);
       fetchData();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to save event');
+      toast.error(err.message || t('admin.events.failedToSaveEvent'));
     } finally {
       setIsSubmitting(false);
     }
@@ -104,11 +106,11 @@ const AdminEvents = () => {
     setIsSubmitting(true);
     try {
       await api.delete(`/api/events/${deleteModal.id}`);
-      toast.success('Event deleted');
+      toast.success(t('admin.events.eventDeleted'));
       setDeleteModal(null);
       fetchData();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to delete event');
+      toast.error(err.message || t('admin.events.failedToSaveEvent'));
     } finally {
       setIsSubmitting(false);
     }
@@ -124,32 +126,35 @@ const AdminEvents = () => {
 
   const inputClass = "border border-gray-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white";
 
-  if (loading) return <Loading message="Loading events..." />;
+  if (loading) return <Loading message={t('admin.events.loadingMessage')} />;
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-800">Events ({events.length})</h2>
-        <input
-          type="text"
-          placeholder="Search by title..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="border border-gray-300 rounded-lg px-4 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <h2 className="text-xl font-bold text-gray-800">{t('admin.events.title')} ({events.length})</h2>
+        <div className="flex gap-3">
+          <input
+            type="text"
+            placeholder={t('admin.events.searchPlaceholder')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border border-gray-300 rounded-lg px-4 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <Button text={t('admin.events.addButton')} onClick={() => openEdit(null)} />
+        </div>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left border-collapse">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="px-4 py-3 font-semibold text-gray-600">ID</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Title</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Date</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Time</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Park</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Privacy</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Actions</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.common.id')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.events.title')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.events.date')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.events.time')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.events.park')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.events.privacy')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.common.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -170,15 +175,15 @@ const AdminEvents = () => {
                   </span>
                 </td>
                 <td className="px-4 py-3 flex gap-2">
-                  <button onClick={() => openEdit(event)} className="text-blue-600 hover:text-blue-800 text-xs font-medium">Edit</button>
-                  <button onClick={() => setDeleteModal(event)} className="text-red-600 hover:text-red-800 text-xs font-medium">Delete</button>
+                  <button onClick={() => openEdit(event)} className="text-blue-600 hover:text-blue-800 text-xs font-medium">{t('admin.common.edit')}</button>
+                  <button onClick={() => setDeleteModal(event)} className="text-red-600 hover:text-red-800 text-xs font-medium">{t('admin.common.delete')}</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
         {filtered.length === 0 && (
-          <p className="text-center text-gray-500 py-8">No events found.</p>
+          <p className="text-center text-gray-500 py-8">{t('admin.events.noFound')}</p>
         )}
       </div>
 
@@ -186,11 +191,11 @@ const AdminEvents = () => {
       <Modal
         isOpen={!!editModal}
         onClose={() => setEditModal(null)}
-        title={editModal?.isNew ? 'Add Event' : 'Edit Event'}
+        title={editModal?.isNew ? t('admin.events.addTitle') : t('admin.events.editTitle')}
       >
         <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.events.title')} *</label>
             <input
               type="text"
               value={formData.title}
@@ -200,7 +205,7 @@ const AdminEvents = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.events.description')}</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
@@ -210,7 +215,7 @@ const AdminEvents = () => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.events.date')} *</label>
               <input
                 type="date"
                 value={formData.date}
@@ -220,7 +225,7 @@ const AdminEvents = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Privacy</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.events.privacy')}</label>
               <select
                 value={formData.private}
                 onChange={(e) => setFormData(prev => ({ ...prev, private: e.target.value }))}
@@ -232,7 +237,7 @@ const AdminEvents = () => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.events.startTime')}</label>
               <input
                 type="time"
                 value={formData.startTime}
@@ -241,7 +246,7 @@ const AdminEvents = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.events.endTime')}</label>
               <input
                 type="time"
                 value={formData.endTime}
@@ -251,23 +256,23 @@ const AdminEvents = () => {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Park *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.events.park')} *</label>
             <select
               value={formData.parkId}
               onChange={(e) => setFormData(prev => ({ ...prev, parkId: e.target.value }))}
               className={inputClass}
               required
             >
-              <option value="">Select a park...</option>
+              <option value="">{t('admin.events.selectPark')}</option>
               {parks.map(park => (
                 <option key={park.id} value={park.id}>{park.name}</option>
               ))}
             </select>
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <Button text="Cancel" variant="outline" onClick={() => setEditModal(null)} />
+            <Button text={t('admin.common.cancel')} variant="outline" onClick={() => setEditModal(null)} />
             <Button
-              text="Save"
+              text={t('admin.common.save')}
               onClick={handleSave}
               loading={isSubmitting}
               disabled={isSubmitting || !formData.title || !formData.date || !formData.parkId}
@@ -277,12 +282,12 @@ const AdminEvents = () => {
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal isOpen={!!deleteModal} onClose={() => setDeleteModal(null)} title="Delete Event">
+      <Modal isOpen={!!deleteModal} onClose={() => setDeleteModal(null)} title={t('admin.events.deleteTitle')}>
         <div className="p-6">
-          <p className="text-gray-700">Are you sure you want to delete <strong>{deleteModal?.title}</strong>? This cannot be undone.</p>
+          <p className="text-gray-700">{t('admin.events.deleteMessage', { title: deleteModal?.title || '' })}</p>
           <div className="flex justify-end gap-3 mt-6">
-            <Button text="Cancel" variant="outline" onClick={() => setDeleteModal(null)} />
-            <Button text="Delete" variant="danger" onClick={handleDelete} loading={isSubmitting} disabled={isSubmitting} />
+            <Button text={t('admin.common.cancel')} variant="outline" onClick={() => setDeleteModal(null)} />
+            <Button text={t('admin.common.delete')} variant="danger" onClick={handleDelete} loading={isSubmitting} disabled={isSubmitting} />
           </div>
         </div>
       </Modal>

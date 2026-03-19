@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import api from '../../services/api';
 import { Modal, Button, Loading } from '../common';
@@ -26,6 +27,7 @@ const emptyForm: ParkFormData = {
 };
 
 const AdminParks = () => {
+  const { t } = useTranslation();
   const [parks, setParks] = useState<Park[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -40,11 +42,11 @@ const AdminParks = () => {
       const data = await api.get<Park[]>('/api/parks');
       setParks(data);
     } catch {
-      toast.error('Failed to load parks');
+      toast.error(t('admin.parks.failedToLoadParks'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchParks(); }, [fetchParks]);
 
@@ -80,15 +82,15 @@ const AdminParks = () => {
 
       if (editModal?.park) {
         await api.put(`/api/parks/${editModal.park.id}`, payload);
-        toast.success('Park updated');
+        toast.success(t('admin.parks.parkUpdated'));
       } else {
         await api.post('/api/parks', payload);
-        toast.success('Park created');
+        toast.success(t('admin.parks.parkCreated'));
       }
       setEditModal(null);
       fetchParks();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to save park');
+      toast.error(err.message || t('admin.parks.failedToSavePark'));
     } finally {
       setIsSubmitting(false);
     }
@@ -99,11 +101,11 @@ const AdminParks = () => {
     setIsSubmitting(true);
     try {
       await api.delete(`/api/parks/${deleteModal.id}`);
-      toast.success('Park deleted');
+      toast.success(t('admin.parks.parkDeleted'));
       setDeleteModal(null);
       fetchParks();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to delete park');
+      toast.error(err.message || t('admin.parks.failedToSavePark'));
     } finally {
       setIsSubmitting(false);
     }
@@ -125,21 +127,21 @@ const AdminParks = () => {
 
   const inputClass = "border border-gray-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white";
 
-  if (loading) return <Loading message="Loading parks..." />;
+  if (loading) return <Loading message={t('admin.parks.loadingMessage')} />;
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-800">Parks ({parks.length})</h2>
+        <h2 className="text-xl font-bold text-gray-800">{t('admin.parks.title')} ({parks.length})</h2>
         <div className="flex gap-3">
           <input
             type="text"
-            placeholder="Search by name or address..."
+            placeholder={t('admin.parks.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="border border-gray-300 rounded-lg px-4 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <Button text="+ Add Park" onClick={() => openEdit(null)} />
+          <Button text={t('admin.parks.addButton')} onClick={() => openEdit(null)} />
         </div>
       </div>
 
@@ -147,12 +149,12 @@ const AdminParks = () => {
         <table className="w-full text-sm text-left border-collapse">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="px-4 py-3 font-semibold text-gray-600">ID</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Name</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Address</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Amenities</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Small Dog Area</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Actions</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.common.id')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.parks.name')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.parks.address')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.parks.amenities')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.parks.smallDogArea')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.common.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -164,15 +166,15 @@ const AdminParks = () => {
                 <td className="px-4 py-3 text-gray-600 text-xs">{park.amenities?.length || 0}</td>
                 <td className="px-4 py-3 text-gray-600">{park.separateSmallDogArea ? 'Yes' : 'No'}</td>
                 <td className="px-4 py-3 flex gap-2">
-                  <button onClick={() => openEdit(park)} className="text-blue-600 hover:text-blue-800 text-xs font-medium">Edit</button>
-                  <button onClick={() => setDeleteModal(park)} className="text-red-600 hover:text-red-800 text-xs font-medium">Delete</button>
+                  <button onClick={() => openEdit(park)} className="text-blue-600 hover:text-blue-800 text-xs font-medium">{t('admin.common.edit')}</button>
+                  <button onClick={() => setDeleteModal(park)} className="text-red-600 hover:text-red-800 text-xs font-medium">{t('admin.common.delete')}</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
         {filtered.length === 0 && (
-          <p className="text-center text-gray-500 py-8">No parks found.</p>
+          <p className="text-center text-gray-500 py-8">{t('admin.parks.noFound')}</p>
         )}
       </div>
 
@@ -180,11 +182,11 @@ const AdminParks = () => {
       <Modal
         isOpen={!!editModal}
         onClose={() => setEditModal(null)}
-        title={editModal?.isNew ? 'Add Park' : 'Edit Park'}
+        title={editModal?.isNew ? t('admin.parks.addTitle') : t('admin.parks.editTitle')}
       >
         <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.parks.name')} *</label>
             <input
               type="text"
               value={formData.name}
@@ -194,7 +196,7 @@ const AdminParks = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Address *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.parks.address')} *</label>
             <input
               type="text"
               value={formData.address}
@@ -205,7 +207,7 @@ const AdminParks = () => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Latitude *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.parks.latitude')} *</label>
               <input
                 type="number"
                 step="any"
@@ -216,7 +218,7 @@ const AdminParks = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Longitude *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.parks.longitude')} *</label>
               <input
                 type="number"
                 step="any"
@@ -228,7 +230,7 @@ const AdminParks = () => {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.parks.description')}</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
@@ -244,10 +246,10 @@ const AdminParks = () => {
               onChange={(e) => setFormData(prev => ({ ...prev, separateSmallDogArea: e.target.checked }))}
               className="rounded"
             />
-            <label htmlFor="park-small-dog" className="text-sm text-gray-700">Separate Small Dog Area</label>
+            <label htmlFor="park-small-dog" className="text-sm text-gray-700">{t('admin.parks.separateSmallDogArea')}</label>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Amenities</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin.parks.amenities')}</label>
             <div className="flex flex-wrap gap-2">
               {Object.values(Amenity).map((amenity) => (
                 <button
@@ -266,9 +268,9 @@ const AdminParks = () => {
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <Button text="Cancel" variant="outline" onClick={() => setEditModal(null)} />
+            <Button text={t('admin.common.cancel')} variant="outline" onClick={() => setEditModal(null)} />
             <Button
-              text="Save"
+              text={t('admin.common.save')}
               onClick={handleSave}
               loading={isSubmitting}
               disabled={isSubmitting || !formData.name || !formData.address || !formData.latitude || !formData.longitude}
@@ -278,12 +280,12 @@ const AdminParks = () => {
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal isOpen={!!deleteModal} onClose={() => setDeleteModal(null)} title="Delete Park">
+      <Modal isOpen={!!deleteModal} onClose={() => setDeleteModal(null)} title={t('admin.parks.deleteTitle')}>
         <div className="p-6">
-          <p className="text-gray-700">Are you sure you want to delete <strong>{deleteModal?.name}</strong>? This cannot be undone.</p>
+          <p className="text-gray-700">{t('admin.parks.deleteMessage', { name: deleteModal?.name || '' })}</p>
           <div className="flex justify-end gap-3 mt-6">
-            <Button text="Cancel" variant="outline" onClick={() => setDeleteModal(null)} />
-            <Button text="Delete" variant="danger" onClick={handleDelete} loading={isSubmitting} disabled={isSubmitting} />
+            <Button text={t('admin.common.cancel')} variant="outline" onClick={() => setDeleteModal(null)} />
+            <Button text={t('admin.common.delete')} variant="danger" onClick={handleDelete} loading={isSubmitting} disabled={isSubmitting} />
           </div>
         </div>
       </Modal>

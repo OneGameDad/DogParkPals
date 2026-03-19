@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import api from '../../services/api';
 import { Modal, Button, Loading } from '../common';
@@ -28,6 +29,7 @@ const emptyForm: DogFormData = {
 };
 
 const AdminDogs = () => {
+  const { t } = useTranslation();
   const [dogs, setDogs] = useState<Dog[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -42,11 +44,11 @@ const AdminDogs = () => {
       const data = await api.get<Dog[]>('/api/dogs');
       setDogs(data);
     } catch {
-      toast.error('Failed to load dogs');
+      toast.error(t('admin.dogs.failedToLoadDogs'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchDogs(); }, [fetchDogs]);
 
@@ -84,15 +86,15 @@ const AdminDogs = () => {
 
       if (editModal?.dog) {
         await api.put(`/api/dogs/${editModal.dog.id}`, payload);
-        toast.success('Dog updated');
+        toast.success(t('admin.dogs.dogUpdated'));
       } else {
         await api.post('/api/dogs', payload);
-        toast.success('Dog created');
+        toast.success(t('admin.dogs.dogCreated'));
       }
       setEditModal(null);
       fetchDogs();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to save dog');
+      toast.error(err.message || t('admin.dogs.failedToSaveDog'));
     } finally {
       setIsSubmitting(false);
     }
@@ -103,11 +105,11 @@ const AdminDogs = () => {
     setIsSubmitting(true);
     try {
       await api.delete(`/api/dogs/${deleteModal.id}`);
-      toast.success('Dog deleted');
+      toast.success(t('admin.dogs.dogDeleted'));
       setDeleteModal(null);
       fetchDogs();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to delete dog');
+      toast.error(err.message || t('admin.dogs.failedToSaveDog'));
     } finally {
       setIsSubmitting(false);
     }
@@ -120,21 +122,21 @@ const AdminDogs = () => {
 
   const selectClass = "border border-gray-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white";
 
-  if (loading) return <Loading message="Loading dogs..." />;
+  if (loading) return <Loading message={t('admin.dogs.loadingMessage')} />;
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-800">Dogs ({dogs.length})</h2>
+        <h2 className="text-xl font-bold text-gray-800">{t('admin.dogs.title')} ({dogs.length})</h2>
         <div className="flex gap-3">
           <input
             type="text"
-            placeholder="Search by name or breed..."
+            placeholder={t('admin.dogs.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="border border-gray-300 rounded-lg px-4 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <Button text="+ Add Dog" onClick={() => openEdit(null)} />
+          <Button text={t('admin.dogs.addButton')} onClick={() => openEdit(null)} />
         </div>
       </div>
 
@@ -142,13 +144,13 @@ const AdminDogs = () => {
         <table className="w-full text-sm text-left border-collapse">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="px-4 py-3 font-semibold text-gray-600">ID</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Name</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Breed</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Gender</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Size</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Fixed</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">Actions</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.common.id')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.dogs.name')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.dogs.breed')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.dogs.gender')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.dogs.size')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.dogs.fixed')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.common.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -161,15 +163,15 @@ const AdminDogs = () => {
                 <td className="px-4 py-3 text-gray-600">{dog.size}</td>
                 <td className="px-4 py-3 text-gray-600">{dog.fixed ? 'Yes' : 'No'}</td>
                 <td className="px-4 py-3 flex gap-2">
-                  <button onClick={() => openEdit(dog)} className="text-blue-600 hover:text-blue-800 text-xs font-medium">Edit</button>
-                  <button onClick={() => setDeleteModal(dog)} className="text-red-600 hover:text-red-800 text-xs font-medium">Delete</button>
+                  <button onClick={() => openEdit(dog)} className="text-blue-600 hover:text-blue-800 text-xs font-medium">{t('admin.common.edit')}</button>
+                  <button onClick={() => setDeleteModal(dog)} className="text-red-600 hover:text-red-800 text-xs font-medium">{t('admin.common.delete')}</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
         {filtered.length === 0 && (
-          <p className="text-center text-gray-500 py-8">No dogs found.</p>
+          <p className="text-center text-gray-500 py-8">{t('admin.dogs.noFound')}</p>
         )}
       </div>
 
@@ -177,11 +179,11 @@ const AdminDogs = () => {
       <Modal
         isOpen={!!editModal}
         onClose={() => setEditModal(null)}
-        title={editModal?.isNew ? 'Add Dog' : 'Edit Dog'}
+        title={editModal?.isNew ? t('admin.dogs.addTitle') : t('admin.dogs.editTitle')}
       >
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.dogs.name')} *</label>
             <input
               type="text"
               value={formData.name}
@@ -192,19 +194,19 @@ const AdminDogs = () => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Breed</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.dogs.breed')}</label>
               <select value={formData.breed} onChange={(e) => setFormData(prev => ({ ...prev, breed: e.target.value }))} className={selectClass}>
                 {Object.values(DogBreed).map(b => <option key={b} value={b}>{b.replace(/_/g, ' ')}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.dogs.gender')}</label>
               <select value={formData.gender} onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))} className={selectClass}>
                 {Object.values(DogGender).map(g => <option key={g} value={g}>{g}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Size</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.dogs.size')}</label>
               <select value={formData.size} onChange={(e) => setFormData(prev => ({ ...prev, size: e.target.value }))} className={selectClass}>
                 {Object.values(DogSize).map(s => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -217,7 +219,7 @@ const AdminDogs = () => {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.dogs.dateOfBirth')} *</label>
             <input
               type="date"
               value={formData.dateOfBirth}
@@ -227,7 +229,7 @@ const AdminDogs = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.dogs.description')}</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
@@ -243,22 +245,22 @@ const AdminDogs = () => {
               onChange={(e) => setFormData(prev => ({ ...prev, fixed: e.target.checked }))}
               className="rounded"
             />
-            <label htmlFor="dog-fixed" className="text-sm text-gray-700">Fixed/Neutered</label>
+            <label htmlFor="dog-fixed" className="text-sm text-gray-700">{t('admin.dogs.fixed')}/Neutered</label>
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <Button text="Cancel" variant="outline" onClick={() => setEditModal(null)} />
-            <Button text="Save" onClick={handleSave} loading={isSubmitting} disabled={isSubmitting || !formData.name || !formData.dateOfBirth} />
+            <Button text={t('admin.common.cancel')} variant="outline" onClick={() => setEditModal(null)} />
+            <Button text={t('admin.common.save')} onClick={handleSave} loading={isSubmitting} disabled={isSubmitting || !formData.name || !formData.dateOfBirth} />
           </div>
         </div>
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal isOpen={!!deleteModal} onClose={() => setDeleteModal(null)} title="Delete Dog">
+      <Modal isOpen={!!deleteModal} onClose={() => setDeleteModal(null)} title={t('admin.dogs.deleteTitle')}>
         <div className="p-6">
-          <p className="text-gray-700">Are you sure you want to delete <strong>{deleteModal?.name}</strong>? This cannot be undone.</p>
+          <p className="text-gray-700">{t('admin.dogs.deleteMessage', { name: deleteModal?.name || '' })}</p>
           <div className="flex justify-end gap-3 mt-6">
-            <Button text="Cancel" variant="outline" onClick={() => setDeleteModal(null)} />
-            <Button text="Delete" variant="danger" onClick={handleDelete} loading={isSubmitting} disabled={isSubmitting} />
+            <Button text={t('admin.common.cancel')} variant="outline" onClick={() => setDeleteModal(null)} />
+            <Button text={t('admin.common.delete')} variant="danger" onClick={handleDelete} loading={isSubmitting} disabled={isSubmitting} />
           </div>
         </div>
       </Modal>

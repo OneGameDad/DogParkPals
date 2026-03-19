@@ -182,20 +182,62 @@ describe('User Services', () => {
     jest.dontMock('@prisma/client');
   });
 
-  test('deleteUser deletes by id', async () => {
+  test('deleteUser anonymizes dependencies, removes friendships, and deletes by id', async () => {
+    const mockFindUnique = jest
+      .fn<any>()
+      .mockResolvedValueOnce({ id: 3 })
+      .mockResolvedValueOnce({ id: 999 });
     const mockDelete = jest.fn<any>().mockResolvedValue(undefined);
+    const mockDeleteMany = jest.fn<any>().mockResolvedValue({ count: 2 });
+    const mockCommentUpdateMany = jest.fn<any>().mockResolvedValue({ count: 1 });
+    const mockMessagesUpdateMany = jest.fn<any>().mockResolvedValue({ count: 1 });
+    const mockEventUpdateMany = jest.fn<any>().mockResolvedValue({ count: 0 });
+    const mockOrganizationUpdateMany = jest.fn<any>().mockResolvedValue({ count: 0 });
+    const mockEnemiesUpdateMany = jest.fn<any>().mockResolvedValue({ count: 0 });
 
     jest.doMock('@prisma/client', () => ({
       PrismaClient: jest.fn(() => ({
-        user: {
-          delete: mockDelete,
-        },
+        $transaction: jest.fn(async (callback: any) =>
+          callback({
+            user: {
+              findUnique: mockFindUnique,
+              delete: mockDelete,
+              create: jest.fn<any>(),
+            },
+            friendship: {
+              deleteMany: mockDeleteMany,
+            },
+            comment: {
+              updateMany: mockCommentUpdateMany,
+            },
+            messages: {
+              updateMany: mockMessagesUpdateMany,
+            },
+            event: {
+              updateMany: mockEventUpdateMany,
+            },
+            organization: {
+              updateMany: mockOrganizationUpdateMany,
+            },
+            enemies: {
+              updateMany: mockEnemiesUpdateMany,
+            },
+          })
+        ),
       })),
     }));
 
     const userService = await import('../services/userServices');
     await userService.default.deleteUser(3);
 
+    expect(mockDeleteMany).toHaveBeenCalledWith({
+      where: {
+        OR: [{ requesterId: 3 }, { addresseeId: 3 }],
+      },
+    });
+    expect(mockCommentUpdateMany).toHaveBeenCalledWith({ where: { userId: 3 }, data: { userId: 999 } });
+    expect(mockMessagesUpdateMany).toHaveBeenCalledWith({ where: { senderId: 3 }, data: { senderId: 999 } });
+    expect(mockMessagesUpdateMany).toHaveBeenCalledWith({ where: { receiverId: 3 }, data: { receiverId: 999 } });
     expect(mockDelete).toHaveBeenCalledWith({ where: { id: 3 } });
 
     jest.dontMock('@prisma/client');

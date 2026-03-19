@@ -113,7 +113,7 @@ const AdminUsers = () => {
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <select
-                      value={user.role}
+                      value={roleModal && roleModal.user.id === user.id ? roleModal.newRole : user.role}
                       onChange={(e) => setRoleModal({ user, newRole: e.target.value })}
                       className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >

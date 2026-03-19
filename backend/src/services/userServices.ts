@@ -1,8 +1,8 @@
 import 'dotenv/config';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { Prisma, PrismaClient, UserRole } from '@prisma/client';
 import { hashPassword, verifyPassword } from '../utils/password';
 import typeSafeLogger from '../utils/typeSafeLogger';
-import { AuthError, ForbiddenError, NotFoundError, toAppError } from '../utils/errors';
+import { AuthError, ConflictError, ForbiddenError, NotFoundError, toAppError } from '../utils/errors';
 import { createDomainEvent } from '../events/createDomainEvent';
 import { EventTypes } from '../events/eventTypes';
 import { addOutboxEvent } from '../infrastructure/outbox/outboxRepository';
@@ -13,6 +13,48 @@ const prisma = new PrismaClient();
 
 const HEARTBEAT_INTERVAL_SECONDS = 150;
 const OFFLINE_TIMEOUT_SECONDS = 300;
+const DELETED_USER_USERNAME = 'deleted_user';
+const DELETED_USER_EMAIL = 'deleted_user@dogparkpals.local';
+
+async function ensureDeletedUserSentinel(tx: Prisma.TransactionClient, deletingUserId: number) {
+  const existingByUsername = await tx.user.findUnique({
+    where: { username: DELETED_USER_USERNAME },
+    select: { id: true },
+  });
+
+  if (existingByUsername) {
+    if (existingByUsername.id === deletingUserId) {
+      throw ConflictError('Cannot delete the deleted_user sentinel account');
+    }
+    return existingByUsername.id;
+  }
+
+  const existingDeletedUser = await tx.user.findUnique({
+    where: { email: DELETED_USER_EMAIL },
+    select: { id: true },
+  });
+
+  if (existingDeletedUser) {
+    if (existingDeletedUser.id === deletingUserId) {
+      throw ConflictError('Cannot delete the deleted_user sentinel account');
+    }
+    return existingDeletedUser.id;
+  }
+
+  const passwordHash = await hashPassword(`deleted-user-${Date.now()}-${Math.random()}`);
+  const createdDeletedUser = await tx.user.create({
+    data: {
+      username: DELETED_USER_USERNAME,
+      email: DELETED_USER_EMAIL,
+      password_hash: passwordHash,
+      first_name: 'Deleted',
+      last_name: 'User',
+    },
+    select: { id: true },
+  });
+
+  return createdDeletedUser.id;
+}
 
 const isOnlineFromLastSeen = (lastSeenAt: Date | null) => {
   if (!lastSeenAt) return false;
@@ -337,7 +379,35 @@ const userService = {
   async deleteUser(id: number) {
     typeSafeLogger.logUserAction('Deleting user', { id });
     try {
-      await prisma.user.delete({ where: { id } });
+      await prisma.$transaction(async (tx) => {
+        const userToDelete = await tx.user.findUnique({
+          where: { id },
+          select: { id: true },
+        });
+
+        if (!userToDelete) {
+          throw NotFoundError('User not found');
+        }
+
+        const deletedUserId = await ensureDeletedUserSentinel(tx, id);
+
+        // Remove the user from friend lists entirely.
+        await tx.friendship.deleteMany({
+          where: {
+            OR: [{ requesterId: id }, { addresseeId: id }],
+          },
+        });
+
+        // Preserve authored content by reassigning it to the sentinel user.
+        await tx.comment.updateMany({ where: { userId: id }, data: { userId: deletedUserId } });
+        await tx.messages.updateMany({ where: { senderId: id }, data: { senderId: deletedUserId } });
+        await tx.messages.updateMany({ where: { receiverId: id }, data: { receiverId: deletedUserId } });
+        await tx.event.updateMany({ where: { organizerId: id }, data: { organizerId: deletedUserId } });
+        await tx.organization.updateMany({ where: { ownerId: id }, data: { ownerId: deletedUserId } });
+        await tx.enemies.updateMany({ where: { ownerId: id }, data: { ownerId: deletedUserId } });
+
+        await tx.user.delete({ where: { id } });
+      });
       typeSafeLogger.logUserAction('User deleted', { id });
     } catch (error) {
       const appError = toAppError(error, {

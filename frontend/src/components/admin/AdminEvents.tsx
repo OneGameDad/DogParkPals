@@ -110,7 +110,7 @@ const AdminEvents = () => {
       setDeleteModal(null);
       fetchData();
     } catch (err: any) {
-      toast.error(err.message || t('admin.events.failedToSaveEvent'));
+      toast.error(err.message || t('admin.common.failedToDelete', { resource: 'event' }));
     } finally {
       setIsSubmitting(false);
     }

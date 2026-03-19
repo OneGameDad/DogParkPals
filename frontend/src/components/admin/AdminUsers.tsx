@@ -56,7 +56,7 @@ const AdminUsers = () => {
       setDeleteModal(null);
       fetchUsers();
     } catch (err: any) {
-      toast.error(err.message || t('admin.users.failedToDeleteUser'));
+      toast.error(err.message || t('admin.common.failedToDelete', { resource: 'user' }));
     } finally {
       setIsSubmitting(false);
     }

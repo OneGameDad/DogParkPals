@@ -109,7 +109,7 @@ const AdminDogs = () => {
       setDeleteModal(null);
       fetchDogs();
     } catch (err: any) {
-      toast.error(err.message || t('admin.dogs.failedToSaveDog'));
+      toast.error(err.message || t('admin.dogs.failedToDeleteDog'));
     } finally {
       setIsSubmitting(false);
     }

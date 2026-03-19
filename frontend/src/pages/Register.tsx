@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import { useSubmit } from '../hooks/useSubmit';
@@ -10,7 +10,7 @@ import { Header } from '../components/layout';
 const Register = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { refreshUser } = useAuth();
+  const { refreshUser, isAuthenticated, loading } = useAuth();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,7 +21,8 @@ const Register = () => {
       try {
         await api.login(email, password);
         await refreshUser();
-        navigate('/dashboard');
+        window.dispatchEvent(new Event('auth:login'));
+        navigate('/');
       } catch (error) {
         console.error('Auto-login failed after registration:', error);
         navigate('/login');
@@ -56,6 +57,14 @@ const Register = () => {
     // Redirect to backend Google OAuth endpoint
     window.location.href = `${api.getBaseUrl()}/auth/google`;
   };
+
+  if (loading) {
+    return null;
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="max-w-md mx-auto p-6">

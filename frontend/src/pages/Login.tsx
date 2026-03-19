@@ -1,21 +1,23 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import { useSubmit } from '../hooks/useSubmit';
+import { useAuth } from '../hooks/useAuth';
 import { Button, InputText } from '../components/common';
 import { Header } from '../components/layout';
 
 const Login = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { isAuthenticated, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const { submit, isSubmitting } = useSubmit({
     onSuccess: () => {
       window.dispatchEvent(new Event('auth:login'));
-      navigate('/dashboard');
+      navigate('/');
     },
     successMessage: t('auth.login.success'),
     loadingMessage: t('auth.login.signingIn'),
@@ -29,6 +31,14 @@ const Login = () => {
   const handleGoogleLogin = () => {
     window.location.href = `${api.getBaseUrl()}/auth/google`;
   };
+
+  if (loading) {
+    return null;
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="max-w-md mx-auto p-6">

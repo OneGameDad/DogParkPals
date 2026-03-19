@@ -55,6 +55,8 @@ vi.mock('react-router-dom', async () => {
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({
     refreshUser: vi.fn(),
+    isAuthenticated: false,
+    loading: false,
   }),
 }));
 
@@ -192,7 +194,7 @@ describe('Register Component', () => {
     });
   });
 
-  it('should navigate to dashboard on successful registration and login', async () => {
+  it('should navigate to home on successful registration and login', async () => {
     vi.spyOn(apiModule.api, 'register').mockResolvedValueOnce({
       user: { id: 1, email: 'new@example.com', username: 'newuser' },
     });
@@ -215,7 +217,7 @@ describe('Register Component', () => {
     fireEvent.click(submitButton);
     
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
+      expect(mockNavigate).toHaveBeenCalledWith('/');
     });
   });
 

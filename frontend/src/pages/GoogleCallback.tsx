@@ -14,8 +14,8 @@ export default function GoogleCallback() {
         // Dispatch auth event
         window.dispatchEvent(new Event('auth:login'));
         
-        // Redirect to dashboard
-        navigate('/dashboard');
+        // Redirect to home
+        navigate('/');
       } catch (error) {
         console.error('Authentication failed:', error);
         // Redirect to login on error

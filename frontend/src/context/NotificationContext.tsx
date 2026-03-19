@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode, useMemo } from 'react';
 import socketService, { Notification } from '../services/socketService';
-import { useTranslation } from 'react-i18next';
 import NotifContainer, { NotifContainerHandle } from '../components/features/Notif';
 import { useAuth } from '../hooks';
 
@@ -27,7 +26,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   }, [notifications]);
   
   const notifContainerRef = useRef<NotifContainerHandle>(null);
-  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -38,19 +36,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
     // Show the notification in the UI
     const showVisualNotification = (notification: Notification) => {
-      // Convert notification type to message type format expected by NotifContainer
-      // e.g., MESSAGE_RECEIVED -> messageReceived
-      const messageType = notification.type
-        .split('_')
-        .map((word, index) => 
-          index === 0 
-            ? word.toLowerCase() 
-            : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-        )
-        .join('');
-      
       if (notifContainerRef.current) {
-        notifContainerRef.current.addNotification(messageType, notification.payload);
+        notifContainerRef.current.addNotification(notification.type, notification.payload);
       }
     };
 

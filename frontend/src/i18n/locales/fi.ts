@@ -397,7 +397,7 @@ export const fi = {
         add: "Lisää",
         actions: "Toiminnot",
         id: "ID",
-        created: "Luottu",
+        created: "Luotu",
         loading: "Ladataan...",
         noResults: "Ei {{resource}} löydetty.",
         deleteConfirmation: "Oletko varma, että haluat poistaa tämän pysyvästi? Tätä toimintoa ei voi kumota.",

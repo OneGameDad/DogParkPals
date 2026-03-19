@@ -387,6 +387,13 @@ export const fi = {
     },
     admin: {
       title: "Järjestelmänvalvoja",
+      tabs: {
+        users: "Käyttäjät",
+        dogs: "Koirat",
+        parks: "Puistot",
+        organizations: "Organisaatiot",
+        events: "Tapahtumat"
+      },
       common: {
         search: "Haku",
         edit: "Muokkaa",
@@ -402,7 +409,7 @@ export const fi = {
         noResults: "Ei {{resource}} löydetty.",
         deleteConfirmation: "Oletko varma, että haluat poistaa tämän pysyvästi? Tätä toimintoa ei voi kumota.",
         deleted: "{{resource}} poistettu onnistuneesti",
-        created: "{{resource}} luotu onnistuneesti",
+        createdSuccess: "{{resource}} luotu onnistuneesti",
         updated: "{{resource}} päivitetty onnistuneesti",
         failedToLoad: "Virhe ladattaessa {{resource}}",
         failedToDelete: "Virhe poistaessa {{resource}}",
@@ -500,7 +507,7 @@ export const fi = {
         title: "Tapahtumat",
         searchPlaceholder: "Hae otsikon perusteella...",
         addButton: "+ Lisää Tapahtuma",
-        title: "Otsikko",
+        eventTitle: "Otsikko",
         description: "Kuvaus",
         date: "Päivä",
         time: "Aika",

@@ -6,6 +6,19 @@ import { Modal, Button, Loading } from '../common';
 import type { User } from '../../types';
 import { UserRole } from '../../types';
 
+const DELETED_USER_USERNAME = 'deleted_user';
+const DELETED_USER_EMAIL = 'deleted_user@dogparkpals.local';
+
+const isDeletedUserSentinel = (user: User) => {
+  const normalizedUsername = user.username.trim().toLowerCase();
+  const normalizedEmail = user.email.trim().toLowerCase();
+
+  return (
+    normalizedUsername === DELETED_USER_USERNAME ||
+    normalizedEmail === DELETED_USER_EMAIL
+  );
+};
+
 const AdminUsers = () => {
   const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
@@ -19,7 +32,7 @@ const AdminUsers = () => {
     setLoading(true);
     try {
       const data = await api.get<User[]>('/users');
-      setUsers(data);
+      setUsers(data.filter((user) => !isDeletedUserSentinel(user)));
     } catch {
       toast.error(t('admin.users.failedToLoadUsers'));
     } finally {

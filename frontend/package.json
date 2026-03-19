@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev-https-redirect.mjs",
+    "dev:https-only": "vite",
     "build": "tsc -b || true && vite build",
     "lint": "eslint .",
     "test": "vitest",

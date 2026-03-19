@@ -1,7 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import CheckInList from '../../../components/parks/CheckInList';
 import type { CheckIn } from '../../../types';
+import type { ReactElement } from 'react';
+
+const renderWithRouter = (ui: ReactElement) => {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+};
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -72,50 +78,50 @@ const mockCheckIns: CheckIn[] = [
 
 describe('CheckInList', () => {
   it('renders heading', () => {
-    render(<CheckInList checkIns={[]} />);
+    renderWithRouter(<CheckInList checkIns={[]} />);
     expect(screen.getByText("Who's here?")).toBeInTheDocument();
   });
 
   it('shows count of checked in users', () => {
-    render(<CheckInList checkIns={mockCheckIns} />);
+    renderWithRouter(<CheckInList checkIns={mockCheckIns} />);
     expect(screen.getByText('2 visiting now')).toBeInTheDocument();
   });
 
   it('renders user information', () => {
-    render(<CheckInList checkIns={mockCheckIns} />);
+    renderWithRouter(<CheckInList checkIns={mockCheckIns} />);
     expect(screen.getByText('john_doe')).toBeInTheDocument();
     expect(screen.getByText('jane_smith')).toBeInTheDocument();
   });
 
   it('shows dog name when present', () => {
-    render(<CheckInList checkIns={mockCheckIns} />);
+    renderWithRouter(<CheckInList checkIns={mockCheckIns} />);
     expect(screen.getByText('with Buddy')).toBeInTheDocument();
   });
 
   it('shows "visiting" when no dog', () => {
-    render(<CheckInList checkIns={mockCheckIns} />);
+    renderWithRouter(<CheckInList checkIns={mockCheckIns} />);
     expect(screen.getByText('visiting')).toBeInTheDocument();
   });
 
   it('shows empty state when no check-ins', () => {
-    render(<CheckInList checkIns={[]} />);
+    renderWithRouter(<CheckInList checkIns={[]} />);
     expect(screen.getByText('No one checked in right now. Be the first!')).toBeInTheDocument();
   });
 
   it('shows loading skeletons when loading', () => {
-    render(<CheckInList checkIns={[]} loading={true} />);
+    renderWithRouter(<CheckInList checkIns={[]} loading={true} />);
     const skeletons = document.querySelectorAll('.animate-pulse');
     expect(skeletons.length).toBeGreaterThan(0);
   });
 
   it('displays profile picture when available', () => {
-    render(<CheckInList checkIns={mockCheckIns} />);
+    renderWithRouter(<CheckInList checkIns={mockCheckIns} />);
     const image = screen.getByAltText('john_doe');
     expect(image).toHaveAttribute('src', 'https://example.com/john.jpg');
   });
 
   it('displays initials when no profile picture', () => {
-    render(<CheckInList checkIns={mockCheckIns} />);
+    renderWithRouter(<CheckInList checkIns={mockCheckIns} />);
     expect(screen.getByText('JA')).toBeInTheDocument(); // jane_smith initials
   });
 
@@ -130,7 +136,7 @@ describe('CheckInList', () => {
       user: undefined as any,
       dog: null,
     };
-    render(<CheckInList checkIns={[unknownUserCheckIn]} />);
+    renderWithRouter(<CheckInList checkIns={[unknownUserCheckIn]} />);
     expect(screen.getByText('Unknown')).toBeInTheDocument();
   });
 });

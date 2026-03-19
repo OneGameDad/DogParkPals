@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { Header } from '../layout';
 import { Picture } from '../common';
 import { formatTime, getUserInitials } from '../../utils/formatters';
@@ -35,7 +36,8 @@ export default function CheckInList({ checkIns, loading }: CheckInListProps) {
                         const photoUrl = getUserPhotoUrl(checkIn.user?.id, checkIn.user?.profilePictureUrl);
 
                         return (
-                            <div
+                            <Link
+                                to={`/user/${checkIn.userId}`}
                                 key={checkIn.id}
                                 className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-white hover:shadow-md transition-all border border-gray-100"
                             >
@@ -62,7 +64,7 @@ export default function CheckInList({ checkIns, loading }: CheckInListProps) {
                                         Checked in {formatTime(checkIn.checkedInAt)}
                                     </p>
                                 </div>
-                            </div>
+                            </Link>
                         );
                     })}
                 </div>

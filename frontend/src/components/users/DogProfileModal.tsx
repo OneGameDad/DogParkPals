@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Button, Picture, BodyText } from '../common';
+import { Modal, Button, Picture, BodyText, Badge } from '../common';
 import { useAuth } from '../../hooks/useAuth';
 import { useFetch } from '../../hooks/useFetch';
 import { useFriendActions } from '../../hooks/users/useFriendActions';
@@ -103,9 +103,11 @@ const DogProfileModal = ({ dog, onClose }: DogProfileModalProps) => {
 
                 <div className="text-center">
                     <h2 className="text-2xl font-bold">{dog.name}</h2>
-                    <p className="text-gray-600 mt-1">
-                        {dog.breed.replace(/_/g, ' ')} • {dog.age ? `${dog.age} years` : 'Age unknown'}
-                    </p>
+                    <div className="flex items-center justify-center gap-2 mt-2">
+                        <Badge text={dog.breed.replace(/_/g, ' ')} variant="blue" />
+                        <span className="text-gray-400">•</span>
+                        <span className="text-gray-600 font-medium">{dog.age ? `${dog.age} years` : 'Age unknown'}</span>
+                    </div>
                 </div>
 
                 <div className="w-full space-y-2">

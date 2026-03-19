@@ -1,11 +1,12 @@
 import { Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Modal, Button, Picture } from '../common';
+import { Modal, Button, Picture, Badge } from '../common';
 import UserDogsList from './UserDogsList';
 import type { User } from '../../types';
-import { getUserInitials } from '../../utils/formatters';
+import { getUserInitials, formatTime } from '../../utils/formatters';
 import { getUserPhotoUrl } from '../../constants';
+import { useUserPresence } from '../../hooks/users/useUserPresence';
 
 // ... imports
 interface UserProfileModalProps {
@@ -32,6 +33,7 @@ export default function UserProfileModal({
     error,
 }: UserProfileModalProps) {
     const { t } = useTranslation();
+    const { isOnline, lastSeenAt } = useUserPresence({ userId: user?.id, enabled: !!user });
 
     if (!user) return null;
 
@@ -51,7 +53,19 @@ export default function UserProfileModal({
                 />
 
                 <div className="text-center">
-                    <h2 className="text-2xl font-bold">{user.username}</h2>
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                        <h2 className="text-2xl font-bold">{user.username}</h2>
+                        {user.role === 'ADMIN' && <Badge text="Admin" variant="red" />}
+                        {user.role === 'DEVELOPER' && <Badge text="Developer" variant="blue" />}
+                    </div>
+
+                    <div className="flex items-center justify-center gap-1.5 text-sm mt-1 mb-2">
+                        <span className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                        <span className={isOnline ? 'text-green-600 font-medium' : 'text-gray-500'}>
+                            {isOnline ? t('profile.online', 'Online') : lastSeenAt ? t('profile.lastSeen', 'Last seen') + ' ' + formatTime(String(lastSeenAt)) : t('profile.offline', 'Offline')}
+                        </span>
+                    </div>
+
                     {(user.first_name || user.last_name) && (
                         <p className="text-gray-600 mt-1">
                             {user.first_name} {user.last_name}
@@ -101,15 +115,23 @@ export default function UserProfileModal({
 
                     {/* Unfriend Logic (My Friends mode) */}
                     {onRemoveFriend && (
-                        <Button
-                            text={loading ? t('friends.removing') || 'Unfriending...' : t('friends.remove') || 'Unfriend'}
-                            onClick={() => {
-                                onRemoveFriend(user.id);
-                                onClose();
-                            }}
-                            disabled={loading}
-                            className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800"
-                        />
+                        <>
+                            <Link
+                                to="/messages"
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white flex justify-center py-2 rounded font-medium transition-colors mb-2"
+                            >
+                                {t('friends.message', 'Message')}
+                            </Link>
+                            <Button
+                                text={loading ? t('friends.removing') || 'Unfriending...' : t('friends.remove') || 'Unfriend'}
+                                onClick={() => {
+                                    onRemoveFriend(user.id);
+                                    onClose();
+                                }}
+                                disabled={loading}
+                                className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800"
+                            />
+                        </>
                     )}
 
                     {/* Remove Enemy Logic (My Enemies mode) */}

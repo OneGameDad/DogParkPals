@@ -387,6 +387,13 @@ export const es = {
     },
     admin: {
       title: "Admin",
+      tabs: {
+        users: "Usuarios",
+        dogs: "Perros",
+        parks: "Parques",
+        organizations: "Organizaciones",
+        events: "Eventos"
+      },
       common: {
         search: "Buscar",
         edit: "Editar",
@@ -402,7 +409,7 @@ export const es = {
         noResults: "No se encontraron {{resource}}.",
         deleteConfirmation: "¿Estás seguro de que quieres eliminar permanentemente esto? Esta acción no se puede deshacer.",
         deleted: "{{resource}} eliminado correctamente",
-        created: "{{resource}} creado correctamente",
+        createdSuccess: "{{resource}} creado correctamente",
         updated: "{{resource}} actualizado correctamente",
         failedToLoad: "Error al cargar {{resource}}",
         failedToDelete: "Error al eliminar {{resource}}",
@@ -500,7 +507,7 @@ export const es = {
         title: "Eventos",
         searchPlaceholder: "Buscar por título...",
         addButton: "+ Agregar Evento",
-        title: "Título",
+        eventTitle: "Título",
         description: "Descripción",
         date: "Fecha",
         time: "Hora",

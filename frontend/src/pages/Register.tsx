@@ -127,7 +127,7 @@ const Register = () => {
           <Button
             text={t('auth.register.signUpWithGoogle')}
             onClick={handleGoogleSignup}
-            className="w-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+            className="w-full bg-pink-500 text-white border border-pink-600 hover:bg-pink-600"
           />
 
           <div className="text-center mt-4">

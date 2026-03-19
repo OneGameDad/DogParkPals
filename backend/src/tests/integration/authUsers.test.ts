@@ -48,6 +48,83 @@ describe("auth flows", () => {
   });
 });
 
+describe("auth login rate limiting", () => {
+  test("limits repeated attempts for the same email", async () => {
+    const email = `ratelimit-same-${Date.now()}@example.com`;
+    const username = `ratelimitsame${Date.now()}`;
+
+    const createRes = await request(app)
+      .post("/users")
+      .send({ username, email, password: "password123" });
+
+    expect(createRes.status).toBe(201);
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const res = await request(app)
+        .post("/auth/login")
+        .send({ email, password: "wrong-password" });
+
+      expect(res.status).toBe(401);
+    }
+
+    const blocked = await request(app)
+      .post("/auth/login")
+      .send({ email, password: "wrong-password" });
+
+    expect(blocked.status).toBe(429);
+  });
+
+  test("tracks rate limits independently per email", async () => {
+    const unique = Date.now();
+    const emailA = `ratelimit-a-${unique}@example.com`;
+    const emailB = `ratelimit-b-${unique}@example.com`;
+
+    const createA = await request(app)
+      .post("/users")
+      .send({ username: `ratelimita${unique}`, email: emailA, password: "password123" });
+    const createB = await request(app)
+      .post("/users")
+      .send({ username: `ratelimitb${unique}`, email: emailB, password: "password123" });
+
+    expect(createA.status).toBe(201);
+    expect(createB.status).toBe(201);
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const resA = await request(app)
+        .post("/auth/login")
+        .send({ email: emailA, password: "wrong-password" });
+
+      expect(resA.status).toBe(401);
+    }
+
+    const userBStillAllowed = await request(app)
+      .post("/auth/login")
+      .send({ email: emailB, password: "wrong-password" });
+    const userABlocked = await request(app)
+      .post("/auth/login")
+      .send({ email: emailA, password: "wrong-password" });
+
+    expect(userBStillAllowed.status).toBe(401);
+    expect(userABlocked.status).toBe(429);
+  });
+
+  test("falls back to anonymous per-IP limiting when email is missing", async () => {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const res = await request(app)
+        .post("/auth/login")
+        .send({ password: "any-value" });
+
+      expect(res.status).toBe(400);
+    }
+
+    const blocked = await request(app)
+      .post("/auth/login")
+      .send({ password: "any-value" });
+
+    expect(blocked.status).toBe(429);
+  });
+});
+
 describe("user flows", () => {
   test("create user succeeds", async () => {
     const res = await request(app)

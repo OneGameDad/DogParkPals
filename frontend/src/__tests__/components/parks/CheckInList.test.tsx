@@ -1,12 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-
-const renderWithRouter = (ui: React.ReactElement) => {
-  return render(<MemoryRouter>{ui}</MemoryRouter>);
-};
 import CheckInList from '../../../components/parks/CheckInList';
 import type { CheckIn } from '../../../types';
+import type { ReactElement } from 'react';
+
+const renderWithRouter = (ui: ReactElement) => {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+};
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({

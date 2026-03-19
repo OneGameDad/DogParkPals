@@ -57,7 +57,8 @@ Frontend stores token and redirects to dashboard
    - Click "Create Credentials" → "OAuth client ID"
    - Select "Web application" as the application type
    - Under "Authorized JavaScript origins", add:
-     - `http://localhost:5173` (development)
+       - `https://localhost:5174` (development, Vite HTTPS server)
+       - `http://localhost:5173` (optional compatibility entry, redirects to HTTPS)
      - `http://localhost:3000` (development)
      - `https://yourdomain.com` (production)
    - Under "Authorized redirect URIs", add:
@@ -84,7 +85,7 @@ Frontend stores token and redirects to dashboard
    GOOGLE_CLIENT_ID=your-client-id-here
    GOOGLE_CLIENT_SECRET=your-client-secret-here
    GOOGLE_CALLBACK_URL=http://localhost:3000/auth/google/callback
-   FRONTEND_URL=http://localhost:5173
+   FRONTEND_URL=https://localhost:5174
    JWT_SECRET=your-jwt-secret
    ```
 
@@ -138,7 +139,7 @@ OAuth callback endpoint (called by Google after user authorization).
 
 **Response:**
 - Status: 302 (Redirect)
-- Location: `http://localhost:5173/auth/google/callback?token=JWT_TOKEN`
+- Location: `https://localhost:5174/auth/google/callback?token=JWT_TOKEN`
 
 ## Authentication Flow
 
@@ -258,7 +259,8 @@ npm test -- --testNamePattern="Google|googleCallback"
    ```
 
 3. **Test OAuth Flow**
-   - Navigate to `http://localhost:5173/login`
+   - Navigate to `https://localhost:5174/login`
+   - Optional: `http://localhost:5173/login` will redirect to HTTPS
    - Click "Sign in with Google"
    - Grant permissions
    - Should redirect to dashboard with token stored
@@ -282,7 +284,7 @@ npm test -- --testNamePattern="Google|googleCallback"
 
 4. **CORS Configuration**
    - Restrict CORS origins to trusted domains only
-   - Currently allows `http://localhost:5173` in development
+   - For local Vite dev, set `FRONTEND_URL=https://localhost:5174`
 
 5. **Scope Permissions**
    - Only request necessary scopes: `profile` and `email`
@@ -337,7 +339,7 @@ app.use(passport.initialize());
 ```typescript
 // In app.ts:
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+   origin: process.env.FRONTEND_URL || "https://localhost:5174",
   credentials: true,
 }));
 ```
@@ -365,7 +367,7 @@ GOOGLE_CLIENT_SECRET=<from Google Cloud Console>
 GOOGLE_CALLBACK_URL=http://localhost:3000/auth/google/callback
 
 # Frontend
-FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=https://localhost:5174
 
 # JWT
 JWT_SECRET=<your-jwt-secret>

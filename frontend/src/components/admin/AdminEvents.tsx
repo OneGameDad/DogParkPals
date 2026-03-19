@@ -149,7 +149,7 @@ const AdminEvents = () => {
           <thead className="bg-gray-50 border-b">
             <tr>
               <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.common.id')}</th>
-              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.events.title')}</th>
+              <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.events.eventTitle')}</th>
               <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.events.date')}</th>
               <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.events.time')}</th>
               <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.events.park')}</th>
@@ -195,7 +195,7 @@ const AdminEvents = () => {
       >
         <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.events.title')} *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.events.eventTitle')} *</label>
             <input
               type="text"
               value={formData.title}

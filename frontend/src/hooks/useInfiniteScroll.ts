@@ -19,11 +19,14 @@ export const useInfiniteScroll = (
 
   const lastMessageIdRef = useRef<number | undefined>(undefined);
   const hasInitialLoadRef = useRef(false);
+  const isLoadingRef = useRef(false);
+  const hasMoreRef = useRef(true);
 
   // Initial load - fetch first page
   const loadMessages = useCallback(async () => {
-    if (isLoading || !hasMore) return;
+    if (isLoadingRef.current || !hasMoreRef.current) return;
 
+    isLoadingRef.current = true;
     setIsLoading(true);
     setError(null);
 
@@ -32,6 +35,7 @@ export const useInfiniteScroll = (
       const response = await fetchFn(undefined, initialPageSize);
       
       setMessages(response.data);
+      hasMoreRef.current = response.cursor.hasMore;
       setHasMore(response.cursor.hasMore);
       
       // Store the last message ID for cursor pagination using cursor metadata
@@ -45,14 +49,16 @@ export const useInfiniteScroll = (
       setError(error);
       onError?.(error);
     } finally {
+      isLoadingRef.current = false;
       setIsLoading(false);
     }
-  }, [fetchFn, initialPageSize, isLoading, hasMore, onError]);
+  }, [fetchFn, initialPageSize, onError]);
 
   // Load more for infinite scroll - uses cursor pagination
   const loadMore = useCallback(async () => {
-    if (isLoading || !hasMore || !lastMessageIdRef.current) return;
+    if (isLoadingRef.current || !hasMoreRef.current || !lastMessageIdRef.current) return;
 
+    isLoadingRef.current = true;
     setIsLoading(true);
     setError(null);
 
@@ -60,7 +66,8 @@ export const useInfiniteScroll = (
       const response = await fetchFn(lastMessageIdRef.current, initialPageSize);
       
       // Append new messages to existing ones
-      setMessages(prev => [...response.data, ...prev]);
+      setMessages(prev => [...prev, ...response.data]);
+      hasMoreRef.current = response.cursor.hasMore;
       setHasMore(response.cursor.hasMore);
 
       // Update cursor for next load
@@ -72,22 +79,25 @@ export const useInfiniteScroll = (
       setError(error);
       onError?.(error);
     } finally {
+      isLoadingRef.current = false;
       setIsLoading(false);
     }
-  }, [fetchFn, initialPageSize, isLoading, hasMore, onError]);
+  }, [fetchFn, initialPageSize, onError]);
 
   // Refresh messages - resets to initial load
   const refresh = useCallback(async () => {
     lastMessageIdRef.current = undefined;
     hasInitialLoadRef.current = false;
+    isLoadingRef.current = true;
+    hasMoreRef.current = true;
     setMessages([]);
     setHasMore(true);
     setError(null);
-    // Create a new fetch to bypass the guard clause checks
     setIsLoading(true);
     try {
       const response = await fetchFn(undefined, initialPageSize);
       setMessages(response.data);
+      hasMoreRef.current = response.cursor.hasMore;
       setHasMore(response.cursor.hasMore);
       if (response.data.length > 0 && response.data[response.data.length - 1].id != null) {
         lastMessageIdRef.current = response.data[response.data.length - 1].id;
@@ -98,6 +108,7 @@ export const useInfiniteScroll = (
       setError(error);
       onError?.(error);
     } finally {
+      isLoadingRef.current = false;
       setIsLoading(false);
     }
   }, [fetchFn, initialPageSize, onError]);

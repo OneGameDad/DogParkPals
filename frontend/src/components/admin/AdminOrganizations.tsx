@@ -88,7 +88,7 @@ const AdminOrganizations = () => {
       setDeleteModal(null);
       fetchOrgs();
     } catch (err: any) {
-      toast.error(err.message || t('admin.organizations.failedToSaveOrg'));
+      toast.error(err.message || t('admin.common.failedToDelete', { resource: 'organization' }));
     } finally {
       setIsSubmitting(false);
     }

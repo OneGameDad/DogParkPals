@@ -69,7 +69,9 @@ const NotificationDropdown: React.FC = () => {
                                     `notifications.${messageType}`,
                                 ];
                                 const translationKey =
-                                    keyCandidates.find((key) => i18n.exists(key)) || 'notifications.generic';
+                                    (typeof i18n?.exists === 'function'
+                                        ? keyCandidates.find((key) => i18n.exists(key))
+                                        : keyCandidates[0]) || 'notifications.generic';
                                 const template = t(translationKey, 'You have a new notification');
                                 const message = Object.entries(notif.payload || {}).reduce(
                                     (text, [key, value]) => text.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value)),

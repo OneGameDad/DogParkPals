@@ -68,5 +68,13 @@ describe("user deletion anonymization", () => {
       select: { senderId: true, receiverId: true },
     });
     expect(messageThree?.senderId).toBe(sentinelUser?.id);
+
+    const usersListRes = await request(app)
+      .get('/users')
+      .set('Authorization', `Bearer ${adminToken()}`);
+
+    expect(usersListRes.status).toBe(200);
+    expect(Array.isArray(usersListRes.body)).toBe(true);
+    expect(usersListRes.body.some((user: { username?: string }) => user.username === 'deleted_user')).toBe(false);
   });
 });

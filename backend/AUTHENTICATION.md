@@ -200,14 +200,25 @@ export const loginSchema = z.object({
 // src/routes/authRouter.ts
 import express from 'express';
 import authController from '../controllers/authController';
+import { authLimiter } from '../middlewares/rateLimitMiddleware';
 
 const router = express.Router();
 
-// Public: Anyone can login
-router.post('/auth/login', (req, res, next) => authController.login(req, res, next));
+// Public: Anyone can login, but attempts are rate limited
+router.post('/auth/login', authLimiter, (req, res, next) => authController.login(req, res, next));
 
 export default router;
 ```
+
+### Login Rate Limiting Behavior
+
+The `authLimiter` protects `POST /auth/login` against brute-force attempts.
+
+- Limit: `5` attempts per `15 minutes`
+- Primary key: normalized user email from request body
+- Fallback key: anonymous bucket scoped by client IP when email is missing/invalid
+
+This design keeps limits user-centric while still covering malformed or identifier-less requests.
 
 ```typescript
 // src/routes/userRouter.ts
@@ -403,6 +414,7 @@ curl http://localhost:3000/users/me \
 | 401 | `AUTH_ERROR` | Invalid token | Token malformed or wrong secret |
 | 401 | `AUTH_ERROR` | Token expired | User needs to login again |
 | 403 | `FORBIDDEN` | Insufficient permissions | User authenticated but lacks access rights |
+| 429 | `RATE_LIMIT` | Too many login attempts | Wait for cooldown window and retry |
 
 ## Security Best Practices
 
@@ -412,8 +424,20 @@ curl http://localhost:3000/users/me \
 4. **Don't store sensitive data in tokens** - Tokens are base64 encoded, not encrypted
 5. **Validate token on every protected request** - Never trust client-side data
 6. **Log authentication failures** - Monitor for suspicious activity
-7. **Rate limit login attempts** - Prevent brute force attacks
+7. **Rate limit login attempts** - `POST /auth/login` is rate-limited per user email with anonymous per-IP fallback
 8. **Hash passwords with bcrypt** - Already implemented in `userServices.ts`
+
+## Authentication Test Coverage
+
+Integration tests validating login rate-limiting behavior are in:
+
+- `src/tests/integration/authUsers.test.ts` (`auth login rate limiting` describe block)
+
+Covered scenarios:
+
+- Same email is blocked after exceeding the configured limit
+- Different emails are tracked independently
+- Missing email requests use anonymous per-IP fallback and are rate-limited
 
 ## Dependencies
 

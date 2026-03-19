@@ -62,7 +62,7 @@ export default function UserProfileModal({
                     <div className="flex items-center justify-center gap-1.5 text-sm mt-1 mb-2">
                         <span className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></span>
                         <span className={isOnline ? 'text-green-600 font-medium' : 'text-gray-500'}>
-                            {isOnline ? t('common.online', 'Online') : lastSeenAt ? t('common.lastSeen', 'Last seen') + ' ' + formatTime(String(lastSeenAt)) : t('common.offline', 'Offline')}
+                            {isOnline ? t('profile.online', 'Online') : lastSeenAt ? t('profile.lastSeen', 'Last seen') + ' ' + formatTime(String(lastSeenAt)) : t('profile.offline', 'Offline')}
                         </span>
                     </div>
 

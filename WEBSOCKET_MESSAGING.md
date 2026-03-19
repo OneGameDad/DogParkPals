@@ -77,6 +77,14 @@ Emitted when a message is read.
 }
 ```
 
+#### `account_deleted`
+Emitted just before the server forcibly disconnects a user's sockets during account deletion.
+```typescript
+{
+  reason: string;
+}
+```
+
 ### Frontend → Backend
 
 #### `typing:start`
@@ -98,6 +106,10 @@ socket.emit('message:read', { messageId: number, senderId: number });
 ```
 
 ## Usage Example
+
+## Connection Lifecycle Note
+
+If a user account is deleted while connected, the server sends `account_deleted` and then disconnects the socket. Clients should handle this event by clearing local auth state and redirecting to a safe route (for example, login).
 
 ### Basic Chat Component (React)
 

@@ -12,6 +12,18 @@ The application uses JWT (JSON Web Token) based authentication. Users receive a 
 - Self-deletion is allowed for authenticated users.
 - Cross-user deletion is restricted to users with role `ADMIN` or `DEVELOPER`.
 - A non-privileged user deleting another account receives `403 Forbidden`.
+- On successful user deletion, all active Socket.io sessions for that user are terminated before the database delete is finalized.
+- Before forced disconnect, connected clients receive an `account_deleted` socket event so the UI can react gracefully.
+
+## User Deletion Session Handling
+
+When `DELETE /users/:id` succeeds, the backend now performs session cleanup in this order:
+
+1. Disconnect active Socket.io sessions for the target user.
+2. Emit `account_deleted` to each active socket for user-facing handling.
+3. Proceed with transactional database cleanup and user deletion.
+
+This prevents stale real-time sessions from continuing after account removal.
 
 ## Architecture
 

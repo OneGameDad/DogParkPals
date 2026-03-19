@@ -11,29 +11,29 @@ const httpsPort = Number(process.env.HTTPS_PORT || 5174)
 
 // https://vite.dev/config/
 export default defineConfig(({ command }) => {
-  const config = {
-    plugins: [react()],
-  }
+  const keyPath = path.resolve(certDir, 'server.key')
+  const certPath = path.resolve(certDir, 'server.crt')
+  const hasCerts = fs.existsSync(keyPath) && fs.existsSync(certPath)
+  const isServe = command === 'serve'
 
   // Only configure HTTPS dev server for `vite serve`.
   // Docker/frontend builds run `vite build` and do not include local cert files.
-  if (command === 'serve') {
-    const keyPath = path.resolve(certDir, 'server.key')
-    const certPath = path.resolve(certDir, 'server.crt')
-    const hasCerts = fs.existsSync(keyPath) && fs.existsSync(certPath)
-
-    config.server = {
-      host: 'localhost',
-      port: httpsPort,
-      strictPort: true,
-      https: hasCerts
-        ? {
-            key: fs.readFileSync(keyPath),
-            cert: fs.readFileSync(certPath),
-          }
-        : undefined,
-    }
+  return {
+    plugins: [react()],
+    ...(isServe
+      ? {
+          server: {
+            host: 'localhost',
+            port: httpsPort,
+            strictPort: true,
+            https: hasCerts
+              ? {
+                  key: fs.readFileSync(keyPath),
+                  cert: fs.readFileSync(certPath),
+                }
+              : undefined,
+          },
+        }
+      : {}),
   }
-
-  return config
 })

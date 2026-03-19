@@ -245,7 +245,7 @@ const AdminDogs = () => {
               onChange={(e) => setFormData(prev => ({ ...prev, fixed: e.target.checked }))}
               className="rounded"
             />
-            <label htmlFor="dog-fixed" className="text-sm text-gray-700">{t('admin.dogs.fixed')}/Neutered</label>
+            <label htmlFor="dog-fixed" className="text-sm text-gray-700">{t('admin.dogs.fixedNeutered', { defaultValue: 'Fixed/Neutered' })}</label>
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button text={t('admin.common.cancel')} variant="outline" onClick={() => setEditModal(null)} />

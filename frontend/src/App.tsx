@@ -25,6 +25,8 @@ import OrganizationList from './components/organizations/OrganizationList';
 import OrganizationProfile from './pages/OrganizationProfile';
 import OrganizationUpdate from './pages/OrganizationUpdate';
 import Messages from './pages/Messages';
+import Admin from './pages/Admin';
+import { UserRole } from './types';
 
 
 function AppContent() {
@@ -141,6 +143,11 @@ function AppContent() {
             <Route path="/organizations/:id/edit" element={
               <ProtectedRoute>
                 <OrganizationUpdate />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin" element={
+              <ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.DEVELOPER]}>
+                <Admin />
               </ProtectedRoute>
             } />
 

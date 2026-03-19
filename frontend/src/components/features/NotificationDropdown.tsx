@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNotifications } from '../../context/NotificationContext';
 
 const NotificationDropdown: React.FC = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { notifications, unreadCount, markAllAsRead } = useNotifications();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -64,7 +64,13 @@ const NotificationDropdown: React.FC = () => {
                                             : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
                                     )
                                     .join('');
-                                const template = t(`notifications.${messageType}`, notif.type);
+                                const keyCandidates = [
+                                    `notifications.${notif.type}`,
+                                    `notifications.${messageType}`,
+                                ];
+                                const translationKey =
+                                    keyCandidates.find((key) => i18n.exists(key)) || 'notifications.generic';
+                                const template = t(translationKey, 'You have a new notification');
                                 const message = Object.entries(notif.payload || {}).reduce(
                                     (text, [key, value]) => text.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value)),
                                     template

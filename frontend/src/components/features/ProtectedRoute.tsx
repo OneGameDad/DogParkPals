@@ -4,10 +4,11 @@ import type { ReactNode } from 'react';
 
 interface ProtectedRouteProps {
   children: ReactNode;
+  requiredRoles?: string[];
 }
 
-const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { isAuthenticated, loading } = useAuth();
+const ProtectedRoute = ({ children, requiredRoles }: ProtectedRouteProps) => {
+  const { isAuthenticated, loading, user } = useAuth();
 
   if (loading) {
     return null;
@@ -15,6 +16,10 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (requiredRoles && requiredRoles.length > 0 && (!user?.role || !requiredRoles.includes(user.role))) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;

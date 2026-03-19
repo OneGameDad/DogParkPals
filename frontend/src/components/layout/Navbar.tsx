@@ -3,15 +3,17 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { useState, useRef, useEffect } from 'react';
 import NotificationDropdown from '../features/NotificationDropdown';
+import { UserRole } from '../../types';
 
 const Navbar = () => {
     const { t, i18n } = useTranslation();
-    const { isAuthenticated, loading } = useAuth();
+    const { isAuthenticated, loading, user } = useAuth();
     const [menuOpen, setMenuOpen] = useState(false);
     const [langOpen, setLangOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const langRef = useRef<HTMLDivElement>(null);
     const location = useLocation();
+    const canAccessAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.DEVELOPER;
 
     const handleLanguageChange = (lang: string) => {
         i18n.changeLanguage(lang);
@@ -97,6 +99,15 @@ const Navbar = () => {
                                 >
                                     {t('profile.title')}
                                 </Link>
+                                {canAccessAdmin && (
+                                    <Link
+                                        to="/admin"
+                                        onClick={() => setMenuOpen(false)}
+                                        className="block px-4 py-3 text-gray-700 hover:bg-gray-100 font-medium border-t border-gray-100"
+                                    >
+                                        {t('admin.title', 'Admin')}
+                                    </Link>
+                                )}
                                 <Link
                                     to="/logout"
                                     onClick={() => setMenuOpen(false)}

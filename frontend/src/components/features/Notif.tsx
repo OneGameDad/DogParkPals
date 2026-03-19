@@ -19,7 +19,7 @@ export interface NotifContainerHandle {
 }
 
 const NotifContainer = React.forwardRef<NotifContainerHandle>((props, ref) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [notifications, setNotifications] = React.useState<NotificationItem[]>([]);
 
   const removeNotification = (id: string) => {
@@ -38,7 +38,21 @@ const NotifContainer = React.forwardRef<NotifContainerHandle>((props, ref) => {
   return (
     <div className="space-y-3 fixed top-4 right-4 w-96 max-w-full">
       {notifications.map(notif => {
-        const template = t(`notifications.${notif.messageType}`);
+        const camelMessageType = notif.messageType
+          .split('_')
+          .map((word, index) =>
+            index === 0
+              ? word.toLowerCase()
+              : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+          )
+          .join('');
+        const keyCandidates = [
+          `notifications.${notif.messageType}`,
+          `notifications.${camelMessageType}`,
+        ];
+        const translationKey =
+          keyCandidates.find((key) => i18n.exists(key)) || 'notifications.generic';
+        const template = t(translationKey, 'You have a new notification');
         const message = Object.entries(notif.variables || {}).reduce((text, [key, value]) => {
           return text.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value));
         }, template);

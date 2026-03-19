@@ -118,7 +118,6 @@ export default function UserProfileModal({
                         <>
                             <Link
                                 to="/messages"
-                                state={{ recipientId: user.id }}
                                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white flex justify-center py-2 rounded font-medium transition-colors mb-2"
                             >
                                 {t('friends.message', 'Message')}

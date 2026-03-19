@@ -4,6 +4,7 @@ import { Server, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
 import { isTokenBlacklisted } from "../utils/tokenBlacklist";
 import typeSafeLogger from "../utils/typeSafeLogger";
+import { sessionManager } from "./sessionManager";
 
 interface JwtPayload {
   userId: number;
@@ -33,6 +34,9 @@ export function initializeSocket(httpServer: HttpServer | HttpsServer): Server {
     // Enable fallback to long-polling if WebSocket fails
     transports: ["websocket", "polling"],
   });
+
+  // Initialize session manager with the Socket.io server
+  sessionManager.setSocketServer(io);
 
   // Authentication middleware for Socket.io
   io.use((socket: AuthenticatedSocket, next) => {
@@ -113,6 +117,11 @@ export function initializeSocket(httpServer: HttpServer | HttpsServer): Server {
       socketId: socket.id,
       userId,
     });
+
+    // Register this session in the session manager
+    if (userId) {
+      sessionManager.registerSession(userId, socket.id);
+    }
 
     // Join user to their personal room for targeted notifications
     if (userId) {
@@ -198,6 +207,11 @@ export function initializeSocket(httpServer: HttpServer | HttpsServer): Server {
         userId,
         reason,
       });
+
+      // Unregister this session from the session manager
+      if (userId) {
+        sessionManager.unregisterSession(userId, socket.id);
+      }
     });
 
     // Optional: Handle ping/pong for connection health

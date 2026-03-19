@@ -6,6 +6,7 @@ import { AuthError, ConflictError, ForbiddenError, NotFoundError, toAppError } f
 import { createDomainEvent } from '../events/createDomainEvent';
 import { EventTypes } from '../events/eventTypes';
 import { addOutboxEvent } from '../infrastructure/outbox/outboxRepository';
+import { sessionManager } from '../infrastructure/sessionManager';
 import path from 'path';
 import fs from "fs";
 
@@ -379,6 +380,11 @@ const userService = {
   async deleteUser(id: number) {
     typeSafeLogger.logUserAction('Deleting user', { id });
     try {
+      // Step 1: Disconnect all active WebSocket sessions for this user
+      // This must happen before database deletion to ensure clean session termination
+      await sessionManager.disconnectUserSessions(id, 'User account has been deleted');
+
+      // Step 2: Proceed with database deletion and cleanup
       await prisma.$transaction(async (tx) => {
         const userToDelete = await tx.user.findUnique({
           where: { id },

@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
 import { addDogEnemySchema, removeDogEnemySchema, checkDogEnemySchema } from '../utils/validationSchemas';

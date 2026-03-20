@@ -13,7 +13,7 @@ if (!fs.existsSync(uploadRoot)) {
 
 // Storage config
 const storage = multer.diskStorage({
-  destination: (req: Request, file: Express.Multer.File, cb) => {
+  destination: (_req: Request, file: Express.Multer.File, cb) => {
     let folder = 'misc';
 
     if (file.mimetype.startsWith('image/')) {
@@ -29,7 +29,7 @@ const storage = multer.diskStorage({
   },
 
   // Create unique filenames
-  filename: (req: Request, file: Express.Multer.File, cb) => {
+  filename: (_req: Request, file: Express.Multer.File, cb) => {
     const ext = path.extname(file.originalname);
     const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
     cb(null, uniqueName);
@@ -37,7 +37,7 @@ const storage = multer.diskStorage({
 });
 
 // Early MIME-type filtering
-const fileFilter: multer.Options['fileFilter'] = (req, file, cb) => {
+const fileFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
   const allowedTypes = [
     'image/jpeg',
     'image/png',
@@ -64,7 +64,7 @@ export const uploadSingleFile = upload.single('file');
 // Optional centralized multer error handler
 export const handleMulterError = (
   err: any,
-  req: Request,
+  _req: Request,
   res: any,
   next: any
 ) => {

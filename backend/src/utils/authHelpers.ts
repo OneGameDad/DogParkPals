@@ -15,7 +15,7 @@ export const getAuthUser = (req: Request) => {
  * Middleware to ensure user is authenticated and attach to request
  * Use this as a route middleware before handlers that need req.user to be defined
  */
-export const ensureAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+export const ensureAuthenticated = (req: Request, _res: Response, next: NextFunction) => {
   if (!req.user) {
     return next(AuthError('User not authenticated'));
   }

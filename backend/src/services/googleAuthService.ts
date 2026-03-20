@@ -22,7 +22,7 @@ passport.use(
       clientSecret: GOOGLE_CLIENT_SECRET,
       callbackURL: GOOGLE_CALLBACK_URL,
     },
-    async (accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback) => {
+    async (_accessToken: string, _refreshToken: string, profile: Profile, done: VerifyCallback) => {
       try {
         typeSafeLogger.info('Google OAuth callback', { profileId: profile.id });
 

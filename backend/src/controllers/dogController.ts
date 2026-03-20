@@ -1,7 +1,7 @@
 import express from "express";
 import typeSafeLogger from "../utils/typeSafeLogger";
 import { ensureString } from "../utils/queryHelpers";
-import { toAppError, ConflictError, NotFoundError, ForbiddenError, isAppError } from "../utils/errors";
+import { toAppError, NotFoundError, ForbiddenError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import dogService from "../services/dogService";
 import friendService from "../services/friendService";
@@ -238,7 +238,7 @@ const dogController = {
         const dogId = parseInt(ensureString(req.params.dogId), 10);
 
         const owners = await dogService.getOwnersOfDog(dogId);
-        const sanitizedOwners = owners.map(sanitizeUser);
+        const sanitizedOwners = owners.map((owner) => sanitizeUser(owner));
         typeSafeLogger.logUserAction("Dog owners retrieved", { dogId, ownerCount: sanitizedOwners.length });
         res.status(200).json(sanitizedOwners);
       } catch (error) {

@@ -1,5 +1,5 @@
 import typeSafeLogger from "../utils/typeSafeLogger";
-import { toAppError, NotFoundError, isAppError } from "../utils/errors";
+import { toAppError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import { addEnemySchema, removeEnemySchema, getUserIdSchema } from "../utils/validationSchemas";
 import enemyService from "../services/enemyService";
@@ -141,7 +141,7 @@ const enemyController = {
     }
     },
 
-    getEnemiesList: async (req: Request, res: Response, next: NextFunction) => {
+    getEnemiesList: async (_req: Request, res: Response, next: NextFunction) => {
     try {
         typeSafeLogger.info("getEnemiesList request received");
         const enemiesList = await enemyService.getAllEnemies();

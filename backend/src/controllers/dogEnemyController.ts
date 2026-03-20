@@ -109,7 +109,7 @@ const dogEnemyController = {
     }
     },
 
-    getAllDogEnemies: async (req: Request, res: Response, next: NextFunction) => {
+    getAllDogEnemies: async (_req: Request, res: Response, next: NextFunction) => {
     try {
         typeSafeLogger.info("getAllDogEnemies request received");
         const enemiesList = await dogEnemyService.getAllDogEnemies();

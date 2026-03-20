@@ -2,7 +2,7 @@ import friendService from "../services/friendService";
 import enemyService from "../services/enemyService";
 import express from "express";
 import typeSafeLogger from "../utils/typeSafeLogger";
-import { toAppError, NotFoundError, isAppError } from "../utils/errors";
+import { toAppError, isAppError } from "../utils/errors";
 import { parseValidation } from "../utils/validator";
 import { createFriendRequestSchema, getUserIdSchema, removeFriendSchema, friendshipIdSchema, getFriendsSchema } from "../utils/validationSchemas";
 import { awardExperience, XP_REWARDS } from "../services/xpService";
@@ -128,7 +128,6 @@ const friendController = {
             const validatedParams = parseValidation(getFriendsSchema, { userId, dogId });
 
             const friendsList = await friendService.getFriendsList(validatedParams.userId, validatedParams.dogId);
-            const totalCount = friendsList.users.length + friendsList.dogs.length;
             typeSafeLogger.logUserAction("Friends list retrieved", { userId: validatedParams.userId, dogId: validatedParams.dogId, userFriendsCount: friendsList.users.length, dogFriendsCount: friendsList.dogs.length });
             res.status(200).json(friendsList);
         } catch (error) {
@@ -149,7 +148,6 @@ const friendController = {
             const validatedParams = parseValidation(getFriendsSchema, { userId, dogId });
 
             const friends = await friendService.getFriend(validatedParams.userId, validatedParams.dogId);
-            const totalCount = friends.users.length + friends.dogs.length;
             typeSafeLogger.logUserAction("Friend retrieved", { userId: validatedParams.userId, dogId: validatedParams.dogId, userFriendsCount: friends.users.length, dogFriendsCount: friends.dogs.length });
             res.status(200).json(friends);
         } catch (error) {

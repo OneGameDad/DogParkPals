@@ -1,7 +1,6 @@
 import express from "express";
 import typeSafeLogger from "../utils/typeSafeLogger";
-import { NotFoundError, ForbiddenError, toAppError, isAppError } from "../utils/errors";
-import { parseValidation } from "../utils/validator";
+import { ForbiddenError, toAppError, isAppError } from "../utils/errors";
 import notificationService from "../services/notificationService";
 import { getQueryNumber, getQueryBoolean, ensureString } from "../utils/queryHelpers";
 

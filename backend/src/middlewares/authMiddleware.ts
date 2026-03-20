@@ -9,7 +9,7 @@ interface JwtPayload {
   role?: string;
 }
 
-export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+export const requireAuth = (req: Request, _res: Response, next: NextFunction) => {
   try {
     let token = req.cookies.authToken;
     if (!token) {

@@ -12,6 +12,7 @@ interface NotificationItem {
   id: string;
   messageType: string;
   variables?: Record<string, string | number>;
+  timeoutId?: ReturnType<typeof setTimeout>;
 }
 
 export interface NotifContainerHandle {
@@ -21,22 +22,53 @@ export interface NotifContainerHandle {
 const NotifContainer = React.forwardRef<NotifContainerHandle>((props, ref) => {
   const { t, i18n } = useTranslation();
   const [notifications, setNotifications] = React.useState<NotificationItem[]>([]);
+  const notificationMapRef = React.useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const removeNotification = (id: string) => {
-    setNotifications(notifications.filter(notif => notif.id !== id));
+    // Clear the timeout if it exists
+    const timeoutId = notificationMapRef.current.get(id);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      notificationMapRef.current.delete(id);
+    }
+    
+    setNotifications(prev => prev.filter(notif => notif.id !== id));
   };
 
   const addNotification = (messageType: string, variables?: Record<string, string | number>) => {
-    const id = Date.now().toString();
-    setNotifications([...notifications, { id, messageType, variables }]);
-    setTimeout(() => removeNotification(id), 5000);
+    // Create a unique ID based on timestamp + random to prevent duplicates
+    const id = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Set auto-dismiss timeout
+    const timeoutId = setTimeout(() => removeNotification(id), 5000);
+    notificationMapRef.current.set(id, timeoutId);
+    
+    setNotifications(prev => [...prev, { 
+      id, 
+      messageType, 
+      variables,
+      timeoutId 
+    }]);
+    
+    console.log('Notification added:', { id, messageType, totalNotifications: notifications.length + 1 });
   };
+
   React.useImperativeHandle(ref, () => ({
     addNotification,
   }));
 
+  // Cleanup timeouts on unmount
+  React.useEffect(() => {
+    return () => {
+      notificationMapRef.current.forEach((timeoutId) => {
+        clearTimeout(timeoutId);
+      });
+      notificationMapRef.current.clear();
+    };
+  }, []);
+
   return (
-    <div className="space-y-3 fixed top-4 right-4 w-96 max-w-full">
+    <div className="space-y-3 fixed top-4 right-4 w-96 max-w-full z-50">
       {notifications.map(notif => {
         const camelMessageType = notif.messageType
           .split('_')
@@ -58,13 +90,14 @@ const NotifContainer = React.forwardRef<NotifContainerHandle>((props, ref) => {
         }, template);
 
         return (
-          <div key={notif.id} className="bg-pink-50 border border-pink-200 text-gray-800 rounded-lg p-4 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <p>{message}</p>
+          <div key={notif.id} className="bg-pink-50 border border-pink-200 text-gray-800 rounded-lg p-4 flex items-center justify-between gap-3 shadow-md">
+            <div className="flex items-center gap-3 flex-1">
+              <p className="text-sm">{message}</p>
             </div>
             <button
               onClick={() => removeNotification(notif.id)}
-              className="text-lg font-bold hover:opacity-70 cursor-pointer"
+              className="text-xl font-bold hover:opacity-70 cursor-pointer flex-shrink-0 h-6 w-6 flex items-center justify-center"
+              aria-label="Close notification"
             >
               ×
             </button>

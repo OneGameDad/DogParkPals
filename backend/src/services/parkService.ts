@@ -281,18 +281,36 @@ const parkService = {
 
   async checkIn (userId: number, parkId: number, dogId?: number) {
     typeSafeLogger.logUserAction('User attempting to check in', { userId, parkId, dogId });
-    const existingCheckIn = await prisma.checkIn.findFirst({
-      where: {
-        userId,
-        checkedOutAt: null,
-      },
-    });
-    if (existingCheckIn) {
-      throw new Error('User already has an active check-in.'); // TODO: or USER_ALREADY_CHECKED_IN?
-    }
-
     try {
       const newCheckIn = await prisma.$transaction(async (tx) => {
+        let switchedFromParkId: number | undefined;
+
+        const existingCheckIn = await tx.checkIn.findFirst({
+          where: {
+            userId,
+            checkedOutAt: null,
+          },
+        });
+
+        if (existingCheckIn) {
+          switchedFromParkId = existingCheckIn.parkId;
+          const checkedOutCheckIn = await tx.checkIn.update({
+            where: { id: existingCheckIn.id },
+            data: { checkedOutAt: new Date() },
+          });
+
+          const checkedOutEvent = createDomainEvent(
+            EventTypes.ParkCheckedOut,
+            {
+              checkInId: checkedOutCheckIn.id,
+              userId: checkedOutCheckIn.userId,
+              parkId: checkedOutCheckIn.parkId,
+            },
+            { actorId: checkedOutCheckIn.userId }
+          );
+          await addOutboxEvent(tx, checkedOutEvent);
+        }
+
         const createdCheckIn = await tx.checkIn.create({
           data: {
             userId,
@@ -313,9 +331,12 @@ const parkService = {
         );
         await addOutboxEvent(tx, domainEvent);
 
-        return createdCheckIn;
+        return {
+          ...createdCheckIn,
+          switchedFromParkId,
+        };
       });
-      typeSafeLogger.logUserAction('Check-in created successfully', { checkInId: newCheckIn.id });
+      typeSafeLogger.logUserAction('Check-in created successfully', { checkInId: newCheckIn.id, userId, parkId });
       return newCheckIn;
     } catch (error) {
       const appError = toAppError(error, {

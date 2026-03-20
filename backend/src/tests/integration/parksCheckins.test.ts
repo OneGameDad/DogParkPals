@@ -195,6 +195,45 @@ describe("parks and check-ins", () => {
     expect(checkOutRes.body.checkedOutAt).toBeTruthy();
   });
 
+  test("second active check-in at another park auto-checks out previous park", async () => {
+    const firstCheckInRes = await request(app)
+      .post(`/api/parks/${ids.parks.park1}/check-in`)
+      .set("Authorization", `Bearer ${userAToken()}`)
+      .send({ dogId: ids.dogs.dogA });
+
+    expect(firstCheckInRes.status).toBe(201);
+    expect(firstCheckInRes.body.switchedFromParkId).toBeUndefined();
+
+    const secondCheckInRes = await request(app)
+      .post(`/api/parks/${ids.parks.park2}/check-in`)
+      .set("Authorization", `Bearer ${userAToken()}`)
+      .send({ dogId: ids.dogs.dogA });
+
+    expect(secondCheckInRes.status).toBe(201);
+    expect(secondCheckInRes.body.parkId).toBe(ids.parks.park2);
+    expect(secondCheckInRes.body.switchedFromParkId).toBe(ids.parks.park1);
+
+    const oldParkCheckOutRes = await request(app)
+      .post(`/api/parks/${ids.parks.park1}/check-out`)
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    expect(oldParkCheckOutRes.status).toBe(404);
+
+    const oldParkActiveRes = await request(app)
+      .get(`/api/parks/${ids.parks.park1}/check-ins`)
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    expect(oldParkActiveRes.status).toBe(200);
+    expect(oldParkActiveRes.body.some((ci: { userId: number }) => ci.userId === ids.users.userA)).toBe(false);
+
+    const newParkActiveRes = await request(app)
+      .get(`/api/parks/${ids.parks.park2}/check-ins`)
+      .set("Authorization", `Bearer ${userAToken()}`);
+
+    expect(newParkActiveRes.status).toBe(200);
+    expect(newParkActiveRes.body.some((ci: { userId: number }) => ci.userId === ids.users.userA)).toBe(true);
+  });
+
   test("check out without active check-in returns 404", async () => {
     const res = await request(app)
       .post(`/api/parks/${ids.parks.park2}/check-out`)

@@ -550,16 +550,53 @@ describe('Park Service', () => {
             actorId: 1,
           }),
         });
-        expect(result).toEqual(mockCheckInData);
+        expect(result).toMatchObject(mockCheckInData);
+        expect(result).toHaveProperty('switchedFromParkId', undefined);
       });
   
       // test for user attempting to check in when already checked in
-      test('should throw error if user already has an active check-in', async () => {
-        mockPrisma.checkIn.findFirst.mockResolvedValue(mockCheckInData);
-  
-        await expect(parkService.checkIn(1, 1, 123)).rejects.toThrow(
-          'User already has an active check-in.'
-        );
+      test('should auto-check-out existing active check-in before creating a new one', async () => {
+        const existingCheckIn = {
+          ...mockCheckInData,
+          id: 9,
+          parkId: 2,
+          checkedOutAt: null,
+        };
+        const updatedExisting = {
+          ...existingCheckIn,
+          checkedOutAt: new Date(),
+        };
+        const newCheckIn = {
+          ...mockCheckInData,
+          id: 10,
+          parkId: 1,
+          checkedOutAt: null,
+        };
+
+        mockPrisma.checkIn.findFirst.mockResolvedValue(existingCheckIn);
+        mockPrisma.checkIn.update.mockResolvedValue(updatedExisting);
+        mockPrisma.checkIn.create.mockResolvedValue(newCheckIn);
+
+        const result = await parkService.checkIn(1, 1, 123);
+
+        expect(mockPrisma.checkIn.findFirst).toHaveBeenCalledWith({
+          where: { userId: 1, checkedOutAt: null },
+        });
+        expect(mockPrisma.checkIn.update).toHaveBeenCalledWith({
+          where: { id: 9 },
+          data: { checkedOutAt: expect.any(Date) },
+        });
+        expect(mockPrisma.checkIn.create).toHaveBeenCalledWith({
+          data: { userId: 1, parkId: 1, dogId: 123 },
+        });
+        expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+          data: expect.objectContaining({ type: 'park.checked_out' }),
+        });
+        expect(mockPrisma.outboxEvent.create).toHaveBeenCalledWith({
+          data: expect.objectContaining({ type: 'park.checked_in' }),
+        });
+        expect(result).toMatchObject(newCheckIn);
+        expect(result).toHaveProperty('switchedFromParkId', 2);
       });
   
       test('should throw error when creation fails', async () => {

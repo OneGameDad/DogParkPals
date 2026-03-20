@@ -6,6 +6,67 @@ This document describes the complete WebSocket-based real-time notification syst
 
 **Note:** The same Socket.io infrastructure is also used for real-time messaging. See [WEBSOCKET_MESSAGING.md](./WEBSOCKET_MESSAGING.md) for messaging-specific implementation details.
 
+## Bug Fixes (Latest)
+
+### Fixed Issues (Fix/Notifications Branch)
+
+Three critical notification issues were identified and resolved:
+
+#### 1. **Duplicate Notifications**
+- **Problem**: Notifications were appearing twice due to Socket.io listener accumulation
+- **Root Cause**: Function reference mismatch when unsubscribing from listeners
+  - React Context created new callback functions on every render
+  - Socket.io's `.off(callback)` requires the exact same function reference that was passed to `.on()`
+  - Unsubscribe attempts failed to find matching listeners, causing accumulation
+- **Solution**: Implemented `useCallback` memoization in `NotificationContext`
+  - Handler function reference now stable across re-renders
+  - Enables proper cleanup in `.off()` calls
+  - Reduced from 2x+ duplicates to 1x delivery
+
+#### 2. **Auto-Dismiss Failures**
+- **Problem**: Some notifications didn't disappear after 5 seconds
+- **Root Cause**: 
+  - Duplicate listeners caused orphaned timeouts
+  - Timestamp-based ID collisions (`Date.now().toString()`) when multiple notifications created in same millisecond
+- **Solutions**:
+  - Enhanced `NotifContainer` with `useRef`-based `Map` for timeout tracking
+  - Unique ID generation: `` `${Date.now()}_${Math.random().toString(36).substr(2, 9)}` ``
+  - Explicit timeout cleanup on notification removal
+  - Component unmount cleanup for bulk timeout cancellation
+
+#### 3. **Multi-User Scrambling**
+- **Problem**: Notifications from one user appeared for other users in same browser
+- **Root Cause**: Socket.io listeners persisted when user logged out; singleton service maintained state
+- **Solutions**:
+  - Added explicit logout cleanup in `NotificationContext`
+  - `SocketService.disconnect()` now calls `removeAllListeners()` for 6+ event types
+  - Connection state flag prevents simultaneous connection attempts
+  - Full service state reset: `this.socket = null; this.token = null;`
+
+### Files Modified
+
+- [`frontend/src/context/NotificationContext.tsx`](frontend/src/context/NotificationContext.tsx) - Added useCallback + useRef patterns
+- [`frontend/src/components/features/Notif.tsx`](frontend/src/components/features/Notif.tsx) - Map-based timeout tracking, unique IDs
+- [`frontend/src/services/socketService.ts`](frontend/src/services/socketService.ts) - Connection state management, aggressive cleanup
+
+### Tests Added (21 Tests)
+
+- [`frontend/src/components/features/__tests__/NotifContainer.auto-dismiss.test.tsx`](frontend/src/components/features/__tests__/NotifContainer.auto-dismiss.test.tsx) - 9 tests
+  - Auto-dismiss timing validation
+  - Independent timeout management for multiple notifications
+  - Manual close button timeout cleanup
+  - Unique ID generation
+  - Rapid notification burst handling
+  - Container renderability and positioning
+
+- [`frontend/src/services/__tests__/socketService.cleanup.test.ts`](frontend/src/services/__tests__/socketService.cleanup.test.ts) - 12 tests
+  - Listener cleanup on disconnect
+  - Complete socket state reset
+  - Connection race condition prevention
+  - Reconnection request handling
+  - Event listener registration validation
+  - Cross-browser/environment compatibility
+
 ## Architecture
 
 ### Backend Components
@@ -45,15 +106,29 @@ This document describes the complete WebSocket-based real-time notification syst
 
 #### 1. Socket Service (`frontend/src/services/socketService.ts`)
 - Singleton service managing Socket.io client connection
-- Obtains JWT token via `/auth/socket-token` endpoint
+- **Connection Management Improvements** (Fix/Notifications):
+  - Connection guard flag: `private isConnecting = false` - prevents simultaneous connection attempts
+  - Connect waits for in-progress connections: `while (this.isConnecting) { await sleep(100); }`
+  - **Aggressive cleanup on disconnect**:
+    - `removeAllListeners('notification')` - clears notification listeners
+    - `removeAllListeners('message:new')` - clears messaging listeners
+    - `removeAllListeners()` for 6+ event types total
+    - Full state reset: `this.socket = null; this.token = null; this.reconnectAttempts = 0;`
+  - Graceful error handling and automatic recovery
 - Features:
+  - Obtains JWT token via `/auth/socket-token` endpoint
   - Auto-reconnection with exponential backoff
-  - Connection state management
   - Event subscription/unsubscription
   - Graceful disconnect on logout
 
 #### 2. Notification Context (`frontend/src/context/NotificationContext.tsx`)
 - React Context providing notification state across app
+- **Stability Improvements** (Fix/Notifications):
+  - `useCallback` memoization for `handleNewNotification` - ensures stable function reference for listener management
+  - `useRef` storage for handler reference (`handlerRef.current`) - enables deterministic cleanup in effects
+  - `useRef` tracking for connection state (`socketConnectedRef.current`) - prevents race conditions
+  - Explicit logout cleanup - calls `socketService.offNotification(handlerRef.current)` and `disconnect()`
+  - User switch handling - reconnects when user changes
 - Features:
   - Stores notification history
   - Tracks unread count
@@ -64,8 +139,14 @@ This document describes the complete WebSocket-based real-time notification syst
 #### 3. UI Components
 - **NotifContainer** (`frontend/src/components/features/Notif.tsx`)
   - Displays pop-up notifications in top-right
-  - Auto-dismisses after 5 seconds
+  - **Timeout Management Improvements** (Fix/Notifications):
+    - `useRef`-based `Map` for timeout tracking: `notificationMapRef.current = new Map()`
+    - Unique ID generation: `` id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}` ``
+    - Explicit timeout cancellation: `clearTimeout(timeoutId); notificationMapRef.current.delete(id)`
+    - Component unmount cleanup: `return () => { notificationMapRef.current.forEach(clearTimeout); }`
+  - Auto-dismisses after 5 seconds (only one timeout per notification)
   - Supports i18n with variable interpolation
+  - Proper z-index layering (z-50)
   
 - **NotificationBadge** (`frontend/src/components/features/NotificationBadge.tsx`)
   - Shows unread notification count
@@ -254,7 +335,7 @@ curl --cookie "authToken=<jwt_token>" http://localhost:3000/auth/socket-token
 
 ### Test Coverage
 
-The WebSocket notification system is comprehensively tested with **61 passing tests** across backend and frontend:
+The WebSocket notification system is comprehensively tested with **82 passing tests** across backend and frontend:
 
 #### Backend Tests
 
@@ -301,6 +382,17 @@ The WebSocket notification system is comprehensively tested with **61 passing te
 - Error handling and recovery
 - Graceful disconnect on logout
 
+**Service Tests - Cleanup & Connection** (`frontend/src/services/__tests__/socketService.cleanup.test.ts`) - **NEW (Fix/Notifications)**
+- ✅ 12 tests passing
+- Socket cleanup on disconnect (all 6+ event types)
+- Complete socket state reset validation
+- Socket instance cleared to null
+- Reconnect attempt counter reset
+- Race condition prevention (isConnecting flag)
+- Multiple simultaneous connect attempts
+- Reconnection after disconnect
+- Event listener registration on connect
+
 **Context Tests** (`frontend/src/context/__tests__/NotificationContext.test.tsx`)
 - ✅ Tests for provider setup
 - useNotifications hook functionality
@@ -310,6 +402,18 @@ The WebSocket notification system is comprehensively tested with **61 passing te
 - Notification event handling
 
 **Component Tests**
+- **NotifContainer Auto-Dismiss** (`frontend/src/components/features/__tests__/NotifContainer.auto-dismiss.test.tsx`) - **NEW (Fix/Notifications)**
+  - ✅ 9 tests passing
+  - Auto-dismiss after 5 seconds
+  - Multiple notifications with independent timeouts
+  - Manual close button timeout cleanup
+  - Unique ID generation (timestamp + random)
+  - Multiple same-type notifications (no ID collision)
+  - Container display and positioning
+  - Rapid burst notification handling (5 in quick succession)
+  - Batch removal with no race conditions
+  - Component unmount cleanup
+
 - **NotificationBadge** (`frontend/src/components/features/__tests__/NotificationBadge.test.tsx`)
   - ✅ Badge rendering and styling
   - Count display logic
@@ -342,14 +446,20 @@ npm run test:integration -- --testPathPattern="socketNotifications"
 # All frontend tests
 cd frontend && npm test
 
-# Socket service tests
+# Socket service tests (including new cleanup tests)
 npm test -- src/services/__tests__/socketService.test.ts --run
+npm test -- src/services/__tests__/socketService.cleanup.test.ts --run
 
 # Context tests
 npm test -- src/context/__tests__/NotificationContext.test.tsx --run
 
-# Component tests
-npm test -- src/components/features/__tests__ --run
+# Component tests (including new auto-dismiss tests)
+npm test -- src/components/features/__tests__/NotifContainer.test.tsx --run
+npm test -- src/components/features/__tests__/NotifContainer.auto-dismiss.test.tsx --run
+
+# All notification-related tests
+npm test -- src/components/features/__tests__/NotifContainer --run
+npm test -- src/services/__tests__ --run
 ```
 
 ### Manual Testing
@@ -463,8 +573,10 @@ Potential improvements:
 
 ### Frontend
 - `frontend/src/services/socketService.ts`
+  - `frontend/src/services/__tests__/socketService.cleanup.test.ts` (NEW - Fix/Notifications)
 - `frontend/src/context/NotificationContext.tsx`
 - `frontend/src/components/features/Notif.tsx`
+  - `frontend/src/components/features/__tests__/NotifContainer.auto-dismiss.test.tsx` (NEW - Fix/Notifications)
 - `frontend/src/components/features/NotificationBadge.tsx`
 - `frontend/src/App.tsx`
 - `frontend/src/hooks/index.ts`

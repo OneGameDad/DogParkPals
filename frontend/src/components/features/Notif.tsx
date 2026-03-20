@@ -50,7 +50,6 @@ const NotifContainer = React.forwardRef<NotifContainerHandle>((props, ref) => {
       timeoutId 
     }]);
     
-    console.log('Notification added:', { id, messageType, totalNotifications: notifications.length + 1 });
   };
 
   React.useImperativeHandle(ref, () => ({

@@ -22,7 +22,8 @@ export const FilterSelect: React.FC<FilterSelectProps> = ({
     const { t, i18n } = useTranslation();
 
     const formatOption = (option: string) => {
-        const fallback = option.replace(/_/g, ' ').charAt(0).toUpperCase() + option.replace(/_/g, ' ').slice(1).toLowerCase();
+        const normalized = option.replace(/_/g, ' ');
+        const fallback = normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase();
 
         if (!optionLabelKeyPrefix) {
             return fallback;

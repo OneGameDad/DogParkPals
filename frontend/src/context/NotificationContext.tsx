@@ -52,7 +52,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     // Only initialize socket if user is authenticated
     if (!isAuthenticated || !user) {
       // Clean up on logout
-      if (socketConnectedRef.current) {
+      if (socketConnectedRef.current || socketService.getSocket()) {
         console.log('Cleaning up socket connection - user logged out');
         socketConnectedRef.current = false;
         if (handlerRef.current) {
@@ -68,7 +68,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     const initSocket = async () => {
       try {
         // Ensure previous connection is fully cleaned up
-        if (socketConnectedRef.current) {
+        if (socketConnectedRef.current || socketService.getSocket()) {
           console.log('Previous socket connection detected, cleaning up');
           if (handlerRef.current) {
             socketService.offNotification(handlerRef.current);
@@ -77,7 +77,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         }
 
         await socketService.connect();
-        socketConnectedRef.current = true;
+        const hasSocket = !!socketService.getSocket();
+        const isConnected = socketService.isConnected();
+        socketConnectedRef.current = hasSocket || isConnected;
+
+        if (!socketConnectedRef.current) {
+          console.warn('Socket initialization completed without an active socket');
+          return;
+        }
         
         // Subscribe to notifications with the stable handler reference
         if (handlerRef.current) {

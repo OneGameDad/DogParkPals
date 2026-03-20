@@ -26,25 +26,66 @@ class SocketService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private isConnecting = false; // Prevent multiple simultaneous connection attempts
+  private connectPromise: Promise<void> | null = null;
 
   /**
    * Initialize and connect to Socket.io server
    */
   async connect(): Promise<void> {
-    // Prevent multiple simultaneous connection attempts
-    if (this.isConnecting) {
-      console.log('Connection already in progress, waiting...');
-      // Wait for the current connection attempt to complete
-      const maxWaitTime = 10000; // 10 seconds max timeout
-      const startTime = Date.now();
-      while (this.isConnecting && Date.now() - startTime < maxWaitTime) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
+    if (this.socket?.connected) {
+      console.log('Socket already connected');
       return;
     }
 
+    if (this.socket) {
+      console.log('Socket already initialized, waiting for connection');
+      return;
+    }
+
+    // If another call is already connecting, wait for it to finish.
+    // Only return early if a connected socket now exists.
+    if (this.connectPromise) {
+      console.log('Connection already in progress, waiting...');
+      await this.waitForInFlightConnect();
+
+      if (this.socket) {
+        return;
+      }
+    }
+
+    this.connectPromise = this.performConnect().finally(() => {
+      this.connectPromise = null;
+    });
+
+    await this.connectPromise;
+  }
+
+  private async waitForInFlightConnect(): Promise<void> {
+    if (!this.connectPromise) {
+      return;
+    }
+
+    const maxWaitTime = 10000;
+
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        this.connectPromise,
+        new Promise<void>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error('Timed out waiting for in-progress socket connection'));
+          }, maxWaitTime);
+        }),
+      ]);
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    }
+  }
+
+  private async performConnect(): Promise<void> {
     if (this.socket?.connected) {
-      console.log('Socket already connected');
       return;
     }
 
@@ -101,6 +142,10 @@ class SocketService {
    */
   private setupEventHandlers(): void {
     if (!this.socket) return;
+    if (typeof this.socket.on !== 'function') {
+      console.warn('Socket does not support event subscriptions, skipping handler setup');
+      return;
+    }
 
     this.socket.on('connect', () => {
       console.log('Socket connected:', this.socket?.id);
@@ -303,20 +348,21 @@ class SocketService {
    */
   disconnect(): void {
     if (this.socket) {
-      // Remove all listeners to prevent accumulation
-      this.socket.removeAllListeners('notification');
-      this.socket.removeAllListeners('message:new');
-      this.socket.removeAllListeners('message:status');
-      this.socket.removeAllListeners('typing:start');
-      this.socket.removeAllListeners('typing:stop');
-      this.socket.removeAllListeners('message:read');
-      this.socket.removeAllListeners('account_deleted');
-      
+      // Remove all listeners to prevent accumulation.
+      if (typeof this.socket.removeAllListeners === 'function') {
+        this.socket.removeAllListeners();
+      }
+
       // Disconnect the socket
-      this.socket.disconnect();
+      if (typeof this.socket.disconnect === 'function') {
+        this.socket.disconnect();
+      }
+
       this.socket = null;
       this.token = null;
       this.reconnectAttempts = 0;
+      this.connectPromise = null;
+      this.isConnecting = false;
       console.log('Socket disconnected and all listeners cleared');
     }
   }

@@ -102,6 +102,7 @@ const ParkExplorer = () => {
                         onChange={setActiveAmenityFilter}
                         options={amenityOptions}
                         allLabel={t('parks.allAmenities', 'All Amenities')}
+                        optionLabelKeyPrefix="amenities"
                         className="w-full md:w-auto min-w-[150px]"
                     />
                     <SortSelect

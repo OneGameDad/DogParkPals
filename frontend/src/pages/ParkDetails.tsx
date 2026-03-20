@@ -75,7 +75,6 @@ const ParkDetails = () => {
 
       <ParkHero
         name={park.name}
-        imageUrl={park.profilePictureUrl || undefined}
       />
 
       <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8">

@@ -130,17 +130,17 @@ const AdminEvents = () => {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xl font-bold text-gray-800">{t('admin.events.title')} ({events.length})</h2>
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <input
             type="text"
             placeholder={t('admin.events.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="border border-gray-300 rounded-lg px-4 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border border-gray-300 rounded-lg px-4 py-2 w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <Button text={t('admin.events.addButton')} onClick={() => openEdit(null)} />
+          <Button text={t('admin.events.addButton')} onClick={() => openEdit(null)} className="w-full sm:w-auto" />
         </div>
       </div>
 

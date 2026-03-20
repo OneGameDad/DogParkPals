@@ -134,6 +134,10 @@ export const en = {
     profile: {
       title: "Profile",
       editProfile: "Edit Profile",
+      achievements: "Achievements",
+      loadingAchievements: "Loading achievements...",
+      errorAchievements: "Failed to load achievements",
+      noAchievements: "No achievements earned yet.",
       loadingProfile: "Loading profile...",
       failedToLoad: "Failed to load user profile",
       username: "Username",
@@ -234,7 +238,9 @@ export const en = {
     parks: {
       explore: "Explore Parks",
       searchPlaceholder: "Search parks...",
+      allAmenities: "All Amenities",
       noParksFound: "No parks found matching your search.",
+      noParksFoundCriteria: "No parks found matching your criteria.",
       noDescription: "No description available",
       error: "Failed to load parks"
     },
@@ -292,8 +298,22 @@ export const en = {
     },
     homePage: {
       welcome: "Welcome to ParkPals",
+      aboutParkPals: "ParkPals helps dog owners discover parks, connect with local dog lovers, and join community events in one friendly place.",
       loggedInAs: "Logged in as: {{name}}",
-      notLoggedIn: "Not logged in"
+      notLoggedIn: "Not logged in",
+      checkInNow: "Check In Now!"
+    },
+    sort: {
+      nameAsc: "Name A → Z",
+      nameDesc: "Name Z → A"
+    },
+    amenities: {
+      WATER_FOUNTAIN: "Water Fountain",
+      SHADE: "Shade",
+      BENCHES: "Benches",
+      WASTE_BAGS: "Waste Bags",
+      OBSTACLES: "Obstacles",
+      AGILITY_EQUIPMENT: "Agility Equipment"
     },
     social: {
       title: "Social",

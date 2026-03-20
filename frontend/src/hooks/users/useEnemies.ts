@@ -6,8 +6,8 @@ import type { User } from '../../types';
 interface EnemyRelationship {
     id: number;
     ownerId: number;
-    enemyUserId: number;
-    enemyUser: User;
+    enemyUserId: number | null;
+    enemyUser: User | null;
 }
 
 export const useEnemies = (userId?: number) => {
@@ -16,7 +16,9 @@ export const useEnemies = (userId?: number) => {
     const { data: relationships, loading, error, refetch } = useFetch<EnemyRelationship[]>(userId ? `/api/enemies/${userId}` : '');
 
     // Transform relationship objects to User objects
-    const enemies = relationships?.map((r: EnemyRelationship) => r.enemyUser) || [];
+    const enemies = relationships
+        ?.map((r: EnemyRelationship): User | null => r.enemyUser)
+        .filter((enemy: User | null): enemy is User => enemy !== null) || [];
 
     const { submit: submitRemove } = useSubmit({
         successMessage: 'Enemy removed',

@@ -134,6 +134,10 @@ export const fi = {
     profile: {
       title: "Profiili",
       editProfile: "Muokkaa profiilia",
+      achievements: "Saavutukset",
+      loadingAchievements: "Ladataan saavutuksia...",
+      errorAchievements: "Saavutusten lataus epäonnistui",
+      noAchievements: "Ei vielä ansaittuja saavutuksia.",
       loadingProfile: "Ladataan profiilia...",
       failedToLoad: "Käyttäjäprofiilin lataus epäonnistui",
       username: "Käyttäjätunnus",
@@ -234,7 +238,9 @@ export const fi = {
     parks: {
       explore: "Tarkastele puistoja",
       searchPlaceholder: "Hae puistoja...",
+      allAmenities: "Kaikki palvelut",
       noParksFound: "Hakusi perusteella ei löytynyt puistoja.",
+      noParksFoundCriteria: "Valituilla kriteereillä ei löytynyt puistoja.",
       noDescription: "Kuvausta ei saatavilla",
       error: "Puistojen lataus epäonnistui"
     },
@@ -292,8 +298,22 @@ export const fi = {
     },
     homePage: {
       welcome: "Tervetuloa ParkPalsiin",
+      aboutParkPals: "ParkPals auttaa koiranomistajia löytämään puistoja, verkostoitumaan muiden koiraihmisten kanssa ja osallistumaan yhteisötapahtumiin yhdessä paikassa.",
       loggedInAs: "Kirjautunut: {{name}}",
-      notLoggedIn: "Ei kirjautunut"
+      notLoggedIn: "Ei kirjautunut",
+      checkInNow: "Kirjaudu sisään nyt!"
+    },
+    sort: {
+      nameAsc: "Nimi A → Ö",
+      nameDesc: "Nimi Ö → A"
+    },
+    amenities: {
+      WATER_FOUNTAIN: "Vesipiste",
+      SHADE: "Varjo",
+      BENCHES: "Penkit",
+      WASTE_BAGS: "Jätepussit",
+      OBSTACLES: "Esteet",
+      AGILITY_EQUIPMENT: "Agility-välineet"
     },
     social: {
       title: "Yhteydet",

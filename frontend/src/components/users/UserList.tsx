@@ -21,7 +21,7 @@ export default function UserList({
 }: UserListProps) {
     const { t } = useTranslation();
 
-    const safeUsers = Array.isArray(users) ? users : [];
+    const safeUsers = Array.isArray(users) ? users.filter((user): user is User => Boolean(user)) : [];
 
     const filteredUsers = safeUsers.filter(user => user.id !== currentUserId);
 

@@ -18,10 +18,7 @@ const Home = () => {
       <Header text={t('homePage.welcome', 'Welcome to ParkPals')} level="h1" colour="text-pink-500" />
 
       <BodyText
-        text={t(
-          'homePage.aboutParkPals',
-          'ParkPals helps dog owners discover parks, connect with local dog lovers, and join community events in one friendly place.'
-        )}
+        text={t('homePage.aboutParkPals')}
         colour="text-gray-700"
       />
 

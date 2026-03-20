@@ -1,11 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
 import NotifContainer from '../Notif';
-import { useTranslation } from 'react-i18next';
 
 // Mock i18next
 vi.mock('react-i18next', () => ({
   useTranslation: vi.fn(() => ({
+    i18n: {
+      exists: () => true,
+    },
     t: (key: string, params?: any) => {
       const translations: Record<string, string> = {
         'notifications.messageReceived': 'You received a message from {name}',
@@ -29,6 +31,11 @@ describe('NotifContainer', () => {
   beforeEach(() => {
     containerRef = { current: null };
     vi.clearAllMocks();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('should render empty initially', () => {
@@ -62,5 +69,23 @@ describe('NotifContainer', () => {
       containerRef.current?.addNotification('messageReceived', { name: 'John' });
       containerRef.current?.addNotification('friendRequest', { name: 'Jane' });
     }).not.toThrow();
+  });
+
+  it('should auto-dismiss all stacked notifications after timeout', () => {
+    const { container } = render(<NotifContainer ref={containerRef} />);
+
+    act(() => {
+      containerRef.current?.addNotification('messageReceived', { name: 'John' });
+      containerRef.current?.addNotification('friendRequest', { name: 'Jane' });
+      containerRef.current?.addNotification('eventCreated', { name: 'Alex' });
+    });
+
+    expect(container.querySelectorAll('[class*="bg-pink"]').length).toBe(3);
+
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(container.querySelectorAll('[class*="bg-pink"]').length).toBe(0);
   });
 });

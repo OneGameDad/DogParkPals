@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import SelectBase from './SelectBase';
 
 interface FilterSelectProps {
@@ -6,6 +7,7 @@ interface FilterSelectProps {
     onChange: (value: string) => void;
     options: readonly string[] | string[];
     allLabel?: string;
+    optionLabelKeyPrefix?: string;
     className?: string;
 }
 
@@ -14,8 +16,23 @@ export const FilterSelect: React.FC<FilterSelectProps> = ({
     onChange,
     options,
     allLabel = 'All',
+    optionLabelKeyPrefix,
     className
 }) => {
+    const { t, i18n } = useTranslation();
+
+    const formatOption = (option: string) => {
+        const normalized = option.replace(/_/g, ' ');
+        const fallback = normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase();
+
+        if (!optionLabelKeyPrefix) {
+            return fallback;
+        }
+
+        const translationKey = `${optionLabelKeyPrefix}.${option}`;
+        return i18n.exists(translationKey) ? t(translationKey) : fallback;
+    };
+
     return (
         <SelectBase
             value={value}
@@ -25,7 +42,7 @@ export const FilterSelect: React.FC<FilterSelectProps> = ({
             <option value="">{allLabel}</option>
             {options.map((option) => (
                 <option key={option} value={option}>
-                    {option.replace(/_/g, ' ').charAt(0).toUpperCase() + option.replace(/_/g, ' ').slice(1).toLowerCase()}
+                    {formatOption(option)}
                 </option>
             ))}
         </SelectBase>

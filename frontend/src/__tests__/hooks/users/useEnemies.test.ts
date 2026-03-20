@@ -49,6 +49,22 @@ describe('useEnemies', () => {
         expect(result.current.enemies[0].username).toBe('enemy1'); // Checks nested mapping
     });
 
+    it('should filter out null enemyUser relationships', () => {
+        (useFetch as any).mockReturnValue({
+            data: [
+                { id: 101, enemyUser: { id: 3, username: 'enemy1' } },
+                { id: 102, enemyUser: null }
+            ],
+            loading: false,
+            error: null,
+            refetch: mockRefetch
+        });
+
+        const { result } = renderHook(() => useEnemies(1));
+        expect(result.current.enemies).toHaveLength(1);
+        expect(result.current.enemies[0].id).toBe(3);
+    });
+
     it('should remove enemy and refetch', async () => {
         (api.delete as any).mockResolvedValue({});
         const { result } = renderHook(() => useEnemies(1));

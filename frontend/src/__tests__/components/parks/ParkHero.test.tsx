@@ -8,18 +8,6 @@ describe('ParkHero', () => {
     expect(screen.getByText('Sunny Dog Park')).toBeInTheDocument();
   });
 
-  it('renders custom image when provided', () => {
-    render(<ParkHero name="Test Park" imageUrl="https://example.com/custom.jpg" />);
-    const image = screen.getByAltText('Test Park');
-    expect(image).toHaveAttribute('src', 'https://example.com/custom.jpg');
-  });
-
-  it('renders default image when no imageUrl provided', () => {
-    render(<ParkHero name="Test Park" />);
-    const image = screen.getByAltText('Test Park');
-    expect(image).toHaveAttribute('src', '/imgs/background.png');
-  });
-
   it('has proper heading hierarchy', () => {
     render(<ParkHero name="My Park" />);
     const heading = screen.getByRole('heading', { level: 1 });

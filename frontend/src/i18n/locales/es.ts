@@ -134,6 +134,10 @@ export const es = {
     profile: {
       title: "Perfil",
       editProfile: "Editar perfil",
+      achievements: "Logros",
+      loadingAchievements: "Cargando logros...",
+      errorAchievements: "Error al cargar logros",
+      noAchievements: "Aún no has conseguido logros.",
       loadingProfile: "Cargando perfil...",
       failedToLoad: "No se pudo cargar el perfil",
       username: "Nombre de usuario",
@@ -234,7 +238,9 @@ export const es = {
     parks: {
       explore: "Explorar Parques",
       searchPlaceholder: "Buscar parques...",
+      allAmenities: "Todos los servicios",
       noParksFound: "No se encontraron parques que coincidan con tu búsqueda.",
+      noParksFoundCriteria: "No se encontraron parques que coincidan con tus criterios.",
       noDescription: "No hay descripción disponible",
       error: "Error al cargar los parques"
     },
@@ -292,8 +298,22 @@ export const es = {
     },
     homePage: {
       welcome: "Bienvenido a ParkPals",
+      aboutParkPals: "ParkPals ayuda a los dueños de perros a descubrir parques, conectar con otros amantes de los perros y unirse a eventos comunitarios en un solo lugar.",
       loggedInAs: "Conectado como: {{name}}",
-      notLoggedIn: "No conectado"
+      notLoggedIn: "No conectado",
+      checkInNow: "¡Regístrate ahora!"
+    },
+    sort: {
+      nameAsc: "Nombre A → Z",
+      nameDesc: "Nombre Z → A"
+    },
+    amenities: {
+      WATER_FOUNTAIN: "Fuente de agua",
+      SHADE: "Sombra",
+      BENCHES: "Bancos",
+      WASTE_BAGS: "Bolsas para desechos",
+      OBSTACLES: "Obstáculos",
+      AGILITY_EQUIPMENT: "Equipo de agilidad"
     },
     social: {
       title: "Conexiones",

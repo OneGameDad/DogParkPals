@@ -20,7 +20,7 @@ export const FilterTabs = <T extends string>({
     className = ''
 }: FilterTabsProps<T>) => {
     return (
-        <div className={`flex justify-center mb-6 space-x-4 ${className}`}>
+        <div className={`flex justify-start sm:justify-center mb-6 gap-2 sm:gap-3 overflow-x-auto pb-1 ${className}`}>
             {tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
                 const activeClasses = tab.activeColorClass || 'bg-blue-600 text-white shadow-md';
@@ -30,7 +30,7 @@ export const FilterTabs = <T extends string>({
                     <button
                         key={tab.id}
                         type="button"
-                        className={`py-2 px-4 rounded-full font-medium transition-colors ${isActive ? activeClasses : inactiveClasses}`}
+                        className={`shrink-0 whitespace-nowrap py-2 px-4 rounded-full font-medium transition-colors ${isActive ? activeClasses : inactiveClasses}`}
                         onClick={() => onChange(tab.id)}
                     >
                         {tab.label}

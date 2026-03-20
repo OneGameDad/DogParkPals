@@ -111,8 +111,8 @@ const FriendFinder = () => {
         if (success) handleCloseModal();
     };
 
-    const isFriend = (user: User) => friends.some((f: User) => f.id === user.id);
-    const isEnemy = (user: User) => enemies.some((e: User) => e.id === user.id);
+    const isFriend = (user: User) => friends.some((f: User) => Boolean(f) && f.id === user.id);
+    const isEnemy = (user: User) => enemies.some((e: User) => Boolean(e) && e.id === user.id);
 
     const selectedIsFriend = selectedUser ? isFriend(selectedUser) : false;
     const selectedIsEnemy = selectedUser ? isEnemy(selectedUser) : false;

@@ -18,13 +18,13 @@ const Admin = () => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6 text-white drop-shadow-md">
+    <div className="max-w-7xl mx-auto px-3 sm:px-4">
+      <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-white drop-shadow-md">
         {t('admin.title')}
       </h1>
 
-      <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl p-6">
-        <FilterTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} className="mb-8" />
+      <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl p-3 sm:p-6">
+        <FilterTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} className="mb-4 sm:mb-8" />
 
         {activeTab === 'users' && <AdminUsers />}
         {activeTab === 'dogs' && <AdminDogs />}

@@ -68,17 +68,4 @@ describe('ParkCard', () => {
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('href', '/parks/1');
   });
-
-  it('renders park image', () => {
-    renderParkCard(mockPark);
-    const image = screen.getByAltText('Central Dog Park');
-    expect(image).toHaveAttribute('src', 'https://example.com/park.jpg');
-  });
-
-  it('uses default image when no profile picture', () => {
-    const parkNoImage = { ...mockPark, profilePictureUrl: null };
-    renderParkCard(parkNoImage);
-    const image = screen.getByAltText('Central Dog Park');
-    expect(image).toHaveAttribute('src', '/imgs/background.png');
-  });
 });

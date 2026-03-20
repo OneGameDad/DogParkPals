@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, ReactNode, useMemo } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode, useMemo, useCallback } from 'react';
 import socketService, { Notification } from '../services/socketService';
 import NotifContainer, { NotifContainerHandle } from '../components/features/Notif';
 import { useAuth } from '../hooks';
@@ -27,52 +27,82 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   
   const notifContainerRef = useRef<NotifContainerHandle>(null);
   const { user, isAuthenticated } = useAuth();
+  const handlerRef = useRef<((notification: Notification) => void) | null>(null);
+  const socketConnectedRef = useRef(false);
+
+  // Memoized handler using useCallback to ensure stable reference
+  const handleNewNotification = useCallback((notification: Notification) => {
+    console.log('Received notification:', notification);
+
+    // Add to notifications list
+    setNotifications((prev) => [notification, ...prev]);
+
+    // Show visual notification using NotifContainer
+    if (notifContainerRef.current) {
+      notifContainerRef.current.addNotification(notification.type, notification.payload);
+    }
+  }, []); // No dependencies - this callback never changes
+
+  useEffect(() => {
+    // Store the handler in ref for cleanup
+    handlerRef.current = handleNewNotification;
+  }, [handleNewNotification]);
 
   useEffect(() => {
     // Only initialize socket if user is authenticated
     if (!isAuthenticated || !user) {
+      // Clean up on logout
+      if (socketConnectedRef.current) {
+        console.log('Cleaning up socket connection - user logged out');
+        socketConnectedRef.current = false;
+        if (handlerRef.current) {
+          socketService.offNotification(handlerRef.current);
+        }
+        socketService.disconnect();
+      }
+      setNotifications([]);
       return;
     }
 
-    // Show the notification in the UI
-    const showVisualNotification = (notification: Notification) => {
-      if (notifContainerRef.current) {
-        notifContainerRef.current.addNotification(notification.type, notification.payload);
-      }
-    };
-
-    // Handle incoming notifications
-    const handleNewNotification = (notification: Notification) => {
-      console.log('Received notification:', notification);
-
-      // Add to notifications list
-      setNotifications((prev) => [notification, ...prev]);
-
-      // Show visual notification using NotifContainer
-      showVisualNotification(notification);
-    };
-
-    // Initialize socket connection when component mounts
+    // Initialize socket connection when user logs in
     const initSocket = async () => {
       try {
+        // Ensure previous connection is fully cleaned up
+        if (socketConnectedRef.current) {
+          console.log('Previous socket connection detected, cleaning up');
+          if (handlerRef.current) {
+            socketService.offNotification(handlerRef.current);
+          }
+          socketService.disconnect();
+        }
+
         await socketService.connect();
+        socketConnectedRef.current = true;
         
-        // Subscribe to notifications with the correctly scoped handler
-        socketService.onNotification(handleNewNotification);
+        // Subscribe to notifications with the stable handler reference
+        if (handlerRef.current) {
+          socketService.onNotification(handlerRef.current);
+          console.log('Socket subscription established for user:', user.id);
+        }
       } catch (error) {
         console.error('Failed to initialize socket:', error);
+        socketConnectedRef.current = false;
       }
     };
 
     initSocket();
 
-    // Cleanup on unmount or when user logs out
+    // Cleanup on unmount or when user changes
     return () => {
-      // Unsubscribe with the same function reference that was subscribed
-      socketService.offNotification(handleNewNotification);
+      console.log('NotificationProvider cleanup - user:', user.id);
+      socketConnectedRef.current = false;
+      // Unsubscribe with the stable function reference
+      if (handlerRef.current) {
+        socketService.offNotification(handlerRef.current);
+      }
       socketService.disconnect();
     };
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user?.id]);
 
   const markAsRead = (notificationId: number) => {
     setNotifications((prev) =>

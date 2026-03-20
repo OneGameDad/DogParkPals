@@ -25,15 +25,30 @@ class SocketService {
   private token: string | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
+  private isConnecting = false; // Prevent multiple simultaneous connection attempts
 
   /**
    * Initialize and connect to Socket.io server
    */
   async connect(): Promise<void> {
+    // Prevent multiple simultaneous connection attempts
+    if (this.isConnecting) {
+      console.log('Connection already in progress, waiting...');
+      // Wait for the current connection attempt to complete
+      const maxWaitTime = 10000; // 10 seconds max timeout
+      const startTime = Date.now();
+      while (this.isConnecting && Date.now() - startTime < maxWaitTime) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return;
+    }
+
     if (this.socket?.connected) {
       console.log('Socket already connected');
       return;
     }
+
+    this.isConnecting = true;
 
     try {
       // Get auth token for Socket.io
@@ -41,6 +56,7 @@ class SocketService {
       
       if (!this.token) {
         console.warn('No auth token available, skipping socket connection');
+        this.isConnecting = false;
         return;
       }
 
@@ -62,6 +78,8 @@ class SocketService {
       console.log('Socket.io connection initiated');
     } catch (error) {
       console.error('Failed to connect socket:', error);
+    } finally {
+      this.isConnecting = false;
     }
   }
 
@@ -281,14 +299,25 @@ class SocketService {
   }
 
   /**
-   * Disconnect from socket
+   * Disconnect from socket and clear all listeners
    */
   disconnect(): void {
     if (this.socket) {
+      // Remove all listeners to prevent accumulation
+      this.socket.removeAllListeners('notification');
+      this.socket.removeAllListeners('message:new');
+      this.socket.removeAllListeners('message:status');
+      this.socket.removeAllListeners('typing:start');
+      this.socket.removeAllListeners('typing:stop');
+      this.socket.removeAllListeners('message:read');
+      this.socket.removeAllListeners('account_deleted');
+      
+      // Disconnect the socket
       this.socket.disconnect();
       this.socket = null;
       this.token = null;
-      console.log('Socket disconnected');
+      this.reconnectAttempts = 0;
+      console.log('Socket disconnected and all listeners cleared');
     }
   }
 

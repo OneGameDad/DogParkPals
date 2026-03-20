@@ -12,7 +12,6 @@ interface NotificationItem {
   id: string;
   messageType: string;
   variables?: Record<string, string | number>;
-  timeoutId?: ReturnType<typeof setTimeout>;
 }
 
 export interface NotifContainerHandle {
@@ -37,7 +36,7 @@ const NotifContainer = React.forwardRef<NotifContainerHandle>((props, ref) => {
 
   const addNotification = (messageType: string, variables?: Record<string, string | number>) => {
     // Create a unique ID based on timestamp + random to prevent duplicates
-    const id = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
     
     // Set auto-dismiss timeout
     const timeoutId = setTimeout(() => removeNotification(id), 5000);
@@ -47,7 +46,6 @@ const NotifContainer = React.forwardRef<NotifContainerHandle>((props, ref) => {
       id, 
       messageType, 
       variables,
-      timeoutId 
     }]);
     
   };

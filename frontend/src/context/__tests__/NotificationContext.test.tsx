@@ -12,6 +12,7 @@ vi.mock('../../services/socketService', () => ({
     disconnect: vi.fn(),
     onNotification: vi.fn(),
     offNotification: vi.fn(),
+    getSocket: vi.fn(() => ({ id: 'mock-socket' })),
     isConnected: vi.fn(() => true),
   },
 }));
@@ -68,9 +69,11 @@ describe('NotificationContext', () => {
     vi.clearAllMocks();
     mockSocketService = vi.mocked(socketService);
     mockUseAuth = vi.mocked(useAuth);
+    mockSocketService.disconnect();
   });
 
   afterEach(() => {
+    mockSocketService.disconnect();
     vi.clearAllMocks();
   });
 
@@ -249,6 +252,29 @@ describe('NotificationContext', () => {
       });
 
       spy.mockRestore();
+    });
+
+    it('should not subscribe when connect completes without socket state', async () => {
+      mockUseAuth.mockReturnValue({
+        user: { id: 1, username: 'testuser', email: 'test@example.com' },
+        isAuthenticated: true,
+        loading: false,
+      });
+
+      mockSocketService.getSocket.mockReturnValue(null as any);
+      mockSocketService.isConnected.mockReturnValue(false);
+
+      render(
+        <NotificationProvider>
+          <TestComponent />
+        </NotificationProvider>
+      );
+
+      await waitFor(() => {
+        expect(mockSocketService.connect).toHaveBeenCalled();
+      });
+
+      expect(mockSocketService.onNotification).not.toHaveBeenCalled();
     });
   });
 });

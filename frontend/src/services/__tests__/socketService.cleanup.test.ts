@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import socketService from '../socketService';
 import { io } from 'socket.io-client';
+import api from '../api';
 
 // Mock socket.io-client and API
 vi.mock('socket.io-client');
@@ -12,11 +13,14 @@ vi.mock('../api', () => ({
 
 describe('SocketService - Connection & Cleanup (Fixes Verification)', () => {
   beforeEach(() => {
+    socketService.disconnect();
     vi.clearAllMocks();
+    (api.get as any).mockReset();
+    (api.get as any).mockResolvedValue({ token: 'test-token' });
   });
 
   describe('Socket cleanup on disconnect', () => {
-    it('should remove all listeners when disconnecting', () => {
+    it('should remove all listeners when disconnecting', async () => {
       const mockSocket = {
         connected: true,
         disconnect: vi.fn(),
@@ -25,18 +29,15 @@ describe('SocketService - Connection & Cleanup (Fixes Verification)', () => {
 
       (io as any).mockReturnValue(mockSocket);
 
-      socketService.connect();
+      await socketService.connect();
       socketService.disconnect();
 
-      // Should have called removeAllListeners for all event types
-      const calls = (mockSocket.removeAllListeners as any).mock.calls.map((c: any) => c[0]);
-      expect(calls).toContain('notification');
-      expect(calls).toContain('message:new');
-      expect(calls).toContain('typing:start');
+      // Should clear all listeners, including lifecycle handlers, in one call
+      expect(mockSocket.removeAllListeners).toHaveBeenCalledWith();
       expect(mockSocket.disconnect).toHaveBeenCalled();
     });
 
-    it('should reset internal state on disconnect', () => {
+    it('should reset internal state on disconnect', async () => {
       const mockSocket = {
         connected: true,
         disconnect: vi.fn(),
@@ -45,14 +46,14 @@ describe('SocketService - Connection & Cleanup (Fixes Verification)', () => {
 
       (io as any).mockReturnValue(mockSocket);
 
-      socketService.connect();
+      await socketService.connect();
       expect(socketService.getSocket()).not.toBeNull();
 
       socketService.disconnect();
       expect(socketService.getSocket()).toBeNull();
     });
 
-    it('should handle multiple disconnects gracefully', () => {
+    it('should handle multiple disconnects gracefully', async () => {
       const mockSocket = {
         connected: true,
         disconnect: vi.fn(),
@@ -61,7 +62,7 @@ describe('SocketService - Connection & Cleanup (Fixes Verification)', () => {
 
       (io as any).mockReturnValue(mockSocket);
 
-      socketService.connect();
+      await socketService.connect();
       socketService.disconnect();
       
       // Second disconnect should not throw
@@ -102,13 +103,35 @@ describe('SocketService - Connection & Cleanup (Fixes Verification)', () => {
 
       (io as any).mockReturnValue(mockSocket);
 
-      socketService.connect();
+      await socketService.connect();
       const firstCallCount = (io as any).mock.calls.length;
 
-      socketService.connect();
+      await socketService.connect();
 
       // Should not create new connection
       expect((io as any).mock.calls.length).toBe(firstCallCount);
+    });
+
+    it('should retry after waiting if in-flight connection fails', async () => {
+      const mockSocket = {
+        connected: false,
+        disconnect: vi.fn(),
+        removeAllListeners: vi.fn(),
+      };
+
+      (io as any).mockReturnValue(mockSocket);
+
+      (api.get as any)
+        .mockRejectedValueOnce(new Error('Token fetch failed'))
+        .mockResolvedValueOnce({ token: 'test-token' });
+
+      await Promise.all([
+        socketService.connect(),
+        socketService.connect(),
+      ]);
+
+      // First attempt fails before socket creation, second caller retries and connects.
+      expect((io as any).mock.calls.length).toBe(1);
     });
   });
 
@@ -161,7 +184,7 @@ describe('SocketService - Connection & Cleanup (Fixes Verification)', () => {
   });
 
   describe('Listener registration/unregistration', () => {
-    it('should register notification listeners', () => {
+    it('should register notification listeners', async () => {
       const mockSocket = {
         connected: true,
         disconnect: vi.fn(),
@@ -172,7 +195,7 @@ describe('SocketService - Connection & Cleanup (Fixes Verification)', () => {
 
       (io as any).mockReturnValue(mockSocket);
 
-      socketService.connect();
+      await socketService.connect();
 
       const callback = vi.fn();
       socketService.onNotification(callback);
@@ -180,7 +203,7 @@ describe('SocketService - Connection & Cleanup (Fixes Verification)', () => {
       expect(mockSocket.on).toHaveBeenCalledWith('notification', callback);
     });
 
-    it('should unregister notification listeners', () => {
+    it('should unregister notification listeners', async () => {
       const mockSocket = {
         connected: true,
         disconnect: vi.fn(),
@@ -191,7 +214,7 @@ describe('SocketService - Connection & Cleanup (Fixes Verification)', () => {
 
       (io as any).mockReturnValue(mockSocket);
 
-      socketService.connect();
+      await socketService.connect();
 
       const callback = vi.fn();
       socketService.onNotification(callback);
@@ -200,7 +223,7 @@ describe('SocketService - Connection & Cleanup (Fixes Verification)', () => {
       expect(mockSocket.off).toHaveBeenCalledWith('notification', callback);
     });
 
-    it('should clear all listener types on disconnect', () => {
+    it('should clear all listener types on disconnect', async () => {
       const mockSocket = {
         connected: true,
         disconnect: vi.fn(),
@@ -211,7 +234,7 @@ describe('SocketService - Connection & Cleanup (Fixes Verification)', () => {
 
       (io as any).mockReturnValue(mockSocket);
 
-      socketService.connect();
+      await socketService.connect();
 
       // Register some listeners
       socketService.onNotification(vi.fn());
@@ -219,16 +242,13 @@ describe('SocketService - Connection & Cleanup (Fixes Verification)', () => {
 
       socketService.disconnect();
 
-      // Verify all listener types were cleared
-      expect(mockSocket.removeAllListeners).toHaveBeenCalled();
-      const listenerTypes = (mockSocket.removeAllListeners as any).mock.calls.map((c: any) => c[0]);
-      expect(listenerTypes).toContain('notification');
-      expect(listenerTypes).toContain('message:new');
+      // Verify blanket listener cleanup was used
+      expect(mockSocket.removeAllListeners).toHaveBeenCalledWith();
     });
   });
 
   describe('Connection state', () => {
-    it('should report connection state correctly', () => {
+    it('should report connection state correctly', async () => {
       const mockSocket = {
         connected: false,
         disconnect: vi.fn(),
@@ -239,7 +259,7 @@ describe('SocketService - Connection & Cleanup (Fixes Verification)', () => {
 
       // Set connected to true via setup
       mockSocket.connected = true;
-      socketService.connect();
+      await socketService.connect();
 
       expect(socketService.isConnected()).toBe(true);
 

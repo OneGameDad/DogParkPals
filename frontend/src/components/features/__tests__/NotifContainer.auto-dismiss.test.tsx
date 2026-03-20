@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { act, fireEvent, render } from '@testing-library/react';
 import NotifContainer from '../Notif';
-import userEvent from '@testing-library/user-event';
 
 // Mock i18next
 vi.mock('react-i18next', () => ({
@@ -26,13 +25,17 @@ describe('NotifContainer - Auto-Dismiss & Cleanup Fixes', () => {
       const containerRef = { current: null as any };
       const { container } = render(<NotifContainer ref={containerRef} />);
 
-      containerRef.current?.addNotification('messageReceived', { name: 'John' });
+      act(() => {
+        containerRef.current?.addNotification('messageReceived', { name: 'John' });
+      });
 
       // Should display notification
       expect(container.querySelectorAll('.bg-pink-50')).toHaveLength(1);
 
       // Fast-forward 5 seconds
-      vi.advanceTimersByTime(5000);
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
 
       // Should be gone
       expect(container.querySelectorAll('.bg-pink-50')).toHaveLength(0);
@@ -42,18 +45,28 @@ describe('NotifContainer - Auto-Dismiss & Cleanup Fixes', () => {
       const containerRef = { current: null as any };
       const { container } = render(<NotifContainer ref={containerRef} />);
 
-      containerRef.current?.addNotification('messageReceived', { name: 'John' });
-      vi.advanceTimersByTime(1000);
-      containerRef.current?.addNotification('friendRequest', { name: 'Jane' });
+      act(() => {
+        containerRef.current?.addNotification('messageReceived', { name: 'John' });
+      });
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      act(() => {
+        containerRef.current?.addNotification('friendRequest', { name: 'Jane' });
+      });
 
       expect(container.querySelectorAll('.bg-pink-50')).toHaveLength(2);
 
       // First notification disappears after 5 seconds from creation
-      vi.advanceTimersByTime(4000); // Total 5s from first
+      act(() => {
+        vi.advanceTimersByTime(4000); // Total 5s from first
+      });
       expect(container.querySelectorAll('.bg-pink-50')).toHaveLength(1);
 
       // Second notification disappears 1 second later
-      vi.advanceTimersByTime(1000); // Total 5s from second
+      act(() => {
+        vi.advanceTimersByTime(1000); // Total 5s from second
+      });
       expect(container.querySelectorAll('.bg-pink-50')).toHaveLength(0);
     });
 
@@ -61,16 +74,21 @@ describe('NotifContainer - Auto-Dismiss & Cleanup Fixes', () => {
       const containerRef = { current: null as any };
       const { container } = render(<NotifContainer ref={containerRef} />);
 
-      containerRef.current?.addNotification('messageReceived', { name: 'John' });
+      act(() => {
+        containerRef.current?.addNotification('messageReceived', { name: 'John' });
+      });
       const closeButton = container.querySelector('button[aria-label="Close notification"]') as HTMLElement;
 
-      const user = userEvent.setup({ delay: null });
-      await user.click(closeButton);
+      act(() => {
+        fireEvent.click(closeButton);
+      });
 
       expect(container.querySelectorAll('.bg-pink-50')).toHaveLength(0);
 
       // Advance timers - should stay gone
-      vi.advanceTimersByTime(10000);
+      act(() => {
+        vi.advanceTimersByTime(10000);
+      });
       expect(container.querySelectorAll('.bg-pink-50')).toHaveLength(0);
     });
 
@@ -78,8 +96,10 @@ describe('NotifContainer - Auto-Dismiss & Cleanup Fixes', () => {
       const containerRef = { current: null as any };
       const { container, unmount } = render(<NotifContainer ref={containerRef} />);
 
-      containerRef.current?.addNotification('messageReceived', { name: 'John' });
-      containerRef.current?.addNotification('friendRequest', { name: 'Jane' });
+      act(() => {
+        containerRef.current?.addNotification('messageReceived', { name: 'John' });
+        containerRef.current?.addNotification('friendRequest', { name: 'Jane' });
+      });
 
       expect(container.querySelectorAll('.bg-pink-50')).toHaveLength(2);
 
@@ -87,7 +107,9 @@ describe('NotifContainer - Auto-Dismiss & Cleanup Fixes', () => {
 
       // Should not throw when advancing timers after unmount
       expect(() => {
-        vi.advanceTimersByTime(10000);
+        act(() => {
+          vi.advanceTimersByTime(10000);
+        });
       }).not.toThrow();
     });
   });
@@ -98,9 +120,11 @@ describe('NotifContainer - Auto-Dismiss & Cleanup Fixes', () => {
       const { container } = render(<NotifContainer ref={containerRef} />);
 
       // Add same notification type multiple times
-      containerRef.current?.addNotification('messageReceived', { name: 'John' });
-      containerRef.current?.addNotification('messageReceived', { name: 'John' });
-      containerRef.current?.addNotification('messageReceived', { name: 'John' });
+      act(() => {
+        containerRef.current?.addNotification('messageReceived', { name: 'John' });
+        containerRef.current?.addNotification('messageReceived', { name: 'John' });
+        containerRef.current?.addNotification('messageReceived', { name: 'John' });
+      });
 
       // Should have 3 separate notifications
       expect(container.querySelectorAll('.bg-pink-50')).toHaveLength(3);
@@ -112,7 +136,9 @@ describe('NotifContainer - Auto-Dismiss & Cleanup Fixes', () => {
       const containerRef = { current: null as any };
       const { container } = render(<NotifContainer ref={containerRef} />);
 
-      containerRef.current?.addNotification('messageReceived', { name: 'John' });
+      act(() => {
+        containerRef.current?.addNotification('messageReceived', { name: 'John' });
+      });
 
       const wrapper = container.firstChild as HTMLElement;
       const classList = Array.from(wrapper.classList);
@@ -137,14 +163,18 @@ describe('NotifContainer - Auto-Dismiss & Cleanup Fixes', () => {
       const { container } = render(<NotifContainer ref={containerRef} />);
 
       // Rapidly add 5 notifications
-      for (let i = 0; i < 5; i++) {
-        containerRef.current?.addNotification('messageReceived', { name: `User${i}` });
-      }
+      act(() => {
+        for (let i = 0; i < 5; i++) {
+          containerRef.current?.addNotification('messageReceived', { name: `User${i}` });
+        }
+      });
 
       expect(container.querySelectorAll('.bg-pink-50')).toHaveLength(5);
 
       // All should dismiss after 5 seconds
-      vi.advanceTimersByTime(5000);
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
       expect(container.querySelectorAll('.bg-pink-50')).toHaveLength(0);
     });
   });
@@ -155,8 +185,12 @@ describe('NotifContainer - Auto-Dismiss & Cleanup Fixes', () => {
       const { container } = render(<NotifContainer ref={containerRef} />);
 
       for (let cycle = 0; cycle < 10; cycle++) {
-        containerRef.current?.addNotification('messageReceived', { name: 'John' });
-        vi.advanceTimersByTime(5000);
+        act(() => {
+          containerRef.current?.addNotification('messageReceived', { name: 'John' });
+        });
+        act(() => {
+          vi.advanceTimersByTime(5000);
+        });
       }
 
       // Should still work correctly - last notification should be gone
@@ -164,7 +198,9 @@ describe('NotifContainer - Auto-Dismiss & Cleanup Fixes', () => {
 
       // No warnings or errors should occur
       expect(() => {
-        vi.advanceTimersByTime(10000);
+        act(() => {
+          vi.advanceTimersByTime(10000);
+        });
       }).not.toThrow();
     });
   });

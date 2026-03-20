@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, act } from '@testing-library/react';
 import NotifContainer from '../Notif';
-import { useTranslation } from 'react-i18next';
 
 // Mock i18next
 vi.mock('react-i18next', () => ({

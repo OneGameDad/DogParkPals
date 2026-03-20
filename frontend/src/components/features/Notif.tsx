@@ -18,7 +18,7 @@ export interface NotifContainerHandle {
   addNotification: (messageType: string, variables?: Record<string, string | number>) => void;
 }
 
-const NotifContainer = React.forwardRef<NotifContainerHandle>((props, ref) => {
+const NotifContainer = React.forwardRef<NotifContainerHandle>((_props, ref) => {
   const { t, i18n } = useTranslation();
   const [notifications, setNotifications] = React.useState<NotificationItem[]>([]);
   const notificationMapRef = React.useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());

@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { OrganizationMember, OrgRole, User } from '../../types';
+import { OrgRole } from '../../types';
+import type { OrganizationMember, User } from '../../types';
 import { Picture, Button } from '../common';
 import { SearchBar } from '../features';
 import { useUserSearch } from '../../hooks';

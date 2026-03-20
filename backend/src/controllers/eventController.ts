@@ -21,7 +21,6 @@ async function checkEventAuthorization(
   eventId: number,
   userId: number,
   userRole: string | undefined,
-  organizationId: number | undefined,
   organizationMember: any
 ): Promise<Event> {
   const event = await eventService.getEventById(eventId);
@@ -106,7 +105,6 @@ const eventController = {
         eventId,
         req.user!.id,
         req.user!.role,
-        req.user!.organizationId,
         req.user!.organizationMember
       );
 
@@ -133,7 +131,6 @@ const eventController = {
         eventId,
         req.user!.id,
         req.user!.role,
-        req.user!.organizationId,
         req.user!.organizationMember
       );
 
@@ -305,7 +302,6 @@ const eventController = {
         eventId,
         userId,
         req.user!.role,
-        req.user!.organizationId,
         req.user!.organizationMember
       );
 
@@ -376,7 +372,6 @@ const eventController = {
         eventId,
         req.user!.id,
         req.user!.role,
-        req.user!.organizationId,
         req.user!.organizationMember
       );
 
@@ -414,7 +409,6 @@ const eventController = {
         eventId,
         req.user!.id,
         req.user!.role,
-        req.user!.organizationId,
         req.user!.organizationMember
       );
 
@@ -441,7 +435,6 @@ const eventController = {
         eventId,
         req.user!.id,
         req.user!.role,
-        req.user!.organizationId,
         req.user!.organizationMember
       );
 

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Organization } from '../../types';
+import type { Organization } from '../../types';
 import { Picture, Button } from '../common';
 import { getOrgPhotoUrl } from '../../constants';
 import api from '../../services/api';

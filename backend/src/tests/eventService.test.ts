@@ -1,5 +1,12 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 import type { Event, EventAttendance, User } from '@prisma/client';
+import {
+  createEventSchema,
+  getEventByIdSchema,
+  deleteEventSchema,
+  getEventsByOrganizerSchema,
+  getEventsByParkSchema,
+} from '../utils/validationSchemas';
 
 // Mock Prisma
 const mockEventCreate = jest.fn() as unknown as jest.Mock<Promise<Event>>;
@@ -188,7 +195,11 @@ describe('Event Service', () => {
       expect(mockEventCreate).toHaveBeenCalled();
     });
 
-    test.skip('should handle validation errors for invalid title', async () => {
+    test('should handle validation errors for invalid title', async () => {
+      (createEventSchema.parse as jest.Mock).mockImplementationOnce(() => {
+        throw new Error('Validation failed: title');
+      });
+
       await expect(
         eventService.createEvent(
           'AB', // Too short
@@ -200,9 +211,15 @@ describe('Event Service', () => {
           1
         )
       ).rejects.toThrow();
+
+      expect(mockEventCreate).not.toHaveBeenCalled();
     });
 
-    test.skip('should handle validation errors for past date', async () => {
+    test('should handle validation errors for past date', async () => {
+      (createEventSchema.parse as jest.Mock).mockImplementationOnce(() => {
+        throw new Error('Validation failed: past date');
+      });
+
       await expect(
         eventService.createEvent(
           'Dog Park Playdate',
@@ -214,14 +231,20 @@ describe('Event Service', () => {
           1
         )
       ).rejects.toThrow();
+
+      expect(mockEventCreate).not.toHaveBeenCalled();
     });
 
-    test.skip('should handle validation errors for event less than 30 minutes', async () => {
+    test('should handle validation errors for event less than 30 minutes', async () => {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 1);
       const startTime = new Date(futureDate);
       const endTime = new Date(futureDate);
       endTime.setMinutes(endTime.getMinutes() + 15); // Only 15 minutes
+
+      (createEventSchema.parse as jest.Mock).mockImplementationOnce(() => {
+        throw new Error('Validation failed: short duration');
+      });
 
       await expect(
         eventService.createEvent(
@@ -234,6 +257,8 @@ describe('Event Service', () => {
           1
         )
       ).rejects.toThrow();
+
+      expect(mockEventCreate).not.toHaveBeenCalled();
     });
 
     test('should handle database errors', async () => {
@@ -284,12 +309,6 @@ describe('Event Service', () => {
       expect(mockEventUpdate).toHaveBeenCalled();
     });
 
-    test.skip('should handle validation errors for invalid title', async () => {
-    });
-
-    test.skip('should handle validation errors for event less than 30 minutes', async () => {
-    });
-
     test('should handle database errors', async () => {
       mockEventUpdate.mockRejectedValue(new Error('Database error'));
 
@@ -327,10 +346,16 @@ describe('Event Service', () => {
       expect(mockEventFindUnique).toHaveBeenCalled();
     });
 
-    test.skip('should handle validation errors for invalid eventId', async () => {
+    test('should handle validation errors for invalid eventId', async () => {
+      (getEventByIdSchema.parse as jest.Mock).mockImplementationOnce(() => {
+        throw new Error('Validation failed: eventId');
+      });
+
       await expect(
         eventService.getEventById(-1)
       ).rejects.toThrow();
+
+      expect(mockEventFindUnique).not.toHaveBeenCalled();
     });
 
     test('should handle database errors', async () => {
@@ -371,10 +396,16 @@ describe('Event Service', () => {
       expect(mockEventDelete).toHaveBeenCalled();
     });
 
-    test.skip('should handle validation errors for invalid eventId', async () => {
+    test('should handle validation errors for invalid eventId', async () => {
+      (deleteEventSchema.parse as jest.Mock).mockImplementationOnce(() => {
+        throw new Error('Validation failed: eventId');
+      });
+
       await expect(
         eventService.deleteEvent(-1)
       ).rejects.toThrow();
+
+      expect(mockEventDelete).not.toHaveBeenCalled();
     });
 
     test('should handle database errors', async () => {
@@ -431,10 +462,16 @@ describe('Event Service', () => {
       expect(mockEventFindMany).toHaveBeenCalled();
     });
 
-    test.skip('should handle validation errors for invalid organizerId', async () => {
+    test('should handle validation errors for invalid organizerId', async () => {
+      (getEventsByOrganizerSchema.parse as jest.Mock).mockImplementationOnce(() => {
+        throw new Error('Validation failed: organizerId');
+      });
+
       await expect(
         eventService.getEventsByOrganizer(-1)
       ).rejects.toThrow();
+
+      expect(mockEventFindMany).not.toHaveBeenCalled();
     });
 
     test('should handle database errors', async () => {
@@ -617,10 +654,16 @@ describe('Event Service', () => {
       expect(mockEventFindMany).toHaveBeenCalled();
     });
 
-    test.skip('should handle validation errors for invalid parkId', async () => {
+    test('should handle validation errors for invalid parkId', async () => {
+      (getEventsByParkSchema.parse as jest.Mock).mockImplementationOnce(() => {
+        throw new Error('Validation failed: parkId');
+      });
+
       await expect(
         eventService.getEventsByPark(-1)
       ).rejects.toThrow();
+
+      expect(mockEventFindMany).not.toHaveBeenCalled();
     });
 
     test('should handle database errors', async () => {

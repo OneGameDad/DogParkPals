@@ -38,7 +38,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, title }) => {
                 className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden transform transition-all"
                 onClick={(e) => e.stopPropagation()}
             >
-                {(title || onClose) && (
+                {title && (
                     <div className="px-6 py-4 border-b flex items-center justify-between">
                         {title && <h3 className="text-lg font-semibold text-gray-900">{title}</h3>}
                         <button

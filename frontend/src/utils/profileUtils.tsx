@@ -1,3 +1,5 @@
+import type { TFunction } from 'i18next';
+
 type TranslateFunction = (key: string) => string;
 
 // Level and XP utilities

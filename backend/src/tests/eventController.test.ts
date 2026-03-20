@@ -226,7 +226,11 @@ describe('Event Controller', () => {
       expect(next).toHaveBeenCalled();
     });
 
-    test.skip('validation error: short title', async () => {
+    test('validation error: short title', async () => {
+      mockParseValidation.mockImplementationOnce(() => {
+        throw new Error('Validation failed: short title');
+      });
+
       const req = {
         method: 'POST',
         path: '/events',
@@ -250,7 +254,11 @@ describe('Event Controller', () => {
       expect(next).toHaveBeenCalled();
     });
 
-    test.skip('validation error: past date', async () => {
+    test('validation error: past date', async () => {
+      mockParseValidation.mockImplementationOnce(() => {
+        throw new Error('Validation failed: past date');
+      });
+
       const req = {
         method: 'POST',
         path: '/events',
@@ -463,7 +471,11 @@ describe('Event Controller', () => {
       expect(next).toHaveBeenCalled();
     });
 
-    test.skip('validation error: invalid eventId param', async () => {
+    test('validation error: invalid eventId param', async () => {
+      mockParseValidation.mockImplementationOnce(() => {
+        throw new Error('Validation failed: eventId');
+      });
+
       const req = { method: 'GET', path: '/events/abc', params: { eventId: 'abc' } as any } as unknown as Request;
       const res = makeRes();
       const next = makeNext();
@@ -546,7 +558,11 @@ describe('Event Controller', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    test.skip('getEvents.*validation error', async () => {
+    test('getEventsByOrganizer validation error', async () => {
+      mockParseValidation.mockImplementationOnce(() => {
+        throw new Error('Validation failed: organizerId');
+      });
+
       const req = { method: 'GET', path: '/organizers/abc/events', params: { organizerId: 'abc' } as any } as unknown as Request;
       const res = makeRes();
       const next = makeNext();
@@ -557,7 +573,11 @@ describe('Event Controller', () => {
       expect(mockEventService.getEventsByOrganizer).not.toHaveBeenCalled();
     });
 
-    test.skip('getEvents.*validation error', async () => {
+    test('getEventsByOrganization validation error', async () => {
+      mockParseValidation.mockImplementationOnce(() => {
+        throw new Error('Validation failed: organizationId');
+      });
+
       const req = { method: 'GET', path: '/organizations/abc/events', params: { organizationId: 'abc' } as any } as unknown as Request;
       const res = makeRes();
       const next = makeNext();
@@ -568,7 +588,11 @@ describe('Event Controller', () => {
       expect(mockEventService.getEventsByOrganization).not.toHaveBeenCalled();
     });
 
-    test.skip('getEvents.*validation error', async () => {
+    test('getEventsByPark validation error', async () => {
+      mockParseValidation.mockImplementationOnce(() => {
+        throw new Error('Validation failed: parkId');
+      });
+
       const req = { method: 'GET', path: '/parks/abc/events', params: { parkId: 'abc' } as any } as unknown as Request;
       const res = makeRes();
       const next = makeNext();
@@ -630,7 +654,11 @@ describe('Event Controller', () => {
       expect(next).toHaveBeenCalled();
     });
 
-    test.skip('validation error: invalid eventId param', async () => {
+    test('validation error: invalid eventId param', async () => {
+      mockParseValidation.mockImplementationOnce(() => {
+        throw new Error('Validation failed: eventId');
+      });
+
       const req = { method: 'GET', path: '/events/abc/exists', params: { eventId: 'abc' } as any } as unknown as Request;
       const res = makeRes();
       const next = makeNext();

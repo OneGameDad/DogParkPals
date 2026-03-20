@@ -84,7 +84,6 @@ const organizationController = {
                 throw NotFoundError("Organization not found");
             }
             const userId = (req as any).user?.id;
-            const userRole = (req as any).user?.role;
             const memberRole = userId ? (await organizationService.getMember(org.id, userId))?.role : undefined;
             const isMember = memberRole !== undefined;
             typeSafeLogger.logUserAction("Organization retrieved", { organizationId: org.id, name });

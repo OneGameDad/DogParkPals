@@ -179,6 +179,7 @@ export interface CheckIn {
   checkedInAt: string;
   checkedOutAt: string | null;
   user?: {
+    id?: number;
     username: string;
     profilePictureUrl: string | null;
   };

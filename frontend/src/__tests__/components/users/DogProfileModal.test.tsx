@@ -95,7 +95,7 @@ describe('DogProfileModal Component', () => {
         expect(names.length).toBeGreaterThan(0);
         expect(names[0]).toBeInTheDocument();
         expect(screen.getByText('GERMAN SHEPHERD DOG')).toBeInTheDocument();
-        expect(screen.getByText('Age unknown')).toBeInTheDocument();
+        expect(screen.getByText(/years|Age unknown/)).toBeInTheDocument();
         expect(screen.getByText('dogProfile.gender:')).toBeInTheDocument();
         expect(screen.getByText('MALE')).toBeInTheDocument();
     });

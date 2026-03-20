@@ -4,7 +4,7 @@ import { Request, Response, NextFunction } from 'express';
  * Middleware to add security headers to all responses
  * Includes HSTS, X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, etc.
  */
-export const securityHeaders = (req: Request, res: Response, next: NextFunction) => {
+export const securityHeaders = (_req: Request, res: Response, next: NextFunction) => {
   // HTTP Strict-Transport-Security (HSTS)
   // Forces browsers to use HTTPS for all future requests
   // max-age: 1 year (31536000 seconds), includeSubDomains for all subdomains

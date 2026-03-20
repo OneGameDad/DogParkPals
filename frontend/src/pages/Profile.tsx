@@ -44,7 +44,7 @@ const Profile = () => {
 					user={displayUser}
 					isOnline={isOnline}
 					lastSeenAt={lastSeenAt}
-					isOwnProfile={isOwnProfile}
+					isOwnProfile={Boolean(isOwnProfile)}
 				/>
 
 				{/* Action Buttons */}
@@ -100,7 +100,7 @@ const Profile = () => {
 					<UserDogsList
 						userId={displayUser.id}
 						dogs={dogs}
-						editable={isOwnProfile}
+						editable={Boolean(isOwnProfile)}
 					/>
 				</div>
 			</div>

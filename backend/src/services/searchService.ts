@@ -1,7 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import typeSafeLogger from '../utils/typeSafeLogger';
 import { toAppError } from '../utils/errors';
-import organizationService from './organizationService';
 
 const prisma = new PrismaClient();
 

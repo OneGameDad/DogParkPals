@@ -106,7 +106,11 @@ const DogProfileModal = ({ dog, onClose }: DogProfileModalProps) => {
                     <div className="flex items-center justify-center gap-2 mt-2">
                         <Badge text={dog.breed.replace(/_/g, ' ')} variant="blue" />
                         <span className="text-gray-400">•</span>
-                        <span className="text-gray-600 font-medium">{dog.age ? `${dog.age} years` : 'Age unknown'}</span>
+                        <span className="text-gray-600 font-medium">
+                            {dog.dateOfBirth
+                                ? `${Math.max(0, new Date().getFullYear() - new Date(dog.dateOfBirth).getFullYear())} years`
+                                : 'Age unknown'}
+                        </span>
                     </div>
                 </div>
 

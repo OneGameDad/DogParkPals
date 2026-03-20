@@ -68,7 +68,7 @@ const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({
 						) : (
 							<>
 								<span className="inline-block w-2 h-2 bg-gray-400 rounded-full mr-1"></span>
-								{t('profile.lastSeen', 'Last seen')}: {formatLastSeen(lastSeenAt, t)}
+								{t('profile.lastSeen', 'Last seen')}: {formatLastSeen(lastSeenAt ?? null, t)}
 							</>
 						)}
 					</span>

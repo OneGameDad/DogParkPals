@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next';
 import { Picture } from '../common';
 import type { Dog } from '../../types';
 import { getDogPhotoUrl } from '../../constants';
@@ -10,8 +9,6 @@ interface DogCardProps {
 }
 
 const DogCard = ({ dog, onClick, onRemove }: DogCardProps) => {
-    const { t } = useTranslation();
-
     return (
         <div
             className="relative flex items-center space-x-4 p-4 border rounded-lg hover:bg-gray-50 transition cursor-pointer group"

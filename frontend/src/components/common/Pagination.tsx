@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface PaginationProps {
     /** 0-based current offset */
     offset: number;

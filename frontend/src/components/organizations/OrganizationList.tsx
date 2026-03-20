@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../../services/api';
-import { Organization } from '../../types';
+import type { Organization } from '../../types';
 import OrganizationCard from './OrganizationCard';
 import { Button, Loading, ErrorMessage, FilterTabs, SortSelect, Pagination } from '../common';
 import { SearchBar } from '../features';

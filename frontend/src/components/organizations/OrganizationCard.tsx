@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Organization } from '../../types';
+import type { Organization } from '../../types';
 import type { OrganizationSearchResult } from '../../services/searchService';
 import { Picture } from '../common';
 import { useTranslation } from 'react-i18next';

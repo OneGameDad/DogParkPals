@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth, useFriendActions, useFriends, useEnemies, useFetch } from '../../hooks';
 import { Loading, ErrorMessage, Pagination, FilterTabs } from '../common';

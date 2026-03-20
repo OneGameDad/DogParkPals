@@ -25,7 +25,6 @@ class SocketService {
   private token: string | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
-  private isConnecting = false; // Prevent multiple simultaneous connection attempts
   private connectPromise: Promise<void> | null = null;
 
   /**
@@ -89,15 +88,12 @@ class SocketService {
       return;
     }
 
-    this.isConnecting = true;
-
     try {
       // Get auth token for Socket.io
       this.token = await this.getSocketToken();
       
       if (!this.token) {
         console.warn('No auth token available, skipping socket connection');
-        this.isConnecting = false;
         return;
       }
 
@@ -119,8 +115,6 @@ class SocketService {
       console.log('Socket.io connection initiated');
     } catch (error) {
       console.error('Failed to connect socket:', error);
-    } finally {
-      this.isConnecting = false;
     }
   }
 
@@ -362,7 +356,6 @@ class SocketService {
       this.token = null;
       this.reconnectAttempts = 0;
       this.connectPromise = null;
-      this.isConnecting = false;
       console.log('Socket disconnected and all listeners cleared');
     }
   }

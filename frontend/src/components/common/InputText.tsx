@@ -1,16 +1,18 @@
 import React from 'react';
 
 interface InputTextProps {
+  id?: string;
   placeholder?: string;
   value: string;
   onChange: (value: string) => void;
   label?: string;
-  type?: 'text' | 'email' | 'password' | 'number' | 'date';
+  type?: 'text' | 'email' | 'password' | 'number' | 'date' | 'time';
   required?: boolean;
   className?: string;
 }
 
 const InputText: React.FC<InputTextProps> = ({
+  id,
   placeholder = '',
   value,
   onChange,
@@ -22,12 +24,13 @@ const InputText: React.FC<InputTextProps> = ({
   return (
     <div className="flex flex-col gap-2">
       {label && (
-        <label className="font-semibold text-sm">
+        <label htmlFor={id} className="font-semibold text-sm">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
       <input
+        id={id}
         type={type}
         placeholder={placeholder}
         value={value}

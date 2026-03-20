@@ -1,4 +1,3 @@
-import React from 'react';
 import { formatTime } from '../../utils/formatters';
 import type { Messages } from '../../types';
 

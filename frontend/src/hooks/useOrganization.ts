@@ -7,7 +7,7 @@ import type { Organization, OrganizationMember, Event } from '../types';
 interface OrganizationDetails extends Organization {
   members: OrganizationMember[];
   events: Event[];
-  accessLevel: 'PUBLIC' | 'MEMBER' | 'MODERATOR' | 'OWNER' | 'ADMIN';
+  accessLevel: 'PUBLIC' | 'INVITEE' | 'MEMBER' | 'MODERATOR' | 'OWNER' | 'ADMIN';
 }
 
 interface UseOrganizationResult {
@@ -68,6 +68,7 @@ export const useOrganization = (organizationId: string | undefined): UseOrganiza
     refresh: fetchOrganization,
     isOwner,
     isAdmin,
+    isModerator,
     isMember,
     isInvitee,
     canEdit,

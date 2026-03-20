@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import messageService from '../../services/messageService';
 import { usePolling } from '../../hooks/usePolling';
 import type { Messages, User } from '../../types';
-import { Loading, Picture, ErrorMessage } from '../common';
+import { Loading, Picture } from '../common';
 import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import { api } from '../../services/api';
@@ -105,11 +105,6 @@ const MessageThread = ({ friendId, currentUserId }: MessageThreadProps) => {
         setFetchingOlder(true);
         const nextPage = page + 1;
         try {
-            // Capture current scroll BEFORE fetching
-            const container = scrollContainerRef.current;
-            const oldScrollHeight = container?.scrollHeight || 0;
-            const oldScrollTop = container?.scrollTop || 0;
-
             const response = await messageService.getConversation(friendId, nextPage, MESSAGES_PER_PAGE);
             const olderMessages = response.data;
 

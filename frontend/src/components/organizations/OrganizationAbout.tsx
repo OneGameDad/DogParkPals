@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Organization } from '../../types';
+import type { Organization } from '../../types';
 
 interface OrganizationAboutProps {
     organization: Organization;

@@ -7,13 +7,13 @@ export function useParkDetails(parkId: string | undefined) {
         loading: loadingPark,
         error: errorPark,
         refetch: refetchPark
-    } = useFetch<Park>(`/api/parks/${parkId}`, { skip: !parkId });
+    } = useFetch<Park>(parkId ? `/api/parks/${parkId}` : null);
 
     const {
         data: checkIns,
         loading: loadingCheckIns,
         refetch: refetchCheckIns
-    } = useFetch<CheckIn[]>(`/api/parks/${parkId}/check-ins`);
+    } = useFetch<CheckIn[]>(parkId ? `/api/parks/${parkId}/check-ins` : null);
 
     return {
         park,

@@ -38,8 +38,8 @@ export const LiveChat: React.FC<LiveChatProps> = ({ friendId }) => {
         // Cursor-based pagination for infinite scroll
         return messageService.getConversationCursor(friendId, lastMessageId, limit);
       } else {
-        // Initial load with offset pagination
-        return messageService.getConversation(friendId, 1, limit);
+        // Initial load with cursor pagination to keep response shape consistent
+        return messageService.getConversationCursor(friendId, undefined, limit);
       }
     },
     {

@@ -21,9 +21,9 @@ export function useEntitySearch<T>(type: SearchEntityType, debouncedQuery: strin
         setError(null);
 
         searchService
-            .searchByType<T>(type, debouncedQuery, { limit: FETCH_LIMIT, offset: 0 })
+            .searchByType(type, debouncedQuery, { limit: FETCH_LIMIT, offset: 0 })
             .then((res) => {
-                if (!cancelled) setResults(res.results);
+                if (!cancelled) setResults(res.results as T[]);
             })
             .catch((err) => {
                 if (!cancelled) setError(err instanceof Error ? err : new Error('Search failed'));

@@ -6,7 +6,7 @@ export const useProfileData = (id?: string) => {
 	const { user: currentUser, loading: authLoading } = useAuth();
 	
 	// Determine if viewing own profile or someone else's
-	const isOwnProfile = !id || (currentUser && id === String(currentUser.id));
+	const isOwnProfile = !id || (!!currentUser && id === String(currentUser.id));
 	const viewingUserId = id ? parseInt(id, 10) : currentUser?.id;
 	
 	// Fetch other user's data if not own profile

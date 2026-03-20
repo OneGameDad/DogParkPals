@@ -1,6 +1,9 @@
-import { createContext, useContext, useEffect, useRef, useState, ReactNode, useMemo, useCallback } from 'react';
-import socketService, { Notification } from '../services/socketService';
-import NotifContainer, { NotifContainerHandle } from '../components/features/Notif';
+import { createContext, useContext, useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import type { ReactNode } from 'react';
+import socketService from '../services/socketService';
+import type { Notification } from '../services/socketService';
+import NotifContainer from '../components/features/Notif';
+import type { NotifContainerHandle } from '../components/features/Notif';
 import { useAuth } from '../hooks';
 
 interface NotificationContextType {

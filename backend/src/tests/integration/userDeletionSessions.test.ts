@@ -131,7 +131,7 @@ describe('User Deletion with Session Termination', () => {
       expect(user).not.toBeNull();
     });
 
-    test('should allow self-deletion', async () => {
+    test('should prevent self-deletion', async () => {
       const userAToken = makeToken({
         id: ids.users.userA,
         role: 'CLIENT',
@@ -142,13 +142,13 @@ describe('User Deletion with Session Termination', () => {
         .delete(`/users/${ids.users.userA}`)
         .set('Authorization', `Bearer ${userAToken}`);
 
-      expect(deleteRes.status).toBe(204);
+      expect(deleteRes.status).toBe(403);
 
-      // User should be deleted
+      // User should still exist
       const user = await prisma.user.findUnique({
         where: { id: ids.users.userA },
       });
-      expect(user).toBeNull();
+      expect(user).not.toBeNull();
     });
 
     test('should allow admin to delete any user', async () => {

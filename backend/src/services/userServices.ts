@@ -387,7 +387,7 @@ const userService = {
     }
   },
 
-  async deleteUser(id: number) {
+  async deleteUser(id: number, requestingUserId?: number) {
     typeSafeLogger.logUserAction('Deleting user', { id });
     try {
       // Step 1: Disconnect all active WebSocket sessions for this user
@@ -398,11 +398,22 @@ const userService = {
       await prisma.$transaction(async (tx) => {
         const userToDelete = await tx.user.findUnique({
           where: { id },
-          select: { id: true },
+          select: { id: true, role: true },
         });
 
         if (!userToDelete) {
           throw NotFoundError('User not found');
+        }
+
+        if (requestingUserId && requestingUserId === id) {
+          throw ForbiddenError('Users cannot delete their own account');
+        }
+
+        if (userToDelete.role === UserRole.ADMIN) {
+          const adminCount = await tx.user.count({ where: { role: UserRole.ADMIN } });
+          if (adminCount <= 1) {
+            throw ConflictError('At least one admin must remain in the system');
+          }
         }
 
         const deletedUserId = await ensureDeletedUserSentinel(tx, id);

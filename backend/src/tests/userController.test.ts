@@ -578,7 +578,7 @@ describe('User Controller', () => {
 
       await userController.deleteUser(mockReq as Request, mockRes as Response, mockNext as any);
 
-      expect(mockDeleteUser).toHaveBeenCalledWith(5);
+      expect(mockDeleteUser).toHaveBeenCalledWith(5, 1);
       expect(mockStatus).toHaveBeenCalledWith(204);
     });
 
@@ -590,20 +590,20 @@ describe('User Controller', () => {
 
       await userController.deleteUser(mockReq as Request, mockRes as Response, mockNext as any);
 
-      expect(mockDeleteUser).toHaveBeenCalledWith(5);
+      expect(mockDeleteUser).toHaveBeenCalledWith(5, 1);
       expect(mockStatus).toHaveBeenCalledWith(204);
     });
 
-    test('returns 204 when deletion succeeds', async () => {
+    test('forwards forbidden when user tries to self-delete', async () => {
       mockReq.params = { id: '5' } as any;
       (mockReq as any).userId = 5;
       (mockReq as any).user = { id: 5, role: 'CLIENT' };
-      mockDeleteUser.mockResolvedValue(undefined);
 
       await userController.deleteUser(mockReq as Request, mockRes as Response, mockNext as any);
 
-      expect(mockDeleteUser).toHaveBeenCalledWith(5);
-      expect(mockStatus).toHaveBeenCalledWith(204);
+      expect(mockDeleteUser).not.toHaveBeenCalled();
+      const forwardedError = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwardedError.statusCode).toBe(403);
     });
   });
 

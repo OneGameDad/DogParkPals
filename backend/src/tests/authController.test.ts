@@ -91,6 +91,19 @@ describe('Auth Controller', () => {
       expect(awardExperience).toHaveBeenCalledWith(1, XP_REWARDS.LOGIN, 'login');
     });
 
+    test('blocks login for deleted_user sentinel account', async () => {
+      mockReq.body = { email: 'deleted@example.com', password: 'password123' };
+      mockGetUserByEmail.mockResolvedValue({ id: 999, email: 'deleted@example.com', username: 'deleted_user', password_hash: 'hashed' });
+      mockVerifyPassword.mockResolvedValue(true);
+
+      await authController.login(mockReq as Request, mockRes as Response, mockNext);
+
+      const forwarded = mockNext.mock.calls[0][0] as unknown as AppError;
+      expect(forwarded.statusCode).toBe(401);
+      expect(forwarded.code).toBe('AUTH_ERROR');
+      expect(forwarded.message).toContain('cannot be used');
+    });
+
     test('forwards not found when user missing', async () => {
       mockReq.body = { email: 'missing@example.com', password: 'password123' };
       mockGetUserByEmail.mockResolvedValue(null);

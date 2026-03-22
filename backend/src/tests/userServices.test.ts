@@ -228,7 +228,8 @@ describe('User Services', () => {
     const mockCommentUpdateMany = jest.fn<any>().mockResolvedValue({ count: 1 });
     const mockMessagesUpdateMany = jest.fn<any>().mockResolvedValue({ count: 1 });
     const mockEventUpdateMany = jest.fn<any>().mockResolvedValue({ count: 0 });
-    const mockOrganizationUpdateMany = jest.fn<any>().mockResolvedValue({ count: 0 });
+    const mockOrganizationFindMany = jest.fn<any>().mockResolvedValue([{ id: 77 }]);
+    const mockOrganizationDeleteMany = jest.fn<any>().mockResolvedValue({ count: 1 });
     const mockEnemiesUpdateMany = jest.fn<any>().mockResolvedValue({ count: 0 });
 
     jest.doMock('@prisma/client', () => ({
@@ -255,7 +256,8 @@ describe('User Services', () => {
               updateMany: mockEventUpdateMany,
             },
             organization: {
-              updateMany: mockOrganizationUpdateMany,
+              findMany: mockOrganizationFindMany,
+              deleteMany: mockOrganizationDeleteMany,
             },
             enemies: {
               updateMany: mockEnemiesUpdateMany,
@@ -276,6 +278,8 @@ describe('User Services', () => {
     expect(mockCommentUpdateMany).toHaveBeenCalledWith({ where: { userId: 3 }, data: { userId: 999 } });
     expect(mockMessagesUpdateMany).toHaveBeenCalledWith({ where: { senderId: 3 }, data: { senderId: 999 } });
     expect(mockMessagesUpdateMany).toHaveBeenCalledWith({ where: { receiverId: 3 }, data: { receiverId: 999 } });
+    expect(mockOrganizationFindMany).toHaveBeenCalledWith({ where: { ownerId: 3 }, select: { id: true } });
+    expect(mockOrganizationDeleteMany).toHaveBeenCalledWith({ where: { id: { in: [77] } } });
     expect(mockDelete).toHaveBeenCalledWith({ where: { id: 3 } });
 
     jest.dontMock('@prisma/client');
@@ -299,7 +303,7 @@ describe('User Services', () => {
             comment: { updateMany: jest.fn<any>() },
             messages: { updateMany: jest.fn<any>() },
             event: { updateMany: jest.fn<any>() },
-            organization: { updateMany: jest.fn<any>() },
+            organization: { findMany: jest.fn<any>().mockResolvedValue([]), deleteMany: jest.fn<any>() },
             enemies: { updateMany: jest.fn<any>() },
           })
         ),
@@ -334,7 +338,7 @@ describe('User Services', () => {
             comment: { updateMany: jest.fn<any>() },
             messages: { updateMany: jest.fn<any>() },
             event: { updateMany: jest.fn<any>() },
-            organization: { updateMany: jest.fn<any>() },
+            organization: { findMany: jest.fn<any>().mockResolvedValue([]), deleteMany: jest.fn<any>() },
             enemies: { updateMany: jest.fn<any>() },
           })
         ),

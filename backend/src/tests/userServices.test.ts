@@ -220,9 +220,10 @@ describe('User Services', () => {
   test('deleteUser anonymizes dependencies, removes friendships, and deletes by id', async () => {
     const mockFindUnique = jest
       .fn<any>()
-      .mockResolvedValueOnce({ id: 3 })
+      .mockResolvedValueOnce({ id: 3, role: 'CLIENT' })
       .mockResolvedValueOnce({ id: 999 });
     const mockDelete = jest.fn<any>().mockResolvedValue(undefined);
+    const mockCount = jest.fn<any>().mockResolvedValue(1);
     const mockDeleteMany = jest.fn<any>().mockResolvedValue({ count: 2 });
     const mockCommentUpdateMany = jest.fn<any>().mockResolvedValue({ count: 1 });
     const mockMessagesUpdateMany = jest.fn<any>().mockResolvedValue({ count: 1 });
@@ -231,12 +232,14 @@ describe('User Services', () => {
     const mockEnemiesUpdateMany = jest.fn<any>().mockResolvedValue({ count: 0 });
 
     jest.doMock('@prisma/client', () => ({
+      UserRole: { ADMIN: 'ADMIN' },
       PrismaClient: jest.fn(() => ({
         $transaction: jest.fn(async (callback: any) =>
           callback({
             user: {
               findUnique: mockFindUnique,
               delete: mockDelete,
+              count: mockCount,
               create: jest.fn<any>(),
             },
             friendship: {
@@ -263,7 +266,7 @@ describe('User Services', () => {
     }));
 
     const userService = await import('../services/userServices');
-    await userService.default.deleteUser(3);
+    await userService.default.deleteUser(3, 1);
 
     expect(mockDeleteMany).toHaveBeenCalledWith({
       where: {
@@ -274,6 +277,77 @@ describe('User Services', () => {
     expect(mockMessagesUpdateMany).toHaveBeenCalledWith({ where: { senderId: 3 }, data: { senderId: 999 } });
     expect(mockMessagesUpdateMany).toHaveBeenCalledWith({ where: { receiverId: 3 }, data: { receiverId: 999 } });
     expect(mockDelete).toHaveBeenCalledWith({ where: { id: 3 } });
+
+    jest.dontMock('@prisma/client');
+  });
+
+  test('deleteUser prevents self-deletion', async () => {
+    const mockFindUnique = jest.fn<any>().mockResolvedValue({ id: 3, role: 'CLIENT' });
+
+    jest.doMock('@prisma/client', () => ({
+      UserRole: { ADMIN: 'ADMIN' },
+      PrismaClient: jest.fn(() => ({
+        $transaction: jest.fn(async (callback: any) =>
+          callback({
+            user: {
+              findUnique: mockFindUnique,
+              count: jest.fn<any>(),
+              delete: jest.fn<any>(),
+              create: jest.fn<any>(),
+            },
+            friendship: { deleteMany: jest.fn<any>() },
+            comment: { updateMany: jest.fn<any>() },
+            messages: { updateMany: jest.fn<any>() },
+            event: { updateMany: jest.fn<any>() },
+            organization: { updateMany: jest.fn<any>() },
+            enemies: { updateMany: jest.fn<any>() },
+          })
+        ),
+      })),
+    }));
+
+    const userService = await import('../services/userServices');
+    await expect(userService.default.deleteUser(3, 3)).rejects.toMatchObject({
+      statusCode: 403,
+      code: 'FORBIDDEN',
+    });
+
+    jest.dontMock('@prisma/client');
+  });
+
+  test('deleteUser prevents deleting the last admin', async () => {
+    const mockFindUnique = jest.fn<any>().mockResolvedValue({ id: 1, role: 'ADMIN' });
+    const mockCount = jest.fn<any>().mockResolvedValue(1);
+
+    jest.doMock('@prisma/client', () => ({
+      UserRole: { ADMIN: 'ADMIN' },
+      PrismaClient: jest.fn(() => ({
+        $transaction: jest.fn(async (callback: any) =>
+          callback({
+            user: {
+              findUnique: mockFindUnique,
+              count: mockCount,
+              delete: jest.fn<any>(),
+              create: jest.fn<any>(),
+            },
+            friendship: { deleteMany: jest.fn<any>() },
+            comment: { updateMany: jest.fn<any>() },
+            messages: { updateMany: jest.fn<any>() },
+            event: { updateMany: jest.fn<any>() },
+            organization: { updateMany: jest.fn<any>() },
+            enemies: { updateMany: jest.fn<any>() },
+          })
+        ),
+      })),
+    }));
+
+    const userService = await import('../services/userServices');
+    await expect(userService.default.deleteUser(1, 2)).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'CONFLICT',
+    });
+
+    expect(mockCount).toHaveBeenCalledWith({ where: { role: 'ADMIN' } });
 
     jest.dontMock('@prisma/client');
   });

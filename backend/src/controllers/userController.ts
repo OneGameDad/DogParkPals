@@ -139,11 +139,15 @@ const userController = {
             const isPrivilegedUser = req.user?.role === 'ADMIN' || req.user?.role === 'DEVELOPER';
             const isSelfDeletion = req.userId === Number(id);
 
-            if (!isSelfDeletion && !isPrivilegedUser) {
-                throw ForbiddenError("You can only delete your own account unless you are an admin or developer");
+            if (isSelfDeletion) {
+                throw ForbiddenError("Users cannot delete their own account");
             }
 
-            await userService.deleteUser(Number(id));
+            if (!isPrivilegedUser) {
+                throw ForbiddenError("Only admin or developer users can delete accounts");
+            }
+
+            await userService.deleteUser(Number(id), req.userId);
             res.status(204).send();
         } catch (error) {
             if (isAppError(error)) {

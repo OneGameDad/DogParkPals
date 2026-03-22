@@ -212,7 +212,7 @@ describe("user flows", () => {
     expect(specificRes.body.lastSeenAt).toBeTruthy();
   });
 
-  test("delete self succeeds", async () => {
+  test("delete self is forbidden", async () => {
     const created = await request(app)
       .post("/users")
       .send({ username: "deleteme", email: "deleteme@example.com", password: "password123" });
@@ -223,7 +223,8 @@ describe("user flows", () => {
       .delete(`/users/${created.body.id}`)
       .set("Authorization", `Bearer ${deleteToken}`);
 
-    expect(res.status).toBe(204);
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("FORBIDDEN");
   });
 
   test("regular user cannot delete another user", async () => {
@@ -257,6 +258,15 @@ describe("user flows", () => {
       .set("Authorization", `Bearer ${developerToken()}`);
 
     expect(res.status).toBe(204);
+  });
+
+  test("cannot delete the last admin", async () => {
+    const res = await request(app)
+      .delete(`/users/${ids.users.admin}`)
+      .set("Authorization", `Bearer ${developerToken()}`);
+
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe("CONFLICT");
   });
 
   test("change password succeeds", async () => {

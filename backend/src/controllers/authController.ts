@@ -24,6 +24,11 @@ const authController = {
         throw NotFoundError('User not found');
       }
 
+      // Prevent deleted_user sentinel from signing in
+      if (user.username === 'deleted_user') {
+        throw AuthError('This account cannot be used');
+      }
+
       const isValidPassword = await verifyPassword(password, user.password_hash);
       if (!isValidPassword) {
         throw AuthError('Invalid credentials');

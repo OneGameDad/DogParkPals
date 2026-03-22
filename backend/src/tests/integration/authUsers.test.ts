@@ -562,3 +562,45 @@ describe("user profile picture upload", () => {
     expect(res.body.code).toBe("AUTH_ERROR");
   });
 });
+
+describe("auth token expiration and deleted user validation", () => {
+  test("token is rejected after user deletion", async () => {
+    // Create a test user
+    const createRes = await request(app)
+      .post("/users")
+      .send({ username: "tokentest", email: "tokentest@example.com", password: "password123" });
+
+    expect(createRes.status).toBe(201);
+    const userId = createRes.body.id;
+
+    // Login and get token
+    const loginRes = await request(app)
+      .post("/auth/login")
+      .send({ email: "tokentest@example.com", password: "password123" });
+
+    expect(loginRes.status).toBe(200);
+    const userToken = loginRes.body.token;
+
+    // Verify token works before deletion
+    const beforeDelete = await request(app)
+      .get("/users/presence")
+      .set("Authorization", `Bearer ${userToken}`);
+
+    expect(beforeDelete.status).toBe(200);
+
+    // Delete the user as admin
+    const deleteRes = await request(app)
+      .delete(`/users/${userId}`)
+      .set("Authorization", `Bearer ${adminToken()}`);
+
+    expect(deleteRes.status).toBe(204);
+
+    // Verify token is now rejected
+    const afterDelete = await request(app)
+      .get("/users/presence")
+      .set("Authorization", `Bearer ${userToken}`);
+
+    expect(afterDelete.status).toBe(401);
+    expect(afterDelete.body.code).toBe("AUTH_ERROR");
+  });
+});

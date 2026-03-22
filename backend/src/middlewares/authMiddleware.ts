@@ -2,6 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AuthError } from '../utils/errors';
 import { isTokenBlacklisted } from '../utils/tokenBlacklist';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 interface JwtPayload {
   userId: number;
@@ -9,7 +12,7 @@ interface JwtPayload {
   role?: string;
 }
 
-export const requireAuth = (req: Request, _res: Response, next: NextFunction) => {
+export const requireAuth = async (req: Request, _res: Response, next: NextFunction) => {
   try {
     let token = req.cookies.authToken;
     if (!token) {
@@ -32,6 +35,16 @@ export const requireAuth = (req: Request, _res: Response, next: NextFunction) =>
     if (isTokenBlacklisted(token)) {
       throw AuthError('Invalid authentication token');
     }
+
+    // Verify user still exists and is not deleted
+    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+    if (!user) {
+      throw AuthError('User account has been deleted');
+    }
+    if (user.username === 'deleted_user') {
+      throw AuthError('This account cannot be used');
+    }
+
     req.userId = decoded.userId;
     req.user = { id: decoded.userId, role: decoded.role };
 
@@ -47,7 +60,7 @@ export const requireAuth = (req: Request, _res: Response, next: NextFunction) =>
   }
 };
 
-export const optionalAuth = (req: Request, _res: Response, next: NextFunction) => {
+export const optionalAuth = async (req: Request, _res: Response, next: NextFunction) => {
   try {
     let token = req.cookies.authToken;
     if (!token) {
@@ -70,6 +83,16 @@ export const optionalAuth = (req: Request, _res: Response, next: NextFunction) =
       if (isTokenBlacklisted(token)) {
         return next(AuthError('Invalid authentication token'));
       }
+
+      // Verify user still exists and is not deleted
+      const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+      if (user && user.username === 'deleted_user') {
+        return next(AuthError('This account cannot be used'));
+      }
+      if (!user) {
+        return next();
+      }
+
       req.userId = decoded.userId;
       req.user = { id: decoded.userId, role: decoded.role };
     next();

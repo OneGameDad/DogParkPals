@@ -77,4 +77,27 @@ describe("user deletion anonymization", () => {
     expect(Array.isArray(usersListRes.body)).toBe(true);
     expect(usersListRes.body.some((user: { username?: string }) => user.username === 'deleted_user')).toBe(false);
   });
+
+  test("deletes organizations owned by the deleted user", async () => {
+    const ownedOrganization = await prisma.organization.create({
+      data: {
+        name: `Temp Org ${Date.now()}`,
+        ownerId: ids.users.userA,
+      },
+      select: { id: true },
+    });
+
+    const deleteRes = await request(app)
+      .delete(`/users/${ids.users.userA}`)
+      .set("Authorization", `Bearer ${adminToken()}`);
+
+    expect(deleteRes.status).toBe(204);
+
+    const deletedOrganization = await prisma.organization.findUnique({
+      where: { id: ownedOrganization.id },
+      select: { id: true },
+    });
+
+    expect(deletedOrganization).toBeNull();
+  });
 });

@@ -430,7 +430,25 @@ const userService = {
         await tx.messages.updateMany({ where: { senderId: id }, data: { senderId: deletedUserId } });
         await tx.messages.updateMany({ where: { receiverId: id }, data: { receiverId: deletedUserId } });
         await tx.event.updateMany({ where: { organizerId: id }, data: { organizerId: deletedUserId } });
-        await tx.organization.updateMany({ where: { ownerId: id }, data: { ownerId: deletedUserId } });
+
+        // Remove organizations created by the deleted user to avoid orphaned ownership.
+        const ownedOrganizations = await tx.organization.findMany({
+          where: { ownerId: id },
+          select: { id: true },
+        });
+
+        if (ownedOrganizations.length > 0) {
+          const ownedOrganizationIds = ownedOrganizations.map((organization) => organization.id);
+
+          // Detach events from organizations that are about to be deleted.
+          await tx.event.updateMany({
+            where: { organizationId: { in: ownedOrganizationIds } },
+            data: { organizationId: null },
+          });
+
+          await tx.organization.deleteMany({ where: { id: { in: ownedOrganizationIds } } });
+        }
+
         await tx.enemies.updateMany({ where: { ownerId: id }, data: { ownerId: deletedUserId } });
 
         await tx.user.delete({ where: { id } });
